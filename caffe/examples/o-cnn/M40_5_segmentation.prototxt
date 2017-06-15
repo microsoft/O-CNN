@@ -1,0 +1,433 @@
+name: "OctreeNet"
+layer {
+  name: "octreedatabase"
+  type: "OctreeDataBase"
+  top: "data"
+  top: "label"
+  include {
+    phase: TRAIN
+  }
+  data_param {  
+    source: "./02691156/lmdb/02691156_train"
+    batch_size: 32
+    backend: LMDB
+  }
+  octree_param {
+    segmentation: true
+  }
+}
+
+layer {
+  name: "octreedatabase"
+  type: "OctreeDataBase"
+  top: "data"
+  top: "octree"
+  top: "label"
+  include {
+    phase: TEST
+  }
+  data_param {
+    source: "./02691156/lmdb/02691156_train"
+    batch_size: 1
+    backend: LMDB
+  }
+  octree_param {
+    segmentation: true
+  }
+}
+
+
+layer {
+  name: "conv1"
+  type: "OctreeConv"
+  bottom: "data"
+  top: "conv1"
+  convolution_param {
+    num_output: 16
+    kernel: 3
+    stride: 1
+    bias_term: false
+    weight_filler {
+      type: "msra"
+    }   
+  }
+}
+
+layer {
+  name: "bn1"
+  bottom: "conv1"
+  top: "conv1"  
+  type: "BatchNorm"
+}
+
+layer {
+  name: "scale1"
+  bottom: "conv1"
+  top: "conv1"
+  type: "Scale"
+  scale_param {
+    bias_term: true
+  }   
+ }
+
+layer {
+  name: "relu1"
+  type: "ReLU"
+  bottom: "conv1"
+  top: "conv1"
+}
+
+layer {
+  name: "pool1"
+  type: "OctreePooling"
+  bottom: "conv1"
+  top: "pool1"
+  top: "pool1_mask"
+}
+
+
+layer {
+  name: "conv2"
+  type: "OctreeConv"
+  bottom: "pool1"
+  top: "conv2" 
+  convolution_param {
+    num_output: 32
+    kernel: 3
+    stride: 1
+    bias_term: false
+    weight_filler {
+      type: "msra"
+    }   
+  }
+}
+
+layer {
+  name: "bn2"
+  bottom: "conv2"
+  top: "conv2"
+  type: "BatchNorm"
+}
+
+layer {
+  name: "scale2"
+  bottom: "conv2"
+  top: "conv2"
+  type: "Scale"
+  scale_param {
+    bias_term: true
+  }
+}
+
+layer {
+  name: "relu2"
+  type: "ReLU"
+  bottom: "conv2"
+  top: "conv2"
+}
+
+layer {
+  name: "pool2"
+  type: "OctreePooling"
+  bottom: "conv2"
+  top: "pool2"
+  top: "pool2_mask" 
+}
+
+
+layer {
+  name: "conv3"
+  type: "OctreeConv"
+  bottom: "pool2"
+  top: "conv3"
+  
+  convolution_param {
+    num_output: 64
+    kernel: 3
+    stride: 1
+    bias_term: false
+    weight_filler {
+      type: "msra"
+    }
+  }
+}
+
+layer {
+  name: "bn3"
+  bottom: "conv3"
+  top: "conv3"  
+  type: "BatchNorm"
+}
+
+layer {
+  name: "scale3"
+  bottom: "conv3"
+  top: "conv3"
+  type: "Scale"
+  scale_param {
+    bias_term: true
+  }
+
+}
+
+layer {
+  name: "relu3"
+  type: "ReLU"
+  bottom: "conv3"
+  top: "conv3"
+}
+
+layer {
+  name: "pool3"
+  type: "OctreePooling"
+  bottom: "conv3"
+  top: "pool3"
+  top: "pool3_mask" 
+}
+
+
+
+layer {
+  name: "deconv2"
+  type: "OctreeConv"
+  bottom: "pool3"
+  top: "deconv2"
+  convolution_param {
+    num_output: 64
+    kernel: 3
+    stride: 1
+    bias_term: false
+    weight_filler {
+      type: "msra"
+    }
+  }
+}
+
+layer {
+  name: "debn2"
+  bottom: "deconv2"
+  top: "deconv2"  
+  type: "BatchNorm"
+}
+
+layer {
+  name: "descale2"
+  bottom: "deconv2"
+  top: "deconv2"
+  type: "Scale"
+  scale_param {
+    bias_term: true
+  }
+}
+
+layer {
+  name: "derelu2"
+  type: "ReLU"
+  bottom: "deconv2"
+  top: "deconv2"
+}
+
+
+layer {
+  name: "unpool3"
+  type: "OctreeUnpooling"
+  bottom: "deconv2"
+  bottom: "pool3_mask"
+  top: "unpool3"
+}
+
+layer {
+  name: "deconv3"
+  type: "OctreeConv"
+  bottom: "unpool3"
+  top: "deconv3"
+  convolution_param {
+    num_output: 32
+    kernel: 3
+    stride: 1
+    bias_term: false
+    weight_filler {
+      type: "msra"
+    }
+  }
+}
+
+layer {
+  name: "debn3"
+  bottom: "deconv3"
+  top: "deconv3"  
+  type: "BatchNorm"
+}
+
+layer {
+  name: "descale3"
+  bottom: "deconv3"
+  top: "deconv3"
+  type: "Scale"
+  scale_param {
+    bias_term: true
+  }
+}
+
+layer {
+  name: "derelu3"
+  type: "ReLU"
+  bottom: "deconv3"
+  top: "deconv3"
+}
+
+
+layer {
+  name: "unpool2"
+  type: "OctreeUnpooling"
+  bottom: "deconv3"
+  bottom: "pool2_mask"
+  top: "unpool2"
+}
+
+layer {
+  name: "deconv4"
+  type: "Convolution"
+  bottom: "unpool2"
+  top: "deconv4"
+    convolution_param {
+    num_output: 16
+    kernel: 3
+    stride: 1
+    bias_term: false
+    weight_filler {
+      type: "msra"
+    }
+  }
+}
+
+layer {
+  name: "debn4"
+  bottom: "deconv4"
+  top: "deconv4"  
+  type: "BatchNorm"
+}
+
+layer {
+  name: "descale4"
+  bottom: "deconv4"
+  top: "deconv4"
+  type: "Scale"
+  scale_param {
+    bias_term: true
+  }
+}
+
+layer {
+  name: "derelu4"
+  type: "ReLU"
+  bottom: "deconv4"
+  top: "deconv4"
+}
+
+layer {
+  name: "unpool1"
+  type: "OctreeUnpooling"
+  bottom: "deconv4"
+  bottom: "pool1_mask"
+  top: "unpool1"
+}
+
+layer {
+  name: "deconv5"
+  type: "OctreeConv"
+  bottom: "unpool1"
+  top: "deconv5"
+  convolution_param {
+    num_output: 16
+    kernel: 3
+    stride: 1
+    bias_term: false
+    weight_filler {
+      type: "msra"
+    }
+  }
+}
+
+layer {
+  name: "debn5"
+  bottom: "deconv5"
+  top: "deconv5"  
+  type: "BatchNorm"
+}
+
+layer {
+  name: "descale5"
+  bottom: "deconv5"
+  top: "deconv5"
+  type: "Scale"
+  scale_param {
+    bias_term: true
+  }
+}
+
+layer {
+  name: "derelu5"
+  type: "ReLU"
+  bottom: "deconv5"
+  top: "deconv5"
+}
+
+layer {
+  name: "deconv2_ip"
+  type: "Convolution"
+  bottom: "deconv5"
+  top: "deconv2_ip"
+  convolution_param {
+    num_output: 4
+    kernel_h: 1
+    kernel_w: 1
+    stride: 1
+    bias_term: false
+    weight_filler {
+      type: "msra"
+    }
+  }
+}
+
+
+layer {
+  name: "loss"
+  type: "SoftmaxWithLoss"
+  bottom: "deconv2_ip"
+  bottom: "label"
+  top: "loss"
+  loss_param{
+    ignore_label: -1
+  }
+}
+
+layer {
+  name: "accuracy"
+  type: "Accuracy"
+  bottom: "deconv2_ip"
+  bottom: "label"
+  top: "accuracy"
+  accuracy_param{
+    ignore_label: -1
+  }
+}
+
+# ##################
+# # for test only
+# layer {
+#   name: "prob"
+#   type: "Softmax"
+#   bottom: "deconv2_ip"
+#   top: "prob"
+# }
+
+# layer {
+#   name: "labelo"
+#   type: "Split"
+#   bottom: "label"
+#   top: "labelo"
+# }
+
+# # for test only
+# ##################
