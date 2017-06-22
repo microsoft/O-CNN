@@ -43,6 +43,9 @@ layer {
       type: "xavier"
     }
   }
+  octree_param {
+    curr_depth: 5
+  }
 }
 layer {
   name: "bn1"
@@ -70,6 +73,9 @@ layer {
   type: "OctreePooling"
   bottom: "conv1"
   top: "maxpool1"
+  octree_param {
+    curr_depth: 5
+  }
 }
 layer {
   name: "conv2"
@@ -84,6 +90,9 @@ layer {
     weight_filler {
       type: "xavier"
     }
+  }
+  octree_param {
+    curr_depth: 4
   }
 }
 layer {
@@ -112,6 +121,9 @@ layer {
   type: "OctreePooling"
   bottom: "conv2"
   top: "maxpool2"
+  octree_param {
+    curr_depth: 4
+  }
 }
 layer {
   name: "conv3"
@@ -126,6 +138,9 @@ layer {
     weight_filler {
       type: "xavier"
     }
+  }
+  octree_param {
+    curr_depth: 3
   }
 }
 layer {
@@ -154,12 +169,18 @@ layer {
   type: "OctreePooling"
   bottom: "conv3"
   top: "maxpool3"
+  octree_param {
+    curr_depth: 3
+  }
 }
 layer {
   name: "oct2voxel"
   type: "Octree2FullVoxel"
   bottom: "maxpool3"
   top: "oct3vxl"
+  octree_param {
+    curr_depth: 2
+  }
 }
 layer {
   name: "drop0"

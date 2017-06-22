@@ -77,6 +77,7 @@ namespace caffe
 		Blob<Dtype> data_buffer_;
 		Blob<Dtype> bias_multiplier_;
 
+	#ifdef USE_CUDNN
 		// cudnn
 		cudnnConvolutionBwdFilterAlgo_t bwd_filter_algo_;
 		cudnnHandle_t                   handle_;
@@ -86,6 +87,7 @@ namespace caffe
 		cudnnConvolutionDescriptor_t    conv_desc_;
 		size_t  filter_workspace_size_;
 		Blob<Dtype> filter_workspace_;
+	#endif // USE_CUDNN
     };
 
 }  // namespace caffe

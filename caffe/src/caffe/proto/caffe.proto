@@ -892,6 +892,7 @@ message MVNParameter {
 }
 
 message OctreeParameter {
+  // the octree depth of the bottom blob(s) in current CNN layer
   required uint32 curr_depth = 1;
   optional bool full_octree = 2 [default = false];
   optional uint32 batch_size = 3 [default = 1];

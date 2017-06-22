@@ -10,10 +10,12 @@ namespace caffe
 	void OctreeUnpoolingLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
 		const vector<Blob<Dtype>*>& top)
 	{
-		// int stride = 2;
-		curr_depth_ = Octree::get_curr_depth();
-		//CHECK_EQ(curr_depth_, this->layer_param_.octree_param().curr_depth());
-		Octree::set_curr_depth(curr_depth_ + 1);
+		CHECK(this->layer_param_.octree_param().has_curr_depth())
+			<< "Error in " << this->layer_param_.name() << ": "
+			<< "The octree depth of bottom blob should be set coreectly.";
+		curr_depth_ = this->layer_param_.octree_param().curr_depth();
+		//curr_depth_ = Octree::get_curr_depth();
+		//Octree::set_curr_depth(curr_depth_ + 1);
 	}
 
 	template <typename Dtype>

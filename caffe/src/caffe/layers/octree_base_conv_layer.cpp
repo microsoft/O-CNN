@@ -8,11 +8,13 @@ namespace caffe
 	template <typename Dtype>
 	OctreeBaseConvLayer<Dtype>::~OctreeBaseConvLayer()
 	{
+	#ifdef USE_CUDNN
 		cudnnDestroyTensorDescriptor(bottom_desc_);
 		cudnnDestroyTensorDescriptor(top_desc_);
 		cudnnDestroyConvolutionDescriptor(conv_desc_);
 		cudnnDestroyFilterDescriptor(filter_desc_);
 		cudnnDestroy(handle_);
+	#endif // USE_CUDNN
 	}
 
 	template <typename Dtype>
@@ -34,13 +36,16 @@ namespace caffe
 		is_1x1_ = kernel_size_ == 1 && stride_ == 1;
 
 		// current octree depth
-		curr_depth_ = Octree::get_curr_depth();
-		//CHECK_EQ(curr_depth_, this->layer_param_.octree_param().curr_depth());
-		if (stride_ == 2)
-		{
-			if (is_deconvolution_layer()) Octree::set_curr_depth(curr_depth_ + 1);
-			else Octree::set_curr_depth(curr_depth_ - 1);
-		}
+		CHECK(this->layer_param_.octree_param().has_curr_depth())
+			<< "Error in " << this->layer_param_.name() << ": "
+			<< "The octree depth of bottom blob should be set coreectly.";
+		curr_depth_ = this->layer_param_.octree_param().curr_depth();
+		//curr_depth_ = Octree::get_curr_depth();
+		//if (stride_ == 2)
+		//{
+		//	if (is_deconvolution_layer()) Octree::set_curr_depth(curr_depth_ + 1);
+		//	else Octree::set_curr_depth(curr_depth_ - 1);
+		//}
 
 		// channels & num_output_
 		channels_ = conv_in_channels_ = bottom[0]->shape(1);
@@ -110,6 +115,7 @@ namespace caffe
 		// Propagate gradients to the parameters (as directed by backward pass).
 		this->param_propagate_down_.resize(this->blobs_.size(), true);
 
+	#ifdef USE_CUDNN
 		// cudnn
 		CUDNN_CHECK(cudnnCreate(&handle_));
 		cudnn::createFilterDesc<Dtype>(&filter_desc_, weight_shape[0],
@@ -120,6 +126,7 @@ namespace caffe
 		filter_workspace_size_ = 8 * 1024 * 1024;
 		vector<int> filter_workspace_shape(1, filter_workspace_size_);
 		filter_workspace_.Reshape(filter_workspace_shape);
+	#endif //USE_CUDNN
 	}
 
 	template <typename Dtype>
@@ -345,13 +352,7 @@ namespace caffe
 			col_data = workspace_.gpu_data();
 		}
 
-		//Blob<Dtype> weight_buff;
-		//weight_buff.ReshapeLike(this->blobs_[1]);
-		// GEMM
-		//caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasTrans, conv_out_channels_,
-		//	kernel_dim_, workspace_h_, Dtype(1.0), top_diff, col_data,
-		//	Dtype(0.0), weights_diff);
-
+	#ifdef USE_CUDNN
 		// Cudnn
 		// Interestingly, we find the GEMM is nearly ten times slower than Cudnn
 		// when doing weight back-propagation. It's possible because the ill matrix
@@ -373,6 +374,12 @@ namespace caffe
 			conv_desc_, bwd_filter_algo_, filter_workspace_.mutable_gpu_data(),
 			filter_workspace_size_, cudnn::dataType<Dtype>::zero, filter_desc_,
 			weights_diff));
+	#else
+		// GEMM
+		caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasTrans, conv_out_channels_,
+			kernel_dim_, workspace_h_, Dtype(1.0), top_diff, col_data,
+			Dtype(0.0), weights_diff);
+	#endif // USE_CUDNN
 	}
 
 	template <typename Dtype>

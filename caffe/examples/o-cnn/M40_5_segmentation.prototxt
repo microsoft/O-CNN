@@ -13,6 +13,7 @@ layer {
     backend: LMDB
   }
   octree_param {
+    curr_depth: 5
     segmentation: true
   }
 }
@@ -32,6 +33,7 @@ layer {
     backend: LMDB
   }
   octree_param {
+    curr_depth: 5
     segmentation: true
   }
 }
@@ -50,6 +52,9 @@ layer {
     weight_filler {
       type: "msra"
     }   
+  }
+  octree_param {
+    curr_depth: 5
   }
 }
 
@@ -83,6 +88,9 @@ layer {
   bottom: "conv1"
   top: "pool1"
   top: "pool1_mask"
+  octree_param {
+    curr_depth: 5
+  }
 }
 
 
@@ -99,6 +107,9 @@ layer {
     weight_filler {
       type: "msra"
     }   
+  }
+  octree_param {
+    curr_depth: 4
   }
 }
 
@@ -132,6 +143,9 @@ layer {
   bottom: "conv2"
   top: "pool2"
   top: "pool2_mask" 
+  octree_param {
+    curr_depth: 4
+  }
 }
 
 
@@ -149,6 +163,9 @@ layer {
     weight_filler {
       type: "msra"
     }
+  }
+  octree_param {
+    curr_depth: 3
   }
 }
 
@@ -183,6 +200,9 @@ layer {
   bottom: "conv3"
   top: "pool3"
   top: "pool3_mask" 
+  octree_param {
+    curr_depth: 3
+  }
 }
 
 
@@ -234,6 +254,9 @@ layer {
   bottom: "deconv2"
   bottom: "pool3_mask"
   top: "unpool3"
+  octree_param {
+    curr_depth: 2
+  }
 }
 
 layer {
@@ -249,6 +272,9 @@ layer {
     weight_filler {
       type: "msra"
     }
+  }
+  octree_param {
+    curr_depth: 3
   }
 }
 
@@ -283,6 +309,9 @@ layer {
   bottom: "deconv3"
   bottom: "pool2_mask"
   top: "unpool2"
+  octree_param {
+    curr_depth: 3
+  }
 }
 
 layer {
@@ -298,6 +327,9 @@ layer {
     weight_filler {
       type: "msra"
     }
+  }
+  octree_param {
+    curr_depth: 4
   }
 }
 
@@ -331,6 +363,9 @@ layer {
   bottom: "deconv4"
   bottom: "pool1_mask"
   top: "unpool1"
+  octree_param {
+    curr_depth: 4
+  }
 }
 
 layer {
@@ -346,6 +381,9 @@ layer {
     weight_filler {
       type: "msra"
     }
+  }
+  octree_param {
+    curr_depth: 5
   }
 }
 

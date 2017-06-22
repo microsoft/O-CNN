@@ -49,12 +49,12 @@ namespace caffe {
 		label_buffer_.resize(batch_size_);
 		
 		// Read a data point, and use it to initialize the top blob.
-		Datum datum;
-		datum.ParseFromString(cursor_->value());
-		OctreeParser octree_parser(datum.data().data());
-		int octree_depth = *octree_parser.depth_;
-		Octree::set_octree_depth(octree_depth);
-		Octree::set_curr_depth(octree_depth);
+		//Datum datum;
+		//datum.ParseFromString(cursor_->value());
+		//OctreeParser octree_parser(datum.data().data());
+		//int octree_depth = *octree_parser.depth_;
+		//Octree::set_octree_depth(octree_depth);
+		//Octree::set_curr_depth(octree_depth);
 		// int node_num = octree_parser.node_num_[octree_depth];
 
 		// initialize top blob shape.
