@@ -45,18 +45,12 @@ For achieving better performance,  we store all the octree inputs in a  `leveldb
 
 - Run the tool `octree.exe` to convert point clouds into the octree files.
 
-  Usage: `Octree <filelist> [depth] [full_layer] [displacement] [augmentation] [segmentation]`
-
-  `filelist: a text file whose each line specifies the full path name of a POINTS file `
-
-  `depth: the maximum depth of the octree tree`
-
-  `full_layer: which layer of the octree is full. suggested value: 2`
-
-  `displacement: the offset value for handing extremely thin shapes: suggested value: 0.5`
-
-  `segmentation: a boolean value indicating whether the output is for the segmentation task.`
-
+		Usage: Octree <filelist> [depth] [full_layer] [displacement] [augmentation] [segmentation]
+			filelist: a text file whose each line specifies the full path name of a POINTS file
+			depth: the maximum depth of the octree tree
+			full_layer: which layer of the octree is full. suggested value: 2
+			displacement: the offset value for handing extremely thin shapes: suggested value: 0.5
+			segmentation: a boolean value indicating whether the output is for the segmentation task.
 
 
 - Convert all the octrees into a `lmdb` or `leveldb` database by the tool `convert_octree_data.exe`.
@@ -80,7 +74,7 @@ The instruction how to run the shape retrieval experiment:
 ### O-CNN for Shape Segmentation
 The instruction how to run the segmentation experiment: 
 
-- The original part annotation data is provided as the supplemental material of the work "[A Scalable Active Framework for Region Annotation in 3D Shape Collections](http://cs.stanford.edu/~ericyi/project_page/part_annotation/index.html)". As detailed in Section 5.3 of our paper, the point cloud in the original dataset is relatively sparse and the normal information is missing. We convert the sparse point clouds to dense points with normal information and correct part annotation.  Here is [one converted dataset](http://pan.baidu.com/s/1jHRRfuA) for your convenience, and we will release more data soon.
+- The original part annotation data is provided as the supplemental material of the work "[A Scalable Active Framework for Region Annotation in 3D Shape Collections](http://cs.stanford.edu/~ericyi/project_page/part_annotation/index.html)". As detailed in Section 5.3 of our paper, the point cloud in the original dataset is relatively sparse and the normal information is missing. We convert the sparse point clouds to dense points with normal information and correct part annotation.  Here is [one converted dataset](http://pan.baidu.com/s/1jHRRfuA) for your convenience, and the dense point clouds with segmentation labels can be downloaded [here](http://pan.baidu.com/s/1mieF2J2).
 - convert the dataset to a `lmdb` database.
 - Download the protocol buffer files, which are contained in the folder `caffe/examples/o-cnn`.
 - For CRF refinement, please refer to the code provided [here](https://github.com/wang-ps/O-CNN/tree/master/densecrf).  We will provide the automated tool soon.
