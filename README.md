@@ -74,9 +74,9 @@ The instruction how to run the shape retrieval experiment:
 ### O-CNN for Shape Segmentation
 The instruction how to run the segmentation experiment: 
 
-- The original part annotation data is provided as the supplemental material of the work "[A Scalable Active Framework for Region Annotation in 3D Shape Collections](http://cs.stanford.edu/~ericyi/project_page/part_annotation/index.html)". As detailed in Section 5.3 of our paper, the point cloud in the original dataset is relatively sparse and the normal information is missing. We convert the sparse point clouds to dense points with normal information and correct part annotation.  Here is [one converted dataset](http://pan.baidu.com/s/1jHRRfuA) for your convenience, and the dense point clouds with segmentation labels can be downloaded [here](http://pan.baidu.com/s/1mieF2J2).
-- convert the dataset to a `lmdb` database.
-- Download the protocol buffer files, which are contained in the folder `caffe/examples/o-cnn`.
+- The original part annotation data is provided as the supplemental material of the work "[A Scalable Active Framework for Region Annotation in 3D Shape Collections](http://cs.stanford.edu/~ericyi/project_page/part_annotation/index.html)". As detailed in Section 5.3 of our paper, the point cloud in the original dataset is relatively sparse and the normal information is missing. We convert the sparse point clouds to dense points with normal information and correct part annotation.  Here is [one converted dataset](http://pan.baidu.com/s/1gfN5tPh) for your convenience, and the dense point clouds with segmentation labels can be downloaded [here](http://pan.baidu.com/s/1mieF2J2).
+- Convert the dataset to a `lmdb` database.
+- Download the protocol buffer files, which are contained in the folder `caffe/examples/o-cnn`. `NOTE:` as detailed in our paper, the training parameters are tuned and the pre-trained model from the retrieval task is used when the training dataset is relatively small. More details will be released soon.
 - For CRF refinement, please refer to the code provided [here](https://github.com/wang-ps/O-CNN/tree/master/densecrf).  We will provide the automated tool soon.
 
 ## Acknowledgments
