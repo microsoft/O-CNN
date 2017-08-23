@@ -1,0 +1,129 @@
+name: "OctreeFeatureNet"
+layer {
+  name: "OctDB"
+  type: "Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TRAIN
+  }
+  data_param {
+    source: "feature/S55_5_train_lmdb"
+    batch_size: 32
+    backend: LMDB
+  }
+}
+
+layer {
+  name: "OctDB"
+  type: "Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TEST
+  }
+  data_param {
+    source: "feature/S55_5_val_lmdb"
+    batch_size: 32
+    backend: LMDB
+  }
+}
+
+layer {
+  name: "ip1"
+  type: "InnerProduct"
+  bottom: "data"
+  top: "ip1"
+  param {
+    lr_mult: 1
+  }
+  inner_product_param {
+    num_output: 128
+    weight_filler {
+      type: "xavier"
+    }
+   bias_term: false
+  }
+}
+
+layer {
+  name: "bn4"
+  bottom: "ip1"
+  top: "ip1"  
+  type: "BatchNorm"
+}
+
+layer {
+  name: "scale4"
+  bottom: "ip1"
+  top: "ip1"
+  type: "Scale"
+  scale_param {
+    bias_term: true
+  }
+}
+
+
+layer {
+  name: "relu5"
+  type: "ReLU"
+  bottom: "ip1"
+  top: "ip1"
+}
+
+layer {
+  name: "drop1"
+  type: "Dropout"
+  bottom: "ip1"
+  top: "ip1"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "ip2"
+  type: "InnerProduct"
+  bottom: "ip1"
+  top: "ip2"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 2
+  }
+  inner_product_param {
+    num_output: 55
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+}
+layer {
+  name: "loss"
+  type: "SoftmaxWithLoss"
+  bottom: "ip2"
+  bottom: "label"
+  top: "loss"
+}
+
+layer {
+  name: "accuracy"
+  type: "Accuracy"
+  bottom: "ip2"
+  bottom: "label"
+  top: "accuracy"
+}
+# ##################
+# # for test only
+# layer {
+#   name: "prob"
+#   type: "Softmax"
+#   bottom: "ip2"
+#   top: "prob"
+# }
+# # for test only
+# #################
