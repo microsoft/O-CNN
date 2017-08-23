@@ -43,12 +43,14 @@ For achieving better performance,  we store all the octree inputs in a  `leveldb
 - Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in POINTS format). 
 As detailed in our paper, we build a virtual scanner and shoot rays to calculate the intersection points and oriented normals. The executable files and source code can be downloaded [here](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner). 
 - Run the tool `octree.exe` to convert point clouds into the octree files.
-		Usage: Octree <filelist> [depth] [full_layer] [displacement] [augmentation] [segmentation]
-			filelist: a text file whose each line specifies the full path name of a POINTS file
-			depth: the maximum depth of the octree tree
-			full_layer: which layer of the octree is full. suggested value: 2
-			displacement: the offset value for handing extremely thin shapes: suggested value: 0.5
-			segmentation: a boolean value indicating whether the output is for the segmentation task.
+        
+        Usage: Octree <filelist> [depth] [full_layer] [displacement] [augmentation] [segmentation]
+            filelist: a text file whose each line specifies the full path name of a POINTS file
+            depth: the maximum depth of the octree tree
+            full_layer: which layer of the octree is full. suggested value: 2
+            displacement: the offset value for handing extremely thin shapes: suggested value: 0.5
+            segmentation: a boolean value indicating whether the output is for the segmentation task.
+
 - Convert all the octrees into a `lmdb` or `leveldb` database by the tool `convert_octree_data.exe`.
 
 
@@ -67,19 +69,27 @@ Note that some OFF files in the SHREC16 dataset can not be loaded by the [tools]
 - Follow the same approach as the classification task to train the O-CNN with the `O-CNN` protocal files `S55_5.prototxt` and `solver_S55_5.prototxt`, which are contained in the folder `caffe/examples/o-cnn`.
 - In the retrieval experiment, the `orientation pooling` is used to achieve better performance, which can be perfromed following the steps below.
     - Generate feature for each object. For example, to generate the feature for the training data, open the file `S55_5.prototxt`, uncomment line 275~283, set the `source` in line 27 to the `training lmdb`, set the `batch_size` in line 28  to 1, and run the following command.
+            
             caffe.exe test --model=S55_5.prototxt --weights=S55_5.caffemodel --blob_prefix=feature/S55_5_train_ 
             --gpu=0 --save_seperately=false --iterations=[the training object number]
+
     Similarly, the feature for the validation data and testing data can also be generated. Then we can get three binary files, `S55_5_train_feature.dat, S55_5_val_feature.dat and S55_5_test_feature.data`, containing the features of the training, validation and testing data respectively.
     - Pool the features of the same object. There are 12 features for each object since each object is rotated 12 times. We use max-pooling to merge these features.
-            feature_pooling.exe --feature=feature/S55_5_train_feature.dat --number=12 --dbname=feature/S55_5_train_lmdb
-            --data=[the data list file name]
+            
+            feature_pooling.exe --feature=feature/S55_5_train_feature.dat --number=12 
+            --dbname=feature/S55_5_train_lmdb --data=[the data list file name]
+
     Then we can get the feature of training, validation and testing data after pooling, contained in the `lmdb` database `S55_5_train_lmdb`, `S55_5_val_lmdb` and `S55_5_test_lmdb`.
     - Fine tune the `FC` layers of O-CNN, i.e. using the `solver_S55_5_finetune.prototxt` to re-train the `FC` layers.
+            
             caffe.exe train --solver=solver_S55_5_finetune.prototxt --weights=S55_5.caffemodel
+
     - Finally, dump the probabilities of each testing objects. Open the file `S55_5_finetune.prototxt`, uncomment the line 120 ~ 129, set the `batch_size` in line 27 to 1, change the `source` in line 26 to `feature/S55_5_test_lmdb`, and run the following command.
-            caffe.exe test --model=S55_5_finetune.prototxt --weights=S55_5_finetune.caffemodel --blob_prefix=feature/S55_test_ 
-            --gpu=0 --save_seperately=false --iterations=[the testing object number]
-- Using the matlab script `retrieval.m`, contained in the folder `caffe/examples/o-cnn` to generate the final retrieval result and evaluated it by the javascript code provided by [SHREC16](http://shapenet.cs.stanford.edu/shrec16/code/Evaluator.zip).
+            
+            caffe.exe test --model=S55_5_finetune.prototxt --weights=S55_5_finetune.caffemodel 
+            --blob_prefix=feature/S55_test_ --gpu=0 --save_seperately=false --iterations=[...]
+            
+- Using the matlab script `retrieval.m`, contained in the folder `caffe/examples/o-cnn`, to generate the final retrieval result. And evaluated it by the javascript code provided by [SHREC16](http://shapenet.cs.stanford.edu/shrec16/code/Evaluator.zip).
 
 ### O-CNN for Shape Segmentation
 The instruction how to run the segmentation experiment: 

@@ -32,6 +32,8 @@ DEFINE_string(pooling, "max",
 	"The type of pooling {max or avg}");
 DEFINE_string(backend, "lmdb",
 	"The backend {lmdb, leveldb} for storing the result");
+DEFINE_string(poolrst, "",
+	"Dump the pooling result");
 DEFINE_int32(number, 24,
 	"The orientation number of model");
 DEFINE_bool(shuffle, true,
@@ -99,7 +101,10 @@ void convert_dataset(const vector<float>& features,
 	{
 		int id = idx[i];
 		datum.set_label(datas[id].label_);
-		datum.set_data(features.data() + channel * id, channel*sizeof(float));
+		datum.clear_float_data();
+		for (int j = 0; j < channel; ++j)
+			datum.add_float_data(features[channel*id + j]);
+		//datum.set_data(features.data() + channel * id, channel*sizeof(float));
 		datum.set_channels(channel);
 		datum.set_height(1);
 		datum.set_width(1);
@@ -121,7 +126,6 @@ void convert_dataset(const vector<float>& features,
 		txn->Commit();
 		LOG(INFO) << "Processed " << count << " files.";
 	}
-	db->Close();
 }
 
 void get_contents(vector<float>& features, vector<data_item>& datas)
@@ -230,6 +234,24 @@ void feature_pooling(vector<float>& features_pool, vector<data_item>& datas_pool
 	}
 	else{
 		LOG(ERROR) << "Only support {max, avg} pooling : " << FLAGS_pooling;
+	}
+
+	if (!FLAGS_poolrst.empty())
+	{
+		// dump the list files
+		ofstream outfile;
+		outfile.open(FLAGS_poolrst + "_datalist_" + FLAGS_pooling + "_pool.txt");
+		for (int i = 0; i < N; ++i)
+			outfile << datas_pool[i].name_ << " " << datas_pool[i].label_ << "\n";
+		outfile.close();
+
+		// dump the feature result
+		outfile.open(FLAGS_poolrst + "_feature_" + FLAGS_pooling + "_pool.dat", ios::binary);
+		outfile.write((const char*)(&N), sizeof(int));
+		outfile.write((const char*)(&dim), sizeof(int));
+		outfile.write((const char*)features_pool.data(), sizeof(float)*N*dim);
+
+		outfile.close();
 	}
 }
 

@@ -118,7 +118,6 @@ void convert_dataset(const string& root_folder, const string& list_file,
 		txn->Commit();
 		LOG(INFO) << "Processed " << count << " files.";
 	}
-	db->Close();
 }
 
 int main(int argc, char** argv) {
