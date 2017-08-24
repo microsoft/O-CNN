@@ -40,7 +40,7 @@ The experiments in our paper can be reproduced as follows.
 For achieving better performance,  we store all the octree inputs in a  `leveldb` or `lmdb` database. Here are the details how to generate databases for O-CNN.
 
 - Download and unzip the corresponding 3D model dataset (like the [ModelNet40](http://modelnet.cs.princeton.edu) dataset) into a folder.
-- Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in POINTS format). 
+- Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in POINTS format). Note that some OFF files in the dataset may not be loaded by the [tools](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner) I provided. It is easy to fix these files. Just open them using any text editor and break the first line after the characters `OFF`.
 As detailed in our paper, we build a virtual scanner and shoot rays to calculate the intersection points and oriented normals. The executable files and source code can be downloaded [here](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner). 
 - Run the tool `octree.exe` to convert point clouds into the octree files.
         
@@ -55,17 +55,16 @@ As detailed in our paper, we build a virtual scanner and shoot rays to calculate
 
 
 ### O-CNN for Shape Classification 
-The instruction how to run the shape classification experiment:
+The instruction to run the shape classification experiment:
 
 - Download the [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset, and convert it to a `lmdb` database as described above. [Here](https://www.dropbox.com/s/vzmxsqkp2lwwwp8/ModelNet40_5.zip?dl=0) we provide a `lmdb` database with 5-depth octrees for convenience.
 - Download the `O-CNN` protocol buffer files, which are contained in the folder `caffe/examples/o-cnn`.
 - Configure the path of the database and run `caffe.exe` according to the instructions of [Caffe](http://caffe.berkeleyvision.org/tutorial/interfaces.html). We also provide our pre-trained Caffe model in `caffe/examples/o-cnn`.
 
 ### O-CNN for Shape Retrieval
-The instruction how to run the shape retrieval experiment:
+The instruction to run the shape retrieval experiment:
 
 - Download the dataset from  [SHREC16](http://shapenet.cs.stanford.edu/shrec16/), and convert it to a `lmdb` database as described above. 
-Note that some OFF files in the SHREC16 dataset can not be loaded by the [tools](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner) I provided. It is easy to fix these files. Just open them using any text editor and break the first line after the characters `OFF`.
 - Follow the same approach as the classification task to train the O-CNN with the `O-CNN` protocal files `S55_5.prototxt` and `solver_S55_5.prototxt`, which are contained in the folder `caffe/examples/o-cnn`.
 - In the retrieval experiment, the `orientation pooling` is used to achieve better performance, which can be perfromed following the steps below.
     - Generate feature for each object. For example, to generate the feature for the training data, open the file `S55_5.prototxt`, uncomment line 275~283, set the `source` in line 27 to the `training lmdb`, set the `batch_size` in line 28  to 1, and run the following command.
@@ -73,7 +72,7 @@ Note that some OFF files in the SHREC16 dataset can not be loaded by the [tools]
             caffe.exe test --model=S55_5.prototxt --weights=S55_5.caffemodel --blob_prefix=feature/S55_5_train_ 
             --gpu=0 --save_seperately=false --iterations=[the training object number]
 
-    Similarly, the feature for the validation data and testing data can also be generated. Then we can get three binary files, `S55_5_train_feature.dat, S55_5_val_feature.dat and S55_5_test_feature.data`, containing the features of the training, validation and testing data respectively.
+    Similarly, the feature for the validation data and testing data can also be generated. Then we can get three binary files, `S55_5_train_feature.dat, S55_5_val_feature.dat and S55_5_test_feature.dat`, containing the features of the training, validation and testing data respectively.
     - Pool the features of the same object. There are 12 features for each object since each object is rotated 12 times. We use max-pooling to merge these features.
             
             feature_pooling.exe --feature=feature/S55_5_train_feature.dat --number=12 
@@ -92,7 +91,7 @@ Note that some OFF files in the SHREC16 dataset can not be loaded by the [tools]
 - Using the matlab script `retrieval.m`, contained in the folder `caffe/examples/o-cnn`, to generate the final retrieval result. And evaluated it by the javascript code provided by [SHREC16](http://shapenet.cs.stanford.edu/shrec16/code/Evaluator.zip).
 
 ### O-CNN for Shape Segmentation
-The instruction how to run the segmentation experiment: 
+The instruction to run the segmentation experiment: 
 
 - The original part annotation data is provided as the supplemental material of the work "[A Scalable Active Framework for Region Annotation in 3D Shape Collections](http://cs.stanford.edu/~ericyi/project_page/part_annotation/index.html)". As detailed in Section 5.3 of our paper, the point cloud in the original dataset is relatively sparse and the normal information is missing. We convert the sparse point clouds to dense points with normal information and correct part annotation.  Here is [one converted dataset](http://pan.baidu.com/s/1gfN5tPh) for your convenience, and the dense point clouds with segmentation labels can be downloaded [here](http://pan.baidu.com/s/1mieF2J2).
 - Convert the dataset to a `lmdb` database.
