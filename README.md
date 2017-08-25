@@ -64,7 +64,9 @@ The instruction to run the shape classification experiment:
 ### O-CNN for Shape Retrieval
 The instruction to run the shape retrieval experiment:
 
-- Download the dataset from  [SHREC16](http://shapenet.cs.stanford.edu/shrec16/), and convert it to a `lmdb` database as described above.  [Here](http://pan.baidu.com/s/1mieF2J2) we provide the lmdb databases with 5-depth octrees for convenience, just download the files prefixed with `S55` and un-zip them.
+- Download the dataset from  [SHREC16](http://shapenet.cs.stanford.edu/shrec16/), and convert it to a `lmdb` database as described above. 
+`Note`: the upright direction of the 3D models in the `ShapeNet55` is `Y` axis. When generating octree files, please uncomment `line 95` in the file `octree/Octree/main.cpp` and rebuild the code.
+[Here](http://pan.baidu.com/s/1mieF2J2) we provide the lmdb databases with 5-depth octrees for convenience, just download the files prefixed with `S55` and un-zip them.
 - Follow the same approach as the classification task to train the O-CNN with the `O-CNN` protocal files `S55_5.prototxt` and `solver_S55_5.prototxt`, which are contained in the folder `caffe/examples/o-cnn`.
 - In the retrieval experiment, the `orientation pooling` is used to achieve better performance, which can be perfromed following the steps below.
     - Generate feature for each object. For example, to generate the feature for the training data, open the file `S55_5.prototxt`, uncomment line 275~283, set the `source` in line 27 to the `training lmdb`, set the `batch_size` in line 28  to 1, and run the following command.

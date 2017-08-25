@@ -88,7 +88,11 @@ int main(int argc, char* argv[])
 		// data augmentation
 		float bbmin[] = { -radius, -radius, -radius };
 		float bbmax[] = { radius, radius, radius };
-		float axis[] = { 0, 0, 1 };
+		// For ModelNet40, the upright direction is Z axis
+		float axis[] = { 0.0f, 0.0f, 1.0f }; 
+		// IMPORTANT: for ShapeNet55, the upright direction is Y axis
+		// please un-comment the following line and rebuild the code.
+		// axis[1] = 1.0f; axis[2] = 0.0f; 
 		float Rot[9];
 		rotation_matrix(Rot, 2.0f*M_PI / float(view_num), axis);
 		//Rot = Eigen::AngleAxis<float>(2.0*M_PI / float(view_num),
