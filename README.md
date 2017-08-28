@@ -90,7 +90,7 @@ The instruction to run the shape retrieval experiment:
             caffe.exe test --model=S55_5_finetune.prototxt --weights=S55_5_finetune.caffemodel 
             --blob_prefix=feature/S55_test_ --gpu=0 --save_seperately=false --iterations=[...]
             
-- Using the matlab script `retrieval.m`, contained in the folder `caffe/examples/o-cnn`, to generate the final retrieval result. And evaluated it by the javascript code provided by [SHREC16](http://shapenet.cs.stanford.edu/shrec16/code/Evaluator.zip).
+- Use the matlab script `retrieval.m`, contained in the folder `caffe/examples/o-cnn`, to generate the final retrieval result. And evaluated it by the javascript code provided by [SHREC16](http://shapenet.cs.stanford.edu/shrec16/code/Evaluator.zip).
 
 ### O-CNN for Shape Segmentation
 The instruction to run the segmentation experiment: 
