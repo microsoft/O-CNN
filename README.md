@@ -33,6 +33,8 @@ O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it 
 ### Octree input for O-CNN
 Our O-CNN takes the octree representation of 3D objects as input.  The efficient octree data structure is described in our paper. For convenience, we provide a reference implementation to convert the point cloud with oriented normal to our octree format. The code is contained in the directory `octree`, along with the Microsoft Visual studio 2015 solution file, which can be built to obtain the executable file `octree.exe`. 
 
+`NOTE`: To build the octree, the bounding sphere of the object is needed to be computed. The initial version of our code is built upon the bound sphere library from this [link](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). However, we remove it from our code due to the licence issue. To reproduce the results in our paper, it is highly recommended to download the [bound sphere library](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). For more details, please refer to the comments in the file `octree/Octree/main.cpp`.
+
 ## O-CNN in Action
 The experiments in our paper can be reproduced as follows.
 
