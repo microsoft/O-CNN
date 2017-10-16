@@ -669,7 +669,7 @@ namespace octree{
 			}
 		};
 
-		const int thread_num = 4;
+		const int thread_num = 8;
 		vector<shared_ptr<boost::thread> > workers(thread_num);
 		for (int id = 1; id < thread_num; ++id)
 		{
