@@ -30,7 +30,7 @@ O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it 
 - The code for O-CNN is contained in the directory `caffe`. Clone and put it into the Caffe directory. 
 - Follow the installation [instructions](https://github.com/BVLC/caffe/tree/windows) of Caffe to build the code to get the executive files `caffe.exe`, `convert_octree_data.exe` and `feature_pooling.exe` etc.
 
-`NOTE`: Compared with the original code used in the experiments of our paper, the code in this repository is refactored for the readability and maintainability, with the sacrifice of speed (it is about 10% slower). If you want to try the original code or do some speed comparisons with our `O-CNN`, feel free to drop me an email, we can share the original code with you.
+`NOTE`: Compared with the original code used in the experiments of our paper, the code in this repository is refactored for the readability and maintainability, with the sacrifice of speed (it is about 10% slower, but it is more memory-efficient). If you want to try the original code or do some speed comparisons with our `O-CNN`, feel free to drop me an email, we can share the original code with you.
 
 ### Octree input for O-CNN
 Our O-CNN takes the octree representation of 3D objects as input.  The efficient octree data structure is described in our paper. For convenience, we provide a reference implementation to convert the point cloud with oriented normal to our octree format. The code is contained in the directory `octree`, along with the Microsoft Visual studio 2015 solution file, which can be built to obtain the executable file `octree.exe`. 
