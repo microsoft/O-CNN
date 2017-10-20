@@ -20,7 +20,7 @@ stepsize: 100000 # about 10 epochs
 display: 10
 
 # The maximum number of iterations
-max_iter: 500000
+max_iter: 400000 # about 40 epochs
 
 # snapshot intermediate results
 snapshot: 4000

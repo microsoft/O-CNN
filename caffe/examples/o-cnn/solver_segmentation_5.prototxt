@@ -15,7 +15,7 @@ weight_decay: 0.0005
 # The learning rate policy
 lr_policy: "step"
 gamma: 0.1
-stepsize: 10000
+stepsize: 10000 
 
 # Display every 10 iterations
 display: 10
