@@ -52,7 +52,7 @@ As detailed in our paper, we build a virtual scanner and shoot rays to calculate
             filelist: a text file whose each line specifies the full path name of a POINTS file
             depth: the maximum depth of the octree tree
             full_layer: which layer of the octree is full. suggested value: 2
-            displacement: the offset value for handing extremely thin shapes: suggested value: 0.5
+            displacement: the offset value for handing extremely thin shapes: suggested value: 0.55
             segmentation: a boolean value indicating whether the output is for the segmentation task.
 
 - Convert all the octrees into a `lmdb` or `leveldb` database by the tool `convert_octree_data.exe`.
