@@ -304,7 +304,7 @@ namespace octree{
 		typedef unsigned char ubyte;
 
 		// build hash table
-		vector<std::pair<unsigned, int>> entries(node_num);
+		vector<std::pair<unsigned, int> > entries(node_num);
 		for (int id = 0; id < node_num; ++id)
 		{	// ignore the root node
 			entries[id] = std::make_pair(key[id], id + displacement);
@@ -466,7 +466,7 @@ namespace octree{
 	}
 
 	template<typename Dtype>
-	void OctreeBatch<Dtype>::set_octreebatch(const vector<vector<char>>& octree_buffer,
+	void OctreeBatch<Dtype>::set_octreebatch(const vector<vector<char> >& octree_buffer,
 		const vector<int>& label_buffer, const bool segmentation /* = false */)
 	{
 		/// octree parser
