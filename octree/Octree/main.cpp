@@ -168,7 +168,7 @@ void load_pointcloud(vector<float>& pt,	vector<float>& normal,
 // 	int d = 3; // 3D mini-ball
 // 	radius = center[0] = center[1] = center[2] = 0;
 // 	if (n < 2) return;
-// 	
+//	
 // 	// mini-ball
 // 	const float** ap = new const float*[n];
 // 	for (int i = 0; i < n; ++i) { ap[i] = V + d * i; }
@@ -177,12 +177,46 @@ void load_pointcloud(vector<float>& pt,	vector<float>& normal,
 // 	Miniball::Miniball <
 // 		Miniball::CoordAccessor < PointIterator, CoordIterator >>
 // 		miniball(d, ap, ap + n);
-// 
+//
 // 	// get result
-// 	const float* cnt = miniball.center();
-// 	for (int i = 0; i < d; ++i) { center[i] = cnt[i]; }
-// 	radius = sqrt(miniball.squared_radius() + 1.0e-20);
-// 	
+// 	if (miniball.is_valid())
+// 	{
+// 		const float* cnt = miniball.center();
+// 		for (int i = 0; i < d; ++i) {
+// 			center[i] = cnt[i];
+// 		}
+// 		radius = sqrtf(miniball.squared_radius() + 1.0e-20f);
+// 	}
+// 	else
+// 	{
+// 		// the miniball might failed sometimes
+// 		// if so, just calculate the bounding box
+//
+// 		float bbmin[3] = { V[0], V[1], V[2] };
+// 		float bbmax[3] = { V[0], V[1], V[2] };
+// 		for (int i = 1; i < n; ++i)
+// 		{
+// 			int i3 = i * 3;
+// 			for (int j = 0; j < d; ++j)
+// 			{
+// 				float tmp = V[i3 + j];
+// 				if (tmp < bbmin[j]) bbmin[j] = tmp;
+// 				if (tmp > bbmax[j]) bbmax[j] = tmp;
+// 			}
+// 		}
+//
+// 		float width[3];
+// 		for (int j = 0; j < d; ++j)
+// 		{
+// 			width[j] = (bbmax[j] - bbmin[j]) / 2.0f;
+// 			center[j] = (bbmax[j] + bbmin[j]) / 2.0f;
+// 		}
+//
+// 		radius = width[0];
+// 		if (width[1] > radius) radius = width[1];
+// 		if (width[2] > radius) radius = width[2];
+// 	}
+//	
 // 	// release
 // 	delete[] ap;
 // }
