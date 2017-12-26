@@ -364,7 +364,7 @@ void Octree::splat_label(const int* labels, const vector<float>& weights,
 	const vector<uint32>& sorted_idx, const vector<uint32>& unique_idx,
 	const vector<int>& children)
 {
-	int n = children_.size();
+	int n = children.size();
 	int nl = *std::max_element(labels, labels + n) + 1;
 
 	label_.clear(); 
