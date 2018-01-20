@@ -35,7 +35,9 @@ O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it 
 `NOTE`: To build the code on the Ubuntu 16.04, you should first manually install the `glog` and `gflag` by using the following command: `sudo apt-get install libgflags libgoogle-glog-dev`, and then add the following line `set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")` in the `Line 60` of the `CMakeLists.txt` file.
 
 ### Octree input for O-CNN
-Our O-CNN takes the octree representation of 3D objects as input.  The efficient octree data structure is described in our paper. For convenience, we provide a reference implementation to convert the point cloud with oriented normal to our octree format. The code is contained in the directory `octree`, along with the Microsoft Visual studio 2015 solution file, which can be built to obtain the executable file `octree.exe`. 
+Our O-CNN takes the octree representation of 3D objects as input.  The efficient octree data structure is described in our paper. For convenience, we provide a reference implementation to convert the point cloud with oriented normal to our octree format.
+Furthermore, we also provide a tool to convert the octree file into ply files, which contains the coordinate of the finest leaf nodes and the corresponding normal signal. Note that when the leaf node is empty, the value of normal signal is (0, 0, 0).
+The code is contained in the directory `octree`, along with the Microsoft Visual studio 2015 solution file, which can be built to obtain the executable file `octree.exe` and `octree2PLY.exe`. 
 
 `NOTE`: To build the octree, the bounding sphere of the object is needed to be computed. The initial version of our code is built upon the bound sphere library from this [link](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). However, we remove it from our code due to the licence issue. To reproduce the results in our paper, it is highly recommended to download the [bound sphere library](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). For more details, please refer to the comments in the file `octree/Octree/main.cpp`.
 
@@ -46,18 +48,24 @@ The experiments in our paper can be reproduced as follows.
 For achieving better performance,  we store all the octree inputs in a  `leveldb` or `lmdb` database. Here are the details how to generate databases for O-CNN.
 
 - Download and unzip the corresponding 3D model dataset (like the [ModelNet40](http://modelnet.cs.princeton.edu) dataset) into a folder.
-- Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in POINTS format). Note that some OFF files in the dataset may not be loaded by the [tools](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner) I provided. It is easy to fix these files. Just open them using any text editor and break the first line after the characters `OFF`.
+- Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in `POINTS` format). 
+For the definition of `POINTS` format, please refer to the function `void load_pointcloud()` defined in the file `octree/Octree/main.cpp`.
+Note that some OFF files in the dataset may not be loaded by the [tools](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner) I provided. It is easy to fix these files. Just open them using any text editor and break the first line after the characters `OFF`.
 As detailed in our paper, we build a virtual scanner and shoot rays to calculate the intersection points and oriented normals. The executable files and source code can be downloaded [here](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner). 
 - Run the tool `octree.exe` to convert point clouds into the octree files.
         
         Usage: Octree <filelist> [depth] [full_layer] [displacement] [augmentation] [segmentation]
-            filelist: a text file whose each line specifies the full path name of a POINTS file
+            filelist: a text file of which each line specifies the full path name of a POINTS file
             depth: the maximum depth of the octree tree
             full_layer: which layer of the octree is full. suggested value: 2
             displacement: the offset value for handing extremely thin shapes: suggested value: 0.55
             segmentation: a boolean value indicating whether the output is for the segmentation task.
+        Usage: Octree2Ply <filelist> [segmentation]
+            filelist: a text file of which each line specifies the full path name of a octree file
+            segmentation: a boolean value indicating whether the octree is for the segmentation task
 
 - Convert all the octrees into a `lmdb` or `leveldb` database by the tool `convert_octree_data.exe`.
+
 
 
 ### O-CNN for Shape Classification 
@@ -105,6 +113,12 @@ The instruction to run the segmentation experiment:
 - Run the `octree.exe` to convert these point clouds to octree files. Note that you should set the parameter `Segmentation` to 1 when running the `octree.exe`. Then you can get the octree files, which also contains the segmentation label.
 - Convert the dataset to a `lmdb` database. Since the segmentation label is contained in each octree file, the object label for each octree file can be set to any desirable value. And the object label is just ignored in the segmentation task.
 - Download the protocol buffer files, which are contained in the folder `caffe/examples/o-cnn`. `NOTE:` as detailed in our paper, the training parameters are tuned and the pre-trained model from the retrieval task is used when the training dataset is relatively small. More details will be released soon.
+- In the testing stage, the output label and probability of each finest leaf node can also be obtained. Specifically, open the file `segmentation_5.prototxt`, uncomment line 458~475, , set the `batch_size` in line 31  to 1, and run the following command to dump the result.  
+
+        caffe.exe test --model=segmentation_5.prototxt --weights=segmentation_5.caffemodel 
+        --blob_prefix=feature/segmentation_5_test_ --gpu=0 --save_seperately=false --iterations=[...]
+
+
 - For CRF refinement, please refer to the code provided [here](https://github.com/wang-ps/O-CNN/tree/master/densecrf).  We will provide the automated tool soon.
 
 ## Acknowledgments
