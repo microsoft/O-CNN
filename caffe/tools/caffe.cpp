@@ -60,6 +60,8 @@ DEFINE_string(blob_prefix, "",
 	"Optional; save the output blob into files.");
 DEFINE_bool(save_seperately, true,
 	"Optional; whether to save the output blob seperately.");
+DEFINE_bool(binary_mode, true,
+	"Optional; whether to save the output blob as the binary mode.");
 
 // A simple registry for caffe commands.
 typedef int (*BrewFunction)();
@@ -293,7 +295,12 @@ int test() {
   }
   // Instantiate the caffe net.
   Net<float> caffe_net(FLAGS_model, caffe::TEST, FLAGS_level, &stages);
-  caffe_net.CopyTrainedLayersFrom(FLAGS_weights);
+  std::vector<std::string> model_names;
+  boost::split(model_names, FLAGS_weights, boost::is_any_of(","));
+  for (int i = 0; i < model_names.size(); ++i) {
+	LOG(INFO) << "Copy weights from " << model_names[i];
+	caffe_net.CopyTrainedLayersFrom(model_names[i]);
+  }
   LOG(INFO) << "Running for " << FLAGS_iterations << " iterations.";
 
   vector<int> test_score_output_id;
@@ -345,14 +352,16 @@ int test() {
 		{
 			for (int j = 0; j < result.size(); ++j)
 			{
-				if (output_to_cmd[j] == 0)
-				{
-					char str[16];
-					sprintf(str, "%05d", i);
-					string filename = FLAGS_blob_prefix + string(str) + "_" +
-						caffe_net.blob_names()[caffe_net.output_blob_indices()[j]];
-					ofstream outfile(filename, std::ios::binary);
+				if (output_to_cmd[j] != 0) continue;
+				
+				char str[16];
+				sprintf(str, "%05d", i);
+				string filename = FLAGS_blob_prefix + string(str) + "_" +
+					caffe_net.blob_names()[caffe_net.output_blob_indices()[j]];
 
+				ofstream outfile(filename, std::ios::binary);
+				
+				if (FLAGS_binary_mode) {
 					int ns = result[j]->num_axes();
 					outfile.write((char*)(&ns), sizeof(int));
 					for (int k = 0; k < ns; ++k)
@@ -360,16 +369,24 @@ int test() {
 						int sk = result[j]->shape(k);
 						outfile.write((char*)(&sk), sizeof(int));
 					}
-					outfile.write((char*)result[j]->cpu_data(), sizeof(float)*result[j]->count());
+					int sz = result[j]->count();
+					outfile.write((char*)result[j]->cpu_data(), sizeof(float)*sz);
 					outfile.close();
-				} 
-				//else {
-				//	const float* result_vec = result[j]->cpu_data();
-				//	for (int k = 0; k < result[j]->count(); ++k)
-				//	{
-				//		outfile << result_vec[k] << std::endl;
-				//	}
-				//}
+				} else {
+					string result_buffer;
+					const float* result_vec = result[j]->cpu_data();
+					for (int k = 0; k < result[j]->count(); ++k)
+					{
+						result_buffer += std::to_string(result_vec[k]) + "\n";
+					}
+					outfile.write(result_buffer.c_str(), result_buffer.size());
+				}
+				outfile.close();
+
+				// output the info to the console
+				const std::string& output_name = caffe_net.blob_names()[
+					caffe_net.output_blob_indices()[j]];
+				LOG(INFO) << "Batch " << i << ", " << output_name;
 			}
 		}
 		else
@@ -414,6 +431,11 @@ int test() {
 				{
 					outfiles[j].close();
 				}
+
+				// output the info to the console
+				const std::string& output_name = caffe_net.blob_names()[
+					caffe_net.output_blob_indices()[j]];
+				LOG(INFO) << "Batch " << i << ", " << output_name;
 			}
 		}
 	}

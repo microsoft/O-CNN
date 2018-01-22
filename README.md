@@ -6,7 +6,7 @@ By [Peng-Shuai Wang](https://wang-ps.github.io/), [Yang Liu](https://xueyuhanlan
 
 ## Introduction 
 
-This repository contains the implementation of O-CNN introduced in our Siggraph 2017 paper "[O-CNN: Octree-based Convolutional Neural Networks for 3D Shape Analysis](http://wang-ps.github.io/O-CNN.html)".  The code is released under the MIT license.
+This repository contains the implementation of O-CNN introduced in our Siggraph 2017 paper "[O-CNN: Octree-based Convolutional Neural Networks for 3D Shape Analysis](https://wang-ps.github.io/O-CNN.html)".  The code is released under the MIT license.
 
 ### Citation
 If you use our code or models, please cite our paper.
@@ -113,10 +113,10 @@ The instruction to run the segmentation experiment:
 - Run the `octree.exe` to convert these point clouds to octree files. Note that you should set the parameter `Segmentation` to 1 when running the `octree.exe`. Then you can get the octree files, which also contains the segmentation label.
 - Convert the dataset to a `lmdb` database. Since the segmentation label is contained in each octree file, the object label for each octree file can be set to any desirable value. And the object label is just ignored in the segmentation task.
 - Download the protocol buffer files, which are contained in the folder `caffe/examples/o-cnn`. `NOTE:` as detailed in our paper, the training parameters are tuned and the pre-trained model from the retrieval task is used when the training dataset is relatively small. More details will be released soon.
-- In the testing stage, the output label and probability of each finest leaf node can also be obtained. Specifically, open the file `segmentation_5.prototxt`, uncomment line 458~475, , set the `batch_size` in line 31  to 1, and run the following command to dump the result.  
+- In the testing stage, the output label and probability of each finest leaf node can also be obtained. Specifically, open the file `segmentation_5.prototxt`, uncomment line 458~485, , set the `batch_size` in line 31  to 1, and run the following command to dump the result.  
 
-        caffe.exe test --model=segmentation_5.prototxt --weights=segmentation_5.caffemodel 
-        --blob_prefix=feature/segmentation_5_test_ --gpu=0 --save_seperately=false --iterations=[...]
+        caffe.exe test --model=segmentation_5.prototxt --weights=segmentation_5.caffemodel --gpu=0
+        --blob_prefix=feature/segmentation_5_test_ --binary_mode=false --save_seperately=true --iterations=[...]
 
 
 - For CRF refinement, please refer to the code provided [here](https://github.com/wang-ps/O-CNN/tree/master/densecrf).  We will provide the automated tool soon.

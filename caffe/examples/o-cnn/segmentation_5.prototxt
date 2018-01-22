@@ -464,11 +464,21 @@ layer {
 #   top: "prob"
 # }
 
+# layer{
+#   name: "label_predicted"
+#   type: "ArgMax"
+#   bottom: "prob"
+#   top: "label_predicted"
+#   argmax_param{
+#     axis: 1
+#   }
+# }
+
 # layer {
-#   name: "labelo"
+#   name: "label_groundtruth"
 #   type: "Split"
 #   bottom: "label"
-#   top: "labelo"
+#   top: "label_groundtruth"
 # }
 
 # # for test only
