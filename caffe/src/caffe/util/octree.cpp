@@ -400,11 +400,14 @@ namespace octree{
 
 	int OctreeParser::node_number_nempty(int depth)
 	{
-		// point to the last element of the children array
-		const int* ptr = children_ + node_num_accu_[depth + 1] - 1;
-		// find the last element which is not equal to -1
-		while (-1 == *ptr) --ptr;
-		return (*ptr) + 1;
+		int num = 0;
+		const int* ptr = children_ + node_num_accu_[depth];
+		for (int i = node_num_[depth] - 1; i >= 0; i--) 
+	  	{
+	    	// find the last element which is not equal to -1
+	    	if (ptr[i] != -1) { num = ptr[i] + 1;  break; }
+	  	}
+		return num;
 	}
 	
 	void OctreeBatchParser::set_cpu(void* data, int depth,
