@@ -94,8 +94,8 @@ Usage: prepare_dataset.py [-h] --datadir DATADIR --dataset {ModelNet10,ModelNet4
 - Download and unzip the corresponding 3D model dataset (like the [ModelNet40](http://modelnet.cs.princeton.edu) dataset) into a folder.
 - Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in `POINTS` format). 
 For the definition of `POINTS` format, please refer to the function `void load_pointcloud()` defined in the file `octree/Octree/main.cpp`.
-Note that some OFF files in the dataset may not be loaded by the [tools](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner) I provided. It is easy to fix these files. Just open them using any text editor and break the first line after the characters `OFF`.
-As detailed in our paper, we build a virtual scanner and shoot rays to calculate the intersection points and oriented normals. The executable files and source code can be downloaded [here](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner). 
+Note that some OFF files in the dataset may not be loaded by the [tools](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner) I provided. It is easy to fix these files. Just open them using any text editor and break the first line after the characters `OFF`.
+As detailed in our paper, we build a virtual scanner and shoot rays to calculate the intersection points and oriented normals. The executable files and source code can be downloaded [here](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner/exe). 
 
 ### Useful Executables
 #### Octree
