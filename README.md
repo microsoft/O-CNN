@@ -20,9 +20,6 @@ If you use our code or models, please cite our paper.
         year      = {2017},
     }
 
-
-## Installation
-
 ### O-CNN
 O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it supports octree-based convolution, deconvolution, pooling, and unpooling. The code has been tested on the Windows 10 x64 (It can be also built on the Ubuntu 16.04). Its installation is as follows:
 
@@ -41,17 +38,67 @@ The code is contained in the directory `octree`, along with the Microsoft Visual
 
 `NOTE`: To build the octree, the bounding sphere of the object is needed to be computed. The initial version of our code is built upon the bound sphere library from this [link](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). However, we remove it from our code due to the licence issue. To reproduce the results in our paper, it is highly recommended to download the [bound sphere library](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). For more details, please refer to the comments in the file `octree/Octree/main.cpp`.
 
+## Installation
+
+### Docker Setup
+A docker build file is provided to automatically build your environments so you don't have to worry about project dependencies. To get your environment up and running, execute the following:
+```
+cd docker
+docker build -t ocnn .
+docker run --name ocnn -it ocnn /bin/bash
+```
+
+You will now find yourself in a container environment where you can automatically prepare datasets and train/test an o-cnn. See the dataset preparation section.
+
+Useful executables in your path are,  
+[`virtualscanner`](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner) - used to convert obj/off files to points files  
+[`octree`](#octree) - used to convert point files to octree files  
+[`octree2ply`](#octree-2-ply) - used to convert octree files to ply files  
+[`convert_octree_data`](#convert-octree-data) - used to convert octree files to lmdb files  
+`caffe` - executable for training / evaluating models  
+`feature_pooling` - pools features and outputs them to an lmdb  
+
+
 ## O-CNN in Action
 The experiments in our paper can be reproduced as follows.
 
 ### Data preparation
 For achieving better performance,  we store all the octree inputs in a  `leveldb` or `lmdb` database. Here are the details how to generate databases for O-CNN.
 
+#### Automated Dataset Setup
+The python folder has some scripts to automatically prepare datasets. 
+```
+Usage: prepare_dataset.py [-h] --datadir DATADIR --dataset {ModelNet10,ModelNet40}
+              --points_converter_path POINTS_CONVERTER_PATH
+              --octree_converter_path OCTREE_CONVERTER_PATH
+              --lmdb_converter_path LMDB_CONVERTER_PATH
+              [--starting_action {Retrieve,Extract,Clean,CreatePoints,CreateOctree,CreateLmdb,Finished}]
+              [--depth DEPTH] [--full_layer FULL_LAYER]
+              [--displacement DISPLACEMENT] [--augmentation AUGMENTATION]
+              [--for_segmentation]
+
+              datadir: directory where to download and prepare dataset
+              dataset: dataset to prepare
+              points_converter_path: path to obj/off to points converter
+              octree_converter_path: path to points to octree converter
+              lmdb_converter_path: path to octree to lmdb converter
+              starting_action: if specified, starting action to perform from. Otherwise, continue from last completed action.
+              depth: depth of octrees to create (default 6)
+              full_layer: layer in which octree is full (default 2)
+              displacement: offset value for thin shapes (default 0.55)
+              augmentation: number of model poses converted to octrees (default 24)
+              for_segmentation: flags whether dataset is for segmentation
+```
+
+#### Manual Setup
 - Download and unzip the corresponding 3D model dataset (like the [ModelNet40](http://modelnet.cs.princeton.edu) dataset) into a folder.
 - Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in `POINTS` format). 
 For the definition of `POINTS` format, please refer to the function `void load_pointcloud()` defined in the file `octree/Octree/main.cpp`.
 Note that some OFF files in the dataset may not be loaded by the [tools](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner) I provided. It is easy to fix these files. Just open them using any text editor and break the first line after the characters `OFF`.
 As detailed in our paper, we build a virtual scanner and shoot rays to calculate the intersection points and oriented normals. The executable files and source code can be downloaded [here](https://github.com/wang-ps/O-CNN/tree/master/virtual%20scanner). 
+
+### Useful Executables
+#### Octree
 - Run the tool `octree.exe` to convert point clouds into the octree files.
         
         Usage: Octree <filelist> [depth] [full_layer] [displacement] [augmentation] [segmentation]
@@ -60,12 +107,22 @@ As detailed in our paper, we build a virtual scanner and shoot rays to calculate
             full_layer: which layer of the octree is full. suggested value: 2
             displacement: the offset value for handing extremely thin shapes: suggested value: 0.55
             segmentation: a boolean value indicating whether the output is for the segmentation task.
+#### Octree 2 Ply
+ - Run the tool `octree2ply.exe` to convert octree files to ply files.
+ ```
         Usage: Octree2Ply <filelist> [segmentation]
             filelist: a text file of which each line specifies the full path name of a octree file
             segmentation: a boolean value indicating whether the octree is for the segmentation task
-
+ ```
+#### Convert Octree Data
 - Convert all the octrees into a `lmdb` or `leveldb` database by the tool `convert_octree_data.exe`.
-
+```
+		Usage: convert_octree_data.exe <rootfolder> <listfile> <db_name>
+            rootfolder: base folder where db will be output and listed files are relative to
+            listfile: file which contains a list of each octree file to be added to the leveldb. 
+                      Each entry should be the [octree_file] [category_number]
+            db_name: Name of db to be outputted
+```
 
 
 ### O-CNN for Shape Classification 
