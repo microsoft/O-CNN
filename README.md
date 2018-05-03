@@ -58,6 +58,7 @@ Useful executables in your path are,
 `caffe` - executable for training / evaluating models  
 `feature_pooling` - pools features and outputs them to an lmdb  
 
+`Many thanks` to David Pisani (@dapisani) for his contribution to the docker setup!
 
 ## O-CNN in Action
 The experiments in our paper can be reproduced as follows.
