@@ -29,7 +29,7 @@ O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it 
 
 `NOTE`: Compared with the original code used in the experiments of our paper, the code in this repository is refactored for the readability and maintainability, with the sacrifice of speed (it is about 10% slower, but it is more memory-efficient). If you want to try the original code or do some speed comparisons with our `O-CNN`, feel free to drop me an email, we can share the original code with you.
 
-`NOTE`: To build the code on the Ubuntu 16.04, you should first manually install the `glog` and `gflag` by using the following command: `sudo apt-get install libgflags libgoogle-glog-dev`, and then add the following line `set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")` in the `Line 60` of the `CMakeLists.txt` file.
+`NOTE`: To build the code on other platforms (such as Ubuntu), you should add the following line `set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")` in the `Line 60` of the `CMakeLists.txt` file and follow the official installation instructions [here](http://caffe.berkeleyvision.org/installation.html). 
 
 ### Octree input for O-CNN
 Our O-CNN takes the octree representation of 3D objects as input.  The efficient octree data structure is described in our paper. For convenience, we provide a reference implementation to convert the point cloud with oriented normal to our octree format.
@@ -58,7 +58,7 @@ Useful executables in your path are,
 `caffe` - executable for training / evaluating models  
 `feature_pooling` - pools features and outputs them to an lmdb  
 
-`Many thanks` to David Pisani (@dapisani) for his contribution to the docker setup!
+`Many thanks` to David Pisani (@[dapisani](https://github.com/dapisani)) for his contribution to the docker setup!
 
 ## O-CNN in Action
 The experiments in our paper can be reproduced as follows.
