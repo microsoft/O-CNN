@@ -213,9 +213,7 @@ void load_pointcloud(vector<float>& pt,	vector<float>& normal,
 // 			center[j] = (bbmax[j] + bbmin[j]) / 2.0f;
 // 		}
 //
-// 		radius = width[0];
-// 		if (width[1] > radius) radius = width[1];
-// 		if (width[2] > radius) radius = width[2];
+//    radius = sqrtf(width[0] * width[0] + width[1] * width[1] + width[2] * width[2]);
 // 	}
 //	
 // 	// release
