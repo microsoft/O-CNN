@@ -41,9 +41,12 @@ def find_files(directory_name, pattern, find_first_instance=False):
             find_first_instance (bool): Whether to early return if pattern found.
     """
     matches = []
+
     for root, _, filenames in os.walk(directory_name):
-        for filename in fnmatch.filter(filenames, pattern):
-            matches.append(os.path.join(root, filename))
+        file_paths = (os.path.join(root, filename) for filename in filenames)
+        for file_path in fnmatch.filter(file_paths, pattern):
+            matches.append(file_path)
             if find_first_instance:
                 break
+
     return matches

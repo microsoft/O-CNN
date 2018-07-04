@@ -62,8 +62,8 @@ class ModelNet(Dataset):
         class_list = os.listdir(model_directory_path)
         class_map = self._generate_class_map(class_list)
 
-        test_list = find_files(self.dataset_directory, '*.octree')
-        train_list = find_files(self.dataset_directory, '*.octree')
+        test_list = find_files(self.dataset_directory, '*test*.octree')
+        train_list = find_files(self.dataset_directory, '*train*.octree')
 
         test_list_generator = self.class_file_map_generator(test_list, class_map)
         train_list_generator = self.class_file_map_generator(train_list, class_map)
