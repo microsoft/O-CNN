@@ -1,23 +1,39 @@
-# O-CNN: Octree-based Convolutional Neural Networks 
-
-By [Peng-Shuai Wang](https://wang-ps.github.io/), [Yang Liu](https://xueyuhanlang.github.io/), Yu-Xiao Guo, Chun-Yu Sun and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/).
-
-[Internet Graphics Group](https://www.microsoft.com/en-us/research/group/internet-graphics/), [Microsoft Research Asia](https://www.microsoft.com/en-us/research/lab/microsoft-research-asia/).
+# O-CNN
 
 ## Introduction 
 
-This repository contains the implementation of O-CNN introduced in our Siggraph 2017 paper "[O-CNN: Octree-based Convolutional Neural Networks for 3D Shape Analysis](https://wang-ps.github.io/O-CNN.html)".  The code is released under the MIT license.
+This repository contains the implementation of *O-CNN*  and  *AO-CNN* introduced in our SIGGRAPH 2017 paper and SIGGRAPH Asia 2018 paper.  The code is released under the MIT license.
+
+
+* **[O-CNN: Octree-based Convolutional Neural Networks](https://wang-ps.github.io/O-CNN.html)**<br/>
+By [Peng-Shuai Wang](https://wang-ps.github.io/), [Yang Liu](https://xueyuhanlang.github.io/), Yu-Xiao Guo, Chun-Yu Sun and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
+ACM Transactions on Graphics (SIGGRAPH), 36(4), 2017
+
+* **[Adaptive O-CNN: A Patch-based Deep Representation of 3D Shapes](https://wang-ps.github.io/AO-CNN.html)**<br/>
+By [Peng-Shuai Wang](https://wang-ps.github.io/), Chun-Yu Sun, [Yang Liu](https://xueyuhanlang.github.io/) and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
+ACM Transactions on Graphics (SIGGRAPH Asia), 37(6), 2018<br/>
+[_**The code for AO-CNN is coming soon...**_]
+
+
 
 ### Citation
 If you use our code or models, please cite our paper.
 
     @article {Wang-2017-OCNN,
-        title     = {O-CNN: Octree-based Convolutional Neural Networks for 3D Shape Analysis},
+        title     = {{O-CNN: Octree-based Convolutional Neural Networks for 3D Shape Analysis}},
         author    = {Wang, Peng-Shuai and Liu, Yang and Guo, Yu-Xiao and Sun, Chun-Yu and Tong, Xin},
         journal   = {ACM Transactions on Graphics (SIGGRAPH)},
         volume    = {36},
         number    = {4},
         year      = {2017},
+    }
+    @article {Wang-2018-AOCNN,
+        title     = {{Adaptive O-CNN: A Patch-based Deep Representation of 3D Shapes}},
+        author    = {Wang, Peng-Shuai and Sun, Chun-Yu and Liu, Yang and Tong, Xin},
+        journal   = {ACM Transactions on Graphics (SIGGRAPH Asia)},
+        volume    = {37},
+        number    = {6},
+        year      = {2018},
     }
 
 ### O-CNN
