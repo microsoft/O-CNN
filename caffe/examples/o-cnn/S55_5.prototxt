@@ -13,6 +13,10 @@ layer {
     batch_size: 32
     backend: LMDB
   }
+  octree_param {
+    curr_depth: 5    
+    signal_channel: 3
+  }
 }
 
 layer {
@@ -27,6 +31,10 @@ layer {
     source: "./LMDB/S55_5_2_12_val_lmdb"
     batch_size: 32
     backend: LMDB
+  }
+  octree_param {
+    curr_depth: 5    
+    signal_channel: 3
   }
 }
 layer {
@@ -180,6 +188,7 @@ layer {
   top: "oct3vxl"
   octree_param {
     curr_depth: 2
+    batch_size: 32
   }
 }
 layer {

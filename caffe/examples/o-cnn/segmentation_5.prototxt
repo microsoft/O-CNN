@@ -3,18 +3,18 @@ layer {
   name: "octreedatabase"
   type: "OctreeDataBase"
   top: "data"
-  top: "label"
   include {
     phase: TRAIN
   }
   data_param {  
-    source: "./02691156/lmdb/02691156_train"
+
+    source: "02691156/lmdb/02691156_train_upgrade"
     batch_size: 32
     backend: LMDB
   }
   octree_param {
     curr_depth: 5
-    segmentation: true
+    signal_channel: 3
   }
 }
 
@@ -22,21 +22,30 @@ layer {
   name: "octreedatabase"
   type: "OctreeDataBase"
   top: "data"
-  top: "label"
   include {
     phase: TEST
   }
   data_param {
-    source: "./02691156/lmdb/02691156_test"
+    source: "02691156/lmdb/02691156_test_upgrade"
     batch_size: 32
     backend: LMDB
   }
   octree_param {
     curr_depth: 5
-    segmentation: true
+    signal_channel: 3
   }
 }
 
+layer {
+  name: "label"
+  type: "OctreeProperty"
+  top: "label"
+  octree_param {
+    curr_depth: 5
+    content_flag: 16
+    signal_channel: 1
+  }
+}
 
 layer {
   name: "conv1"

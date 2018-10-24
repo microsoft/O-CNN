@@ -13,6 +13,10 @@ layer {
     batch_size: 32
     backend: LMDB
   }
+  octree_param {
+    curr_depth: 6    
+    signal_channel: 3
+  }
 }
 
 layer {
@@ -27,6 +31,10 @@ layer {
     source: "./ShapeNet/val_6_2_lmdb"
     batch_size: 32
     backend: LMDB
+  }
+  octree_param {
+    curr_depth: 6    
+    signal_channel: 3
   }
 }
 layer {
@@ -228,6 +236,7 @@ layer {
   top: "oct3vxl"
   octree_param {
     curr_depth: 2
+    batch_size: 32
   }
 }
 layer {

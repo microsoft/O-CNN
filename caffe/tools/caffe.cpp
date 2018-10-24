@@ -51,17 +51,19 @@ DEFINE_string(weights, "",
 DEFINE_int32(iterations, 50,
     "The number of iterations to run.");
 DEFINE_string(sigint_effect, "stop",
-             "Optional; action to take when a SIGINT signal is received: "
-              "snapshot, stop or none.");
+    "Optional; action to take when a SIGINT signal is received: "
+    "snapshot, stop or none.");
 DEFINE_string(sighup_effect, "snapshot",
-             "Optional; action to take when a SIGHUP signal is received: "
-             "snapshot, stop or none.");
+    "Optional; action to take when a SIGHUP signal is received: "
+    "snapshot, stop or none.");
 DEFINE_string(blob_prefix, "",
-	"Optional; save the output blob into files.");
+    "Optional; save the output blob into files.");
 DEFINE_bool(save_seperately, true,
-	"Optional; whether to save the output blob seperately.");
+    "Optional; whether to save the output blob seperately.");
 DEFINE_bool(binary_mode, true,
-	"Optional; whether to save the output blob as the binary mode.");
+    "Optional; whether to save the output blob as the binary mode.");
+DEFINE_bool(blob_header, true,
+    "Optional; whether to save the header information of the output blob.");
 
 // A simple registry for caffe commands.
 typedef int (*BrewFunction)();
@@ -85,7 +87,7 @@ static BrewFunction GetBrewFunction(const caffe::string& name) {
   } else {
     LOG(ERROR) << "Available caffe actions:";
     for (BrewMap::iterator it = g_brew_map.begin();
-         it != g_brew_map.end(); ++it) {
+        it != g_brew_map.end(); ++it) {
       LOG(ERROR) << "\t" << it->first;
     }
     LOG(FATAL) << "Unknown action: " << name;
@@ -158,7 +160,7 @@ RegisterBrewFunction(device_query);
 // test nets.
 void CopyLayers(caffe::Solver<float>* solver, const std::string& model_list) {
   std::vector<std::string> model_names;
-  boost::split(model_names, model_list, boost::is_any_of(",") );
+  boost::split(model_names, model_list, boost::is_any_of(","));
   for (int i = 0; i < model_names.size(); ++i) {
     LOG(INFO) << "Finetuning from " << model_names[i];
     solver->net()->CopyTrainedLayersFrom(model_names[i]);
@@ -181,7 +183,7 @@ caffe::SolverAction::Enum GetRequestedAction(
   if (flag_value == "none") {
     return caffe::SolverAction::NONE;
   }
-  LOG(FATAL) << "Invalid signal effect \""<< flag_value << "\" was specified";
+  LOG(FATAL) << "Invalid signal effect \"" << flag_value << "\" was specified";
   return caffe::SolverAction::NONE;
 }
 
@@ -190,7 +192,7 @@ int train() {
   CHECK_GT(FLAGS_solver.size(), 0) << "Need a solver definition to train.";
   CHECK(!FLAGS_snapshot.size() || !FLAGS_weights.size())
       << "Give a snapshot to resume training or weights to finetune "
-      "but not both.";
+          "but not both.";
   vector<string> stages = get_stages_from_flags();
 
   caffe::SolverParameter solver_param;
@@ -204,14 +206,14 @@ int train() {
   // If the gpus flag is not provided, allow the mode and device to be set
   // in the solver prototxt.
   if (FLAGS_gpu.size() == 0
-	  && solver_param.has_solver_mode()
+      && solver_param.has_solver_mode()
       && solver_param.solver_mode() == caffe::SolverParameter_SolverMode_GPU) {
-      if (solver_param.has_device_id()) {
-          FLAGS_gpu = "" +
-              boost::lexical_cast<string>(solver_param.device_id());
-      } else {  // Set default GPU if unspecified
-          FLAGS_gpu = "" + boost::lexical_cast<string>(0);
-      }
+    if (solver_param.has_device_id()) {
+      FLAGS_gpu = "" +
+          boost::lexical_cast<string>(solver_param.device_id());
+    } else {  // Set default GPU if unspecified
+      FLAGS_gpu = "" + boost::lexical_cast<string>(0);
+    }
   }
 
   vector<int> gpus;
@@ -239,11 +241,11 @@ int train() {
   }
 
   caffe::SignalHandler signal_handler(
-        GetRequestedAction(FLAGS_sigint_effect),
-        GetRequestedAction(FLAGS_sighup_effect));
+      GetRequestedAction(FLAGS_sigint_effect),
+      GetRequestedAction(FLAGS_sighup_effect));
 
   shared_ptr<caffe::Solver<float> >
-      solver(caffe::SolverRegistry<float>::CreateSolver(solver_param));
+  solver(caffe::SolverRegistry<float>::CreateSolver(solver_param));
 
   solver->SetActionFunction(signal_handler.GetActionFunction());
 
@@ -257,13 +259,13 @@ int train() {
   LOG(INFO) << "Starting Optimization";
   if (gpus.size() > 1) {
 #ifdef USE_NCCL
-	  caffe::NCCL<float> nccl(solver);
-	  nccl.Run(gpus, FLAGS_snapshot.size() > 0 ? FLAGS_snapshot.c_str() : NULL);
+    caffe::NCCL<float> nccl(solver);
+    nccl.Run(gpus, FLAGS_snapshot.size() > 0 ? FLAGS_snapshot.c_str() : NULL);
 #else
-	  LOG(FATAL) << "Multi-GPU execution not available - rebuild with USE_NCCL";
+    LOG(FATAL) << "Multi-GPU execution not available - rebuild with USE_NCCL";
 #endif
   } else {
-	  solver->Solve();
+    solver->Solve();
   }
   LOG(INFO) << "Optimization Done.";
   return 0;
@@ -298,8 +300,8 @@ int test() {
   std::vector<std::string> model_names;
   boost::split(model_names, FLAGS_weights, boost::is_any_of(","));
   for (int i = 0; i < model_names.size(); ++i) {
-	LOG(INFO) << "Copy weights from " << model_names[i];
-	caffe_net.CopyTrainedLayersFrom(model_names[i]);
+    LOG(INFO) << "Copy weights from " << model_names[i];
+    caffe_net.CopyTrainedLayersFrom(model_names[i]);
   }
   LOG(INFO) << "Running for " << FLAGS_iterations << " iterations.";
 
@@ -310,149 +312,122 @@ int test() {
   float loss = 0;
   for (int i = 0; i < FLAGS_iterations; ++i) {
     float iter_loss;
-	const vector<Blob<float>*>& result = caffe_net.Forward(&iter_loss);
+    const vector<Blob<float>*>& result = caffe_net.Forward(&iter_loss);
     loss += iter_loss;
-    
-	if (i == 0) 
-	{
-		// if the size of result blob is large than 8, do not output it to cmd
-		for (int j = 0; j < result.size(); ++j)
-			output_to_cmd.push_back(result[j]->count() < 8);
-	}
-	
-	int idx = 0;
-    for (int j = 0; j < result.size(); ++j) 
-	{
-		if (output_to_cmd[j] == 0) continue;
 
-		// the following code is used to accumulate the test_score
-		const float* result_vec = result[j]->cpu_data();
-		for (int k = 0; k < result[j]->count(); ++k, ++idx)
-		{
-			const float score = result_vec[k];
-			if (i == 0) {
-				test_score.push_back(score);
-				test_score_output_id.push_back(j);
-			} else {
-				test_score[idx] += score;
-			}
-
-			// output the score to the console
-			const std::string& output_name = caffe_net.blob_names()[
-				caffe_net.output_blob_indices()[j]];
-				LOG(INFO) << "Batch " << i << ", " << output_name << " = " << score;
-		}
+    if (i == 0) {
+      // if the size of result blob is large than 4, do not output it to cmd
+      for (int j = 0; j < result.size(); ++j)
+        output_to_cmd.push_back(result[j]->count() < 4);
     }
-	
-	// save output blob into files
-	if (!FLAGS_blob_prefix.empty())
-	{
-		// save each blob to seperate files
-		if (FLAGS_save_seperately)
-		{
-			for (int j = 0; j < result.size(); ++j)
-			{
-				if (output_to_cmd[j] != 0) continue;
-				
-				char str[16];
-				sprintf(str, "%05d", i);
-				string filename = FLAGS_blob_prefix + string(str) + "_" +
-					caffe_net.blob_names()[caffe_net.output_blob_indices()[j]];
 
-				ofstream outfile(filename, std::ios::binary);
-				
-				if (FLAGS_binary_mode) {
-					int ns = result[j]->num_axes();
-					outfile.write((char*)(&ns), sizeof(int));
-					for (int k = 0; k < ns; ++k)
-					{
-						int sk = result[j]->shape(k);
-						outfile.write((char*)(&sk), sizeof(int));
-					}
-					int sz = result[j]->count();
-					outfile.write((char*)result[j]->cpu_data(), sizeof(float)*sz);
-					outfile.close();
-				} else {
-					string result_buffer;
-					const float* result_vec = result[j]->cpu_data();
-					for (int k = 0; k < result[j]->count(); ++k)
-					{
-						result_buffer += std::to_string(result_vec[k]) + "\n";
-					}
-					outfile.write(result_buffer.c_str(), result_buffer.size());
-				}
-				outfile.close();
+    int idx = 0;
+    for (int j = 0; j < result.size(); ++j) {
+      if (output_to_cmd[j] == 0) continue;
 
-				// output the info to the console
-				const std::string& output_name = caffe_net.blob_names()[
-					caffe_net.output_blob_indices()[j]];
-				LOG(INFO) << "Batch " << i << ", " << output_name;
-			}
-		}
-		else
-		{
-			// save data to file
-			for (int j = 0; j < result.size(); ++j)
-			{
-				// open the corresponding files
-				if (i == 0)
-				{
-					outfiles.push_back(ofstream());
-					if (output_to_cmd[j] == 0)
-					{
-						const std::string& filename = caffe_net.blob_names()[
-							caffe_net.output_blob_indices()[j]];
-						outfiles[j].open(FLAGS_blob_prefix + filename + ".dat",
-							std::ios::binary);
-						int it = FLAGS_iterations, cj = result[j]->count();
-						outfiles[j].write((const char*)(&it), sizeof(int));
-						outfiles[j].write((const char*)(&cj), sizeof(int));
-					}
+      // the following code is used to accumulate the test_score
+      const float* result_vec = result[j]->cpu_data();
+      for (int k = 0; k < result[j]->count(); ++k, ++idx) {
+        const float score = result_vec[k];
+        if (i == 0) {
+          test_score.push_back(score);
+          test_score_output_id.push_back(j);
+        } else {
+          test_score[idx] += score;
+        }
 
-				}
+        // output the score to the console
+        const std::string& output_name = caffe_net.blob_names()[
+         caffe_net.output_blob_indices()[j]];
+        LOG(INFO) << "Batch " << i << ", " << output_name << " = " << score;
+      }
+    }
 
-				if (output_to_cmd[j] == 0)
-				{
-					outfiles[j].write((const char*)result[j]->cpu_data(),
-						sizeof(float)*result[j]->count());
-				}
-				//else 
-				//{
-				//	const float* result_vec = result[j]->cpu_data();
-				//	for (int k = 0; k < result[j]->count(); ++k)
-				//	{
-				//		outfiles[j] << result_vec[k] << " ";
-				//	}
-				//	outfiles[j] << std::endl;
-				//}
+    // save output blob into files
+    if (FLAGS_blob_prefix.empty()) continue;
 
-				// close the corresponding files
-				if (i == FLAGS_iterations - 1 && output_to_cmd[j] == 0)
-				{
-					outfiles[j].close();
-				}
+    if (FLAGS_save_seperately) {
+      // save each blob to seperate files
+      for (int j = 0; j < result.size(); ++j) {
+        if (output_to_cmd[j] != 0) continue;
 
-				// output the info to the console
-				const std::string& output_name = caffe_net.blob_names()[
-					caffe_net.output_blob_indices()[j]];
-				LOG(INFO) << "Batch " << i << ", " << output_name;
-			}
-		}
-	}
+        char str[16];
+        sprintf(str, "%05d", i);
+        string filename = FLAGS_blob_prefix + string(str) + "_" +
+            caffe_net.blob_names()[caffe_net.output_blob_indices()[j]];
+
+        ofstream outfile(filename, std::ios::binary);
+
+        if (FLAGS_binary_mode) {
+          if (FLAGS_blob_header) {
+            int ns = result[j]->num_axes();
+            outfile.write((char*)(&ns), sizeof(int));
+            for (int k = 0; k < ns; ++k) {
+              int sk = result[j]->shape(k);
+              outfile.write((char*)(&sk), sizeof(int));
+            }
+          }
+          int sz = result[j]->count();
+          outfile.write((char*)result[j]->cpu_data(), sizeof(float)*sz);
+          outfile.close();
+        } else {
+          string result_buffer;
+          const float* result_vec = result[j]->cpu_data();
+          for (int k = 0; k < result[j]->count(); ++k) {
+            result_buffer += std::to_string(result_vec[k]) + "\n";
+          }
+          outfile.write(result_buffer.c_str(), result_buffer.size());
+        }
+        outfile.close();
+
+        // output the info to the console
+        const std::string& output_name = caffe_net.blob_names()[
+         caffe_net.output_blob_indices()[j]];
+        LOG(INFO) << "Batch " << i << ", " << output_name;
+      }
+    } else {
+      // save data to file
+      outfiles.resize(result.size());
+      for (int j = 0; j < result.size(); ++j) {
+        if (output_to_cmd[j] != 0) continue;
+
+        // open the corresponding files
+        if (i == 0) {
+          const std::string& filename = caffe_net.blob_names()[
+          caffe_net.output_blob_indices()[j]];
+          outfiles[j].open(FLAGS_blob_prefix + filename + ".dat",
+              std::ios::binary);
+          int it = FLAGS_iterations, cj = result[j]->count();
+          outfiles[j].write((const char*)(&it), sizeof(int));
+          outfiles[j].write((const char*)(&cj), sizeof(int));
+        }
+
+        outfiles[j].write((const char*)result[j]->cpu_data(),
+            sizeof(float)*result[j]->count());
+
+        // close the corresponding files
+        if (i == FLAGS_iterations - 1)	outfiles[j].close();
+
+        // output the info to the console
+        const std::string& output_name = caffe_net.blob_names()[
+         caffe_net.output_blob_indices()[j]];
+        LOG(INFO) << "Batch " << i << ", " << output_name;
+      }
+    }
   }
 
   loss /= FLAGS_iterations;
   LOG(INFO) << "Loss: " << loss;
   for (int i = 0; i < test_score.size(); ++i) {
     const std::string& output_name = caffe_net.blob_names()[
-        caffe_net.output_blob_indices()[test_score_output_id[i]]];
+         caffe_net.output_blob_indices()[test_score_output_id[i]]];
     const float loss_weight = caffe_net.blob_loss_weights()[
-        caffe_net.output_blob_indices()[test_score_output_id[i]]];
+         caffe_net.output_blob_indices()[test_score_output_id[i]]];
     std::ostringstream loss_msg_stream;
     const float mean_score = test_score[i] / FLAGS_iterations;
     if (loss_weight) {
       loss_msg_stream << " (* " << loss_weight
-                      << " = " << loss_weight * mean_score << " loss)";
+          << " = " << loss_weight * mean_score << " loss)";
     }
     LOG(INFO) << output_name << " = " << mean_score << loss_msg_stream.str();
   }
@@ -523,30 +498,30 @@ int time() {
     for (int i = layers.size() - 1; i >= 0; --i) {
       timer.Start();
       layers[i]->Backward(top_vecs[i], bottom_need_backward[i],
-                          bottom_vecs[i]);
+          bottom_vecs[i]);
       backward_time_per_layer[i] += timer.MicroSeconds();
     }
     backward_time += backward_timer.MicroSeconds();
     LOG(INFO) << "Iteration: " << j + 1 << " forward-backward time: "
-      << iter_timer.MilliSeconds() << " ms.";
+        << iter_timer.MilliSeconds() << " ms.";
   }
   LOG(INFO) << "Average time per layer: ";
   for (int i = 0; i < layers.size(); ++i) {
     const caffe::string& layername = layers[i]->layer_param().name();
     LOG(INFO) << std::setfill(' ') << std::setw(10) << layername <<
-      "\tforward: " << forward_time_per_layer[i] / 1000 /
-      FLAGS_iterations << " ms.";
+        "\tforward: " << forward_time_per_layer[i] / 1000 /
+        FLAGS_iterations << " ms.";
     LOG(INFO) << std::setfill(' ') << std::setw(10) << layername  <<
-      "\tbackward: " << backward_time_per_layer[i] / 1000 /
-      FLAGS_iterations << " ms.";
+        "\tbackward: " << backward_time_per_layer[i] / 1000 /
+        FLAGS_iterations << " ms.";
   }
   total_timer.Stop();
   LOG(INFO) << "Average Forward pass: " << forward_time / 1000 /
-    FLAGS_iterations << " ms.";
+      FLAGS_iterations << " ms.";
   LOG(INFO) << "Average Backward pass: " << backward_time / 1000 /
-    FLAGS_iterations << " ms.";
+      FLAGS_iterations << " ms.";
   LOG(INFO) << "Average Forward-Backward: " << total_timer.MilliSeconds() /
-    FLAGS_iterations << " ms.";
+      FLAGS_iterations << " ms.";
   LOG(INFO) << "Total Time: " << total_timer.MilliSeconds() << " ms.";
   LOG(INFO) << "*** Benchmark ends ***";
   return 0;

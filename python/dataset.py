@@ -310,14 +310,20 @@ class Dataset:
         points_list_path = os.path.join(self.dataset_directory, Dataset.POINTS_LIST_FILE)
         file_list = line_separator_generator(find_files(self.dataset_directory, '*.points'), use_os_sep=False)
         write_out_iterable(points_list_path, file_list)
-        subprocess.check_call([octree_converter_path,
-                               points_list_path,
-                               str(conversion_arguments.depth),
-                               str(conversion_arguments.full_layer),
-                               str(conversion_arguments.displacement),
-                               str(conversion_arguments.augmentation),
-                               str(int(conversion_arguments.for_segmentation))])
+        # subprocess.check_call([octree_converter_path,
+        #                        points_list_path,
+        #                        str(conversion_arguments.depth),
+        #                        str(conversion_arguments.full_layer),
+        #                        str(conversion_arguments.displacement),
+        #                        str(conversion_arguments.augmentation),
+        #                        str(int(conversion_arguments.for_segmentation))])
 
+        subprocess.check_call([octree_converter_path, 
+                               '--filenames', points_list_path,
+                               '--depth', str(conversion_arguments.depth),
+                               '--full_depth', str(conversion_arguments.full_layer),
+                               '--offset', str(conversion_arguments.displacement),
+                               '--rot_num', str(conversion_arguments.augmentation)])
     def convert_to_lmdb(self, lmdb_converter_path):
         """
             Converts octree files to lmdb files

@@ -1,274 +1,182 @@
-#include <boost/thread.hpp>
-#include <vector>
-
 #include "caffe/layers/octree_database_layer.hpp"
+#include "caffe/layers/octree_property_layer.hpp"
 #include "caffe/util/benchmark.hpp"
-#include "caffe/util/math_functions.hpp"
-#include "caffe/util/blocking_queue.hpp"
+#include "caffe/util/octree.hpp"
 
 namespace caffe {
-	template <typename Dtype>
-	OctreeDataBaseLayer<Dtype>::OctreeDataBaseLayer(const LayerParameter& param)
-		: Layer<Dtype>(param), prefetch_(param.data_param().prefetch()),
-		prefetch_free_(), prefetch_full_(), prefetch_current_(), offset_()
-	{
-		for (int i = 0; i < prefetch_.size(); ++i) 
-		{
-			prefetch_[i].reset(new OctreeBatch<Dtype>());
-			prefetch_free_.push(prefetch_[i].get());
-		}
 
-		db_.reset(db::GetDB(param.data_param().backend()));
-		db_->Open(param.data_param().source(), db::READ);
-		cursor_.reset(db_->NewCursor());
-	}
-	
-	template <typename Dtype>
-	OctreeDataBaseLayer<Dtype>::~OctreeDataBaseLayer()
-	{
-		this->StopInternalThread();
-	}
-	
-	template <typename Dtype>
-	void OctreeDataBaseLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-		const vector<Blob<Dtype>*>& top)
-	{
-		// true if #top > 1
-		output_labels_ = top.size() == 2;
-		
-		// batch size
-		batch_size_ = this->layer_param_.data_param().batch_size();
-		CHECK_GT(batch_size_, 0) << "Positive batch size required";
+template <typename Dtype>
+OctreeDataBaseLayer<Dtype>::OctreeDataBaseLayer(const LayerParameter& param)
+  : DataLayer<Dtype>(param) {}
 
-		rand_skip_ = this->layer_param_.data_param().rand_skip();
-		// whether this layer is for segmentation
-		segmentation_ = this->layer_param_.octree_param().segmentation();
+template <typename Dtype>
+OctreeDataBaseLayer<Dtype>::~OctreeDataBaseLayer() {
+  this->StopInternalThread();
+}
 
-		// buffer for the dutam from data base
-		data_buffer_.resize(batch_size_);
-		label_buffer_.resize(batch_size_);
-		
-		// Read a data point, and use it to initialize the top blob.
-		//Datum datum;
-		//datum.ParseFromString(cursor_->value());
-		//OctreeParser octree_parser(datum.data().data());
-		//int octree_depth = *octree_parser.depth_;
-		//Octree::set_octree_depth(octree_depth);
-		//Octree::set_curr_depth(octree_depth);
-		// int node_num = octree_parser.node_num_[octree_depth];
+template <typename Dtype>
+void OctreeDataBaseLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
+    const vector<Blob<Dtype>*>& top) {
+  // get parameters
+  CHECK(this->layer_param_.has_octree_param()) << "The octree_param must be set";
+  signal_channel_ = this->layer_param_.octree_param().signal_channel();
+  curr_depth_ = this->layer_param_.octree_param().curr_depth();
 
-		// initialize top blob shape.
-		// a workaround for a valid first-time reshape
-		vector<int> data_shape, label_shape, octree_shape{ 1 };
-		if (!segmentation_)
-		{
-			// note: this is just an estimation of the height of top blob
-			// node_num * 1.2 : allocate slightly more memory to avoid re-allocating
-			// int height = node_num * 1.2; 
-			data_shape = { batch_size_, 3, 8, 1 };
-			label_shape = { batch_size_ };
-		}
-		else{
-			data_shape = { 1, 3, 8, 1 };
-			label_shape = { 1, 8 };
-		}			
-		top[0]->Reshape(data_shape);
-		for (int i = 0; i < prefetch_.size(); ++i)
-		{
-			prefetch_[i]->data_.Reshape(data_shape);
-			prefetch_[i]->octree_.Reshape(octree_shape);
-		}
-		if (output_labels_)
-		{
-			top[1]->Reshape(label_shape);
-			for (int i = 0; i < prefetch_.size(); ++i)
-			{
-				prefetch_[i]->label_.Reshape(label_shape);
-			}
-		}
+  rand_skip_ = this->layer_param_.data_param().rand_skip();
+  batch_size_ = this->layer_param_.data_param().batch_size();
+  CHECK_GT(batch_size_, 0) << "Positive batch size required";
+  Octree::set_batchsize(batch_size_);
+  octree_buffer_.resize(batch_size_);
 
-		// Before starting the prefetch thread, we make cpu_data and gpu_data
-		// calls so that the prefetch thread does not accidentally make simultaneous
-		// cudaMalloc calls when the main thread is running. In some GPUs this
-		// seems to cause failures if we do not so.
-		for (int i = 0; i < prefetch_.size(); ++i)
-		{
-			prefetch_[i]->data_.mutable_cpu_data();
-			prefetch_[i]->octree_.mutable_cpu_data();
-			if (this->output_labels_) 
-			{
-				prefetch_[i]->label_.mutable_cpu_data();
-			}
-		}
-		#ifndef CPU_ONLY
-		if (Caffe::mode() == Caffe::GPU) 
-		{
-			for (int i = 0; i < prefetch_.size(); ++i) 
-			{
-				prefetch_[i]->data_.mutable_gpu_data();
-				prefetch_[i]->octree_.mutable_gpu_data();
-				if (this->output_labels_) 
-				{
-					prefetch_[i]->label_.mutable_gpu_data();
-				}
-			}
-		}
-		#endif
+  output_octree_ = top.size() == 3;
 
-		// start internal thread for reading data
-		DLOG(INFO) << "Initializing prefetch";
-		StartInternalThread();
-		DLOG(INFO) << "Prefetch initialized.";
-	}
+  // set the feature_layer_
+  LayerParameter feature_param(this->layer_param_);
+  feature_param.set_type("OctreeProperty");
+  feature_param.mutable_octree_param()->set_content_flag("feature");
+  feature_layer_ = LayerRegistry<Dtype>::CreateLayer(feature_param);
+  feature_btm_vec_.resize(1);
+  feature_top_vec_.resize(1);
+  feature_top_vec_[0] = top[0];
+  feature_layer_->SetUp(feature_btm_vec_, feature_top_vec_);
 
-	template <typename Dtype>
-	bool OctreeDataBaseLayer<Dtype>::Skip()
-	{
-		int size = Caffe::solver_count();
-		int rank = Caffe::solver_rank();
-		bool keep = (offset_ % size) == rank ||
-			// In test mode, only rank 0 runs, so avoid skipping
-			this->layer_param_.phase() == TEST;
-		return !keep;
-	}
+  // initialize top blob shape
+  // a workaround for a valid first-time reshape
+  vector<int> data_shape{ 1, signal_channel_, 8, 1 };
+  top[0]->Reshape(data_shape);
+  for (int i = 0; i < prefetch_.size(); ++i) {
+    prefetch_[i]->data_.Reshape(data_shape);
+  }
+  if (output_labels_) {
+    vector<int> label_shape{ batch_size_ };
+    top[1]->Reshape(label_shape);
+    for (int i = 0; i < prefetch_.size(); ++i) {
+      prefetch_[i]->label_.Reshape(label_shape);
+    }
+  }
+  if (output_octree_) {
+    top[2]->Reshape(vector<int> {1});
+  }
 
-	template<typename Dtype>
-	void OctreeDataBaseLayer<Dtype>::Next() 
-	{
-		cursor_->Next();
-		if (!cursor_->valid())
-		{
-			LOG_IF(INFO, Caffe::root_solver())
-				<< "Restarting data prefetching from start.";
-			cursor_->SeekToFirst();
-		}
-		offset_++;
-	}
+  //// whether this layer needs dropout
+  //int dropout_size = octree_param.dropout_depth_size();
+  //CHECK_EQ(dropout_size, octree_param.dropout_ratio_size());
+  //dropout_ = dropout_size != 0;
+  //if (dropout_) {
+  //  dropout_ratio_.resize(dropout_size);
+  //  dropout_depth_.resize(dropout_size);
+  //  for (int i = 0; i < dropout_size; ++i) {
+  //    dropout_ratio_[i] = octree_param.dropout_ratio(i);
+  //    dropout_depth_[i] = octree_param.dropout_depth(i);
+  //  }
+  //}
+}
 
+template<typename Dtype>
+void OctreeDataBaseLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
+  CPUTimer batch_timer;
+  batch_timer.Start();
 
-	template <typename Dtype>
-	void OctreeDataBaseLayer<Dtype>::InternalThreadEntry()
-	{
-		#ifndef CPU_ONLY
-		cudaStream_t stream;
-		if (Caffe::mode() == Caffe::GPU)
-		{
-			CUDA_CHECK(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
-		}
-		#endif
+  Datum datum;
+  Dtype* label_data = nullptr;
+  if (this->output_labels_) label_data = batch->label_.mutable_cpu_data();
+  for (int i = 0; i < batch_size_; ++i) {
+    // get a datum
+    while (Skip()) Next();
+    datum.ParseFromString(cursor_->value());
 
-		try
-		{
-			while (!must_stop())
-			{
-				OctreeBatch<Dtype>* batch = prefetch_free_.pop();
-				load_batch(batch);
+    //// dropout octree nodes
+    //if (dropout_) {
+    //  if (signal_location_ == 0) {
+    //    octree::octree_dropout(data_buffer_[i], datum.data(), dropout_depth_[0],
+    //        dropout_ratio_[0], signal_channel_);
+    //  } else {
+    //    int drop_depth = RandDropDepth();
+    //    octree::aoctree_dropout(data_buffer_[i], datum.data(), drop_depth, signal_channel_);
+    //  }
+    //}
 
-				#ifndef CPU_ONLY
-				if (Caffe::mode() == Caffe::GPU)
-				{
-					batch->data_.data().get()->async_gpu_push(stream);
-					batch->octree_.data().get()->async_gpu_push(stream);
-					if(output_labels_) batch->label_.data().get()->async_gpu_push(stream);
-					CUDA_CHECK(cudaStreamSynchronize(stream));
-				}
-				#endif
+    // copy data
+    int n = datum.data().size();
+    octree_buffer_[i].resize(n);
+    memcpy(octree_buffer_[i].data(), datum.data().data(), n);
+    if (this->output_labels_) label_data[i] = static_cast<Dtype>(datum.label());
 
-				prefetch_full_.push(batch);
-			}
-		}
-		catch (boost::thread_interrupted&)
-		{
-			// Interrupted exception is expected on shutdown
-		}
+    // update cursor
+    Next();
+  }
 
-		#ifndef CPU_ONLY
-		if (Caffe::mode() == Caffe::GPU) {
-			CUDA_CHECK(cudaStreamDestroy(stream));
-		}
-		#endif
-	}
-	
-	// This function is called on prefetch thread
-	template<typename Dtype>
-	void OctreeDataBaseLayer<Dtype>::load_batch(OctreeBatch<Dtype>* batch)
-	{
-		CPUTimer batch_timer;
-		batch_timer.Start();
+  // merge octrees
+  octree::merge_octrees<Dtype>(batch->data_, octree_buffer_);
 
-		//// rand skip one point
-		//static uint32 indicator = 1;
-		//if (rand_skip_ > 0 && phase_ == TRAIN)
-		//{
-		//	if (0 == (indicator % rand_skip_))
-		//	{
-		//		int r = 0;
-		//		caffe_rng_bernoulli(1, Dtype(0.5), &r);
-		//		if (r > 0)
-		//		{
-		//			Datum& datum = *(reader_.full().pop("Waiting for data"));
-		//			reader_.free().push(const_cast<Datum*>(&datum));
-		//		}				
-		//	}
-		//	indicator++;
-		//}
+  //// rand skip a datum
+  //static uint32 indicator = 1;
+  //if (rand_skip_ > 0 && phase_ == TRAIN) {
+  //  if (0 == (indicator % rand_skip_)) {
+  //    int r = 0;
+  //    caffe_rng_bernoulli(1, Dtype(0.5), &r);
+  //    if (r > 0) {
+  //      Datum& datum = *(reader_.full().pop("Waiting for data"));
+  //      reader_.free().push(const_cast<Datum*>(&datum));
+  //    }
+  //  }
+  //  indicator++;
+  //}
 
-		// get data from data reader
-		Datum datum;
-		for (int i = 0; i < batch_size_; ++i)
-		{
-			// get a datum
-			while (Skip()) Next();
-			datum.ParseFromString(cursor_->value());
+  batch_timer.Stop();
+  LOG_EVERY_N(INFO, 50) << "Prefetch batch: " << batch_timer.MilliSeconds() << " ms.";
+}
 
-			// copy data
-			int n = datum.data().size();
-			data_buffer_[i].resize(n);
-			caffe_copy(n, datum.data().data(), data_buffer_[i].data());
+template<typename Dtype>
+int OctreeDataBaseLayer<Dtype>::RandDropDepth() {
+  int n = dropout_ratio_.size();
+  vector<float> ratio_cum(n + 1, 0);
+  for (int i = 0; i < n; ++i) {
+    ratio_cum[i + 1] = ratio_cum[i] + dropout_ratio_[i];
+  }
+  float rnd = 0.0f;
+  caffe_rng_uniform<float>(1, 0.0f, 1.0f, &rnd);
+  for (int i = 0; i < n; ++i) {
+    if (rnd < ratio_cum[i + 1]) return dropout_depth_[i];
+  }
+  return 20;
+}
 
-			// Copy label
-			if (this->output_labels_) label_buffer_[i] = datum.label();
+template <typename Dtype>
+void OctreeDataBaseLayer<Dtype>::Forward_cpu(
+    const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
+  if (prefetch_current_) prefetch_free_.push(prefetch_current_);
+  prefetch_current_ = prefetch_full_.pop("Waiting for data");
+  Blob<Dtype>& curr_octree = prefetch_current_->data_;
 
-			// update cursor
-			Next();
-		}
-		
-		// set batch
-		batch->set_octreebatch(data_buffer_, label_buffer_, segmentation_);
+  // set data - top[0]
+  feature_btm_vec_[0] = &curr_octree;
+  feature_layer_->Reshape(feature_btm_vec_, feature_top_vec_);
+  feature_layer_->Forward(feature_btm_vec_, feature_top_vec_);
 
-		batch_timer.Stop();
-		LOG_EVERY_N(INFO, 50) << "Prefetch batch: " << batch_timer.MilliSeconds() << " ms.";
-	}
+  // set label - top[1]
+  if (output_labels_) {
+    top[1]->ReshapeLike(prefetch_current_->label_);
+    top[1]->set_cpu_data(prefetch_current_->label_.mutable_cpu_data());
+  }
 
-	template <typename Dtype>
-	void OctreeDataBaseLayer<Dtype>::Forward_cpu(
-		const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top)
-	{
-		if (prefetch_current_) prefetch_free_.push(prefetch_current_);
-		prefetch_current_ = prefetch_full_.pop("Waiting for data");
+  // set the global octree
+  Blob<Dtype>& the_octree = Octree::get_octree(Dtype(0));
+  the_octree.ReshapeLike(curr_octree);
+  the_octree.set_cpu_data(curr_octree.mutable_cpu_data());
 
-		// set octree - top[0]
-		top[0]->ReshapeLike(prefetch_current_->data_);
-		top[0]->set_cpu_data(prefetch_current_->data_.mutable_cpu_data());
-
-		// set label - top[1]
-		if (output_labels_)
-		{
-			top[1]->ReshapeLike(prefetch_current_->label_);
-			top[1]->set_cpu_data(prefetch_current_->label_.mutable_cpu_data());
-		}
-
-		// set octree 
-		Blob<int>& the_octree = Octree::get_octree();
-		the_octree.ReshapeLike(prefetch_current_->octree_);
-		the_octree.set_cpu_data(prefetch_current_->octree_.mutable_cpu_data());
-	}
+  // set octree - top[2]
+  if (output_octree_) {
+    top[2]->ReshapeLike(curr_octree);
+    top[2]->set_cpu_data(curr_octree.mutable_cpu_data());
+  }
+}
 
 #ifdef CPU_ONLY
-	STUB_GPU_FORWARD(OctreeDataBaseLayer, Forward);
+STUB_GPU_FORWARD(OctreeDataBaseLayer, Forward);
 #endif
 
-	INSTANTIATE_CLASS(OctreeDataBaseLayer);
-	REGISTER_LAYER_CLASS(OctreeDataBase);
+INSTANTIATE_CLASS(OctreeDataBaseLayer);
+REGISTER_LAYER_CLASS(OctreeDataBase);
 
 }  // namespace caffe

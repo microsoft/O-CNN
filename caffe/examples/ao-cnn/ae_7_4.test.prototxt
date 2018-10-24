@@ -1,0 +1,1883 @@
+layer {
+  name: "data"
+  type: "OctreeDataBase"
+  top: "OctLData4"
+  # top: "label"
+  include {
+    phase: TRAIN
+  }
+  data_param {
+    source: "lmdb/0515_shapenet_train_7_2_adp4_aug_upgrade"
+    batch_size: 1
+    backend: LMDB
+  }
+  octree_param {
+    curr_depth: 7
+    signal_channel: 4
+  }
+}
+layer {
+  name: "data"
+  type: "OctreeDataBase"
+  top: "OctLData4"
+  # top: "label"
+  include {
+    phase: TEST
+  }
+  data_param {
+    source: "lmdb/0515_shapenet_test_7_2_adpt4_upgrade"
+    batch_size: 1
+    backend: LMDB
+  }
+  octree_param {
+    curr_depth: 7
+    signal_channel: 4
+  }
+}
+layer {
+  name: "OctLData1"
+  type: "OctreeProperty"
+  top: "OctLData1"
+  octree_param {
+    curr_depth: 4
+    content_flag: 8
+    signal_channel: 4
+  }
+}
+layer {
+  name: "OctConv1"
+  type: "OctreeConv"
+  bottom: "OctLData1"
+  top: "OctConv1"
+  convolution_param {
+    num_output: 16
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 4
+  }
+}
+layer {
+  name: "BN1"
+  type: "BatchNorm"
+  bottom: "OctConv1"
+  top: "OctConv1"
+}
+layer {
+  name: "Scale1"
+  type: "Scale"
+  bottom: "OctConv1"
+  top: "OctConv1"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU1"
+  type: "ReLU"
+  bottom: "OctConv1"
+  top: "OctConv1"
+}
+layer {
+  name: "OctLData2"
+  type: "OctreeProperty"
+  top: "OctLData2"
+  octree_param {
+    curr_depth: 5
+    content_flag: 8
+    signal_channel: 4
+  }
+}
+layer {
+  name: "OctConv2"
+  type: "OctreeConv"
+  bottom: "OctLData2"
+  top: "OctConv2"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 5
+  }
+}
+layer {
+  name: "BN2"
+  type: "BatchNorm"
+  bottom: "OctConv2"
+  top: "OctConv2"
+}
+layer {
+  name: "Scale2"
+  type: "Scale"
+  bottom: "OctConv2"
+  top: "OctConv2"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU2"
+  type: "ReLU"
+  bottom: "OctConv2"
+  top: "OctConv2"
+}
+layer {
+  name: "OctLData3"
+  type: "OctreeProperty"
+  top: "OctLData3"
+  octree_param {
+    curr_depth: 6
+    content_flag: 8
+    signal_channel: 4
+  }
+}
+layer {
+  name: "OctConv3"
+  type: "OctreeConv"
+  bottom: "OctLData3"
+  top: "OctConv3"
+  convolution_param {
+    num_output: 4
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 6
+  }
+}
+layer {
+  name: "BN3"
+  type: "BatchNorm"
+  bottom: "OctConv3"
+  top: "OctConv3"
+}
+layer {
+  name: "Scale3"
+  type: "Scale"
+  bottom: "OctConv3"
+  top: "OctConv3"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU3"
+  type: "ReLU"
+  bottom: "OctConv3"
+  top: "OctConv3"
+}
+
+layer {
+  name: "OctConv4"
+  type: "OctreeConv"
+  bottom: "OctLData4"
+  top: "OctConv4"
+  convolution_param {
+    num_output: 4
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 7
+  }
+}
+layer {
+  name: "BN4"
+  type: "BatchNorm"
+  bottom: "OctConv4"
+  top: "OctConv4"
+}
+layer {
+  name: "Scale4"
+  type: "Scale"
+  bottom: "OctConv4"
+  top: "OctConv4"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU4"
+  type: "ReLU"
+  bottom: "OctConv4"
+  top: "OctConv4"
+}
+layer {
+  name: "OctPool1"
+  type: "OctreePooling"
+  bottom: "OctConv4"
+  top: "OctPool1"
+  octree_param {
+    curr_depth: 7
+  }
+}
+layer {
+  name: "Eltwise1"
+  type: "Eltwise"
+  bottom: "OctConv3"
+  bottom: "OctPool1"
+  top: "Eltwise1"
+  eltwise_param {
+    operation: MAX
+  }
+}
+layer {
+  name: "OctConv5"
+  type: "OctreeConv"
+  bottom: "Eltwise1"
+  top: "OctConv5"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 6
+  }
+}
+layer {
+  name: "BN5"
+  type: "BatchNorm"
+  bottom: "OctConv5"
+  top: "OctConv5"
+}
+layer {
+  name: "Scale5"
+  type: "Scale"
+  bottom: "OctConv5"
+  top: "OctConv5"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU5"
+  type: "ReLU"
+  bottom: "OctConv5"
+  top: "OctConv5"
+}
+layer {
+  name: "OctPool2"
+  type: "OctreePooling"
+  bottom: "OctConv5"
+  top: "OctPool2"
+  octree_param {
+    curr_depth: 6
+  }
+}
+layer {
+  name: "Eltwise2"
+  type: "Eltwise"
+  bottom: "OctConv2"
+  bottom: "OctPool2"
+  top: "Eltwise2"
+  eltwise_param {
+    operation: MAX
+  }
+}
+layer {
+  name: "OctConv6"
+  type: "OctreeConv"
+  bottom: "Eltwise2"
+  top: "OctConv6"
+  convolution_param {
+    num_output: 16
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 5
+  }
+}
+layer {
+  name: "BN6"
+  type: "BatchNorm"
+  bottom: "OctConv6"
+  top: "OctConv6"
+}
+layer {
+  name: "Scale6"
+  type: "Scale"
+  bottom: "OctConv6"
+  top: "OctConv6"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU6"
+  type: "ReLU"
+  bottom: "OctConv6"
+  top: "OctConv6"
+}
+layer {
+  name: "OctPool3"
+  type: "OctreePooling"
+  bottom: "OctConv6"
+  top: "OctPool3"
+  octree_param {
+    curr_depth: 5
+  }
+}
+layer {
+  name: "Eltwise3"
+  type: "Eltwise"
+  bottom: "OctConv1"
+  bottom: "OctPool3"
+  top: "Eltwise3"
+  eltwise_param {
+    operation: MAX
+  }
+}
+layer {
+  name: "OctConv7"
+  type: "OctreeConv"
+  bottom: "Eltwise3"
+  top: "OctConv7"
+  convolution_param {
+    num_output: 32
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 4
+  }
+}
+layer {
+  name: "BN7"
+  type: "BatchNorm"
+  bottom: "OctConv7"
+  top: "OctConv7"
+}
+layer {
+  name: "Scale7"
+  type: "Scale"
+  bottom: "OctConv7"
+  top: "OctConv7"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU7"
+  type: "ReLU"
+  bottom: "OctConv7"
+  top: "OctConv7"
+}
+layer {
+  name: "OctPool4"
+  type: "OctreePooling"
+  bottom: "OctConv7"
+  top: "OctPool4"
+  octree_param {
+    curr_depth: 4
+  }
+}
+layer {
+  name: "OctConv8"
+  type: "OctreeConv"
+  bottom: "OctPool4"
+  top: "OctConv8"
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 3
+  }
+}
+layer {
+  name: "BN8"
+  type: "BatchNorm"
+  bottom: "OctConv8"
+  top: "OctConv8"
+}
+layer {
+  name: "Scale8"
+  type: "Scale"
+  bottom: "OctConv8"
+  top: "OctConv8"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU8"
+  type: "ReLU"
+  bottom: "OctConv8"
+  top: "OctConv8"
+}
+layer {
+  name: "OctPool5"
+  type: "OctreePooling"
+  bottom: "OctConv8"
+  top: "OctPool5"
+  octree_param {
+    curr_depth: 3
+  }
+}
+layer {
+  name: "OctConv9"
+  type: "OctreeConv"
+  bottom: "OctPool5"
+  top: "OctConv9"
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 2
+  }
+}
+layer {
+  name: "BN9"
+  type: "BatchNorm"
+  bottom: "OctConv9"
+  top: "OctConv9"
+}
+layer {
+  name: "Scale9"
+  type: "Scale"
+  bottom: "OctConv9"
+  top: "OctConv9"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU9"
+  type: "ReLU"
+  bottom: "OctConv9"
+  top: "OctConv9"
+}
+layer {
+  name: "OctPool6"
+  type: "OctreePooling"
+  bottom: "OctConv9"
+  top: "OctPool6"
+  octree_param {
+    curr_depth: 2
+  }
+}
+layer {
+  name: "Conv1"
+  type: "Convolution"
+  bottom: "OctPool6"
+  top: "Conv1"
+  convolution_param {
+    num_output: 256
+    bias_term: false
+    kernel_size: 8
+    kernel_size: 1
+    stride: 8
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "BN10"
+  type: "BatchNorm"
+  bottom: "Conv1"
+  top: "Conv1"
+}
+layer {
+  name: "Scale10"
+  type: "Scale"
+  bottom: "Conv1"
+  top: "Conv1"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU10"
+  type: "ReLU"
+  bottom: "Conv1"
+  top: "Conv1"
+}
+layer {
+  name: "Conv2"
+  type: "Convolution"
+  bottom: "Conv1"
+  top: "Conv2"
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "BN11"
+  type: "BatchNorm"
+  bottom: "Conv2"
+  top: "Conv2"
+}
+layer {
+  name: "Scale11"
+  type: "Scale"
+  bottom: "Conv2"
+  top: "Conv2"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "TanH1"
+  type: "TanH"
+  bottom: "Conv2"
+  top: "Conv2"
+}
+layer {
+  name: "Deconv1"
+  type: "Deconvolution"
+  bottom: "Conv2"
+  top: "Deconv1"
+  convolution_param {
+    num_output: 256
+    bias_term: false
+    kernel_size: 8
+    kernel_size: 1
+    stride: 8
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "BN12"
+  type: "BatchNorm"
+  bottom: "Deconv1"
+  top: "Deconv1"
+}
+layer {
+  name: "Scale12"
+  type: "Scale"
+  bottom: "Deconv1"
+  top: "Deconv1"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU11"
+  type: "ReLU"
+  bottom: "Deconv1"
+  top: "Deconv1"
+}
+layer {
+  name: "OctGrow1"
+  type: "OctreeGrow"
+  top: "OctGrow1"
+  octree_param {
+    curr_depth: 1
+    full_octree: true
+    batch_size: 1
+  }
+}
+layer {
+  name: "OctGrow2"
+  type: "OctreeGrow"
+  bottom: "OctGrow1"
+  top: "OctGrow2"
+  octree_param {
+    curr_depth: 2
+    full_octree: true
+    batch_size: 1
+  }
+}
+layer {
+  name: "OctDecnv1"
+  type: "OctreeDeconv"
+  bottom: "Deconv1"
+  bottom: "OctGrow2"
+  top: "OctDecnv1"
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    kernel_size: 2
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 1
+  }
+}
+layer {
+  name: "BN13"
+  type: "BatchNorm"
+  bottom: "OctDecnv1"
+  top: "OctDecnv1"
+}
+layer {
+  name: "Scale13"
+  type: "Scale"
+  bottom: "OctDecnv1"
+  top: "OctDecnv1"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU12"
+  type: "ReLU"
+  bottom: "OctDecnv1"
+  top: "OctDecnv1"
+}
+layer {
+  name: "OctConv10"
+  type: "OctreeConv"
+  bottom: "OctDecnv1"
+  bottom: "OctGrow2"
+  top: "OctConv10"
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 2
+  }
+}
+layer {
+  name: "BN14"
+  type: "BatchNorm"
+  bottom: "OctConv10"
+  top: "OctConv10"
+}
+layer {
+  name: "Scale14"
+  type: "Scale"
+  bottom: "OctConv10"
+  top: "OctConv10"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU13"
+  type: "ReLU"
+  bottom: "OctConv10"
+  top: "OctConv10"
+}
+layer {
+  name: "Conv3"
+  type: "Convolution"
+  bottom: "OctConv10"
+  top: "Conv3"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "BN15"
+  type: "BatchNorm"
+  bottom: "Conv3"
+  top: "Conv3"
+}
+layer {
+  name: "Scale15"
+  type: "Scale"
+  bottom: "Conv3"
+  top: "Conv3"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU14"
+  type: "ReLU"
+  bottom: "Conv3"
+  top: "Conv3"
+}
+layer {
+  name: "Conv4"
+  type: "Convolution"
+  bottom: "Conv3"
+  top: "Conv4"
+  convolution_param {
+    num_output: 2
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "ArgMax1"
+  type: "ArgMax"
+  bottom: "Conv4"
+  top: "ArgMax1"
+  argmax_param {
+    out_max_val: false
+    top_k: 1
+    axis: 1
+  }
+}
+layer {
+  name: "OctUpt1"
+  type: "OctreeUpdateLabel"
+  bottom: "OctGrow2"
+  bottom: "ArgMax1"
+  top: "OctUpt1"
+  octree_param {
+    curr_depth: 2
+    mask: 1
+  }
+}
+layer {
+  name: "OctGrow3"
+  type: "OctreeGrow"
+  bottom: "OctUpt1"
+  top: "OctGrow3"
+  octree_param {
+    curr_depth: 3
+  }
+}
+layer {
+  name: "OctDecnv2"
+  type: "OctreeDeconv"
+  bottom: "OctConv10"
+  bottom: "OctGrow3"
+  top: "OctDecnv2"
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    kernel_size: 2
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 2
+  }
+}
+layer {
+  name: "BN16"
+  type: "BatchNorm"
+  bottom: "OctDecnv2"
+  top: "OctDecnv2"
+}
+layer {
+  name: "Scale16"
+  type: "Scale"
+  bottom: "OctDecnv2"
+  top: "OctDecnv2"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU15"
+  type: "ReLU"
+  bottom: "OctDecnv2"
+  top: "OctDecnv2"
+}
+layer {
+  name: "OctConv11"
+  type: "OctreeConv"
+  bottom: "OctDecnv2"
+  bottom: "OctGrow3"
+  top: "OctConv11"
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 3
+  }
+}
+layer {
+  name: "BN17"
+  type: "BatchNorm"
+  bottom: "OctConv11"
+  top: "OctConv11"
+}
+layer {
+  name: "Scale17"
+  type: "Scale"
+  bottom: "OctConv11"
+  top: "OctConv11"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU16"
+  type: "ReLU"
+  bottom: "OctConv11"
+  top: "OctConv11"
+}
+layer {
+  name: "Conv5"
+  type: "Convolution"
+  bottom: "OctConv11"
+  top: "Conv5"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "BN18"
+  type: "BatchNorm"
+  bottom: "Conv5"
+  top: "Conv5"
+}
+layer {
+  name: "Scale18"
+  type: "Scale"
+  bottom: "Conv5"
+  top: "Conv5"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU17"
+  type: "ReLU"
+  bottom: "Conv5"
+  top: "Conv5"
+}
+layer {
+  name: "Conv6"
+  type: "Convolution"
+  bottom: "Conv5"
+  top: "Conv6"
+  convolution_param {
+    num_output: 2
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "ArgMax2"
+  type: "ArgMax"
+  bottom: "Conv6"
+  top: "ArgMax2"
+  argmax_param {
+    out_max_val: false
+    top_k: 1
+    axis: 1
+  }
+}
+layer {
+  name: "OctUpt2"
+  type: "OctreeUpdateLabel"
+  bottom: "OctGrow3"
+  bottom: "ArgMax2"
+  top: "OctUpt2"
+  octree_param {
+    curr_depth: 3
+    mask: 1
+  }
+}
+layer {
+  name: "OctGrow4"
+  type: "OctreeGrow"
+  bottom: "OctUpt2"
+  top: "OctGrow4"
+  octree_param {
+    curr_depth: 4
+  }
+}
+layer {
+  name: "OctDecnv3"
+  type: "OctreeDeconv"
+  bottom: "OctConv11"
+  bottom: "OctGrow4"
+  top: "OctDecnv3"
+  convolution_param {
+    num_output: 32
+    bias_term: false
+    kernel_size: 2
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 3
+  }
+}
+layer {
+  name: "BN19"
+  type: "BatchNorm"
+  bottom: "OctDecnv3"
+  top: "OctDecnv3"
+}
+layer {
+  name: "Scale19"
+  type: "Scale"
+  bottom: "OctDecnv3"
+  top: "OctDecnv3"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU18"
+  type: "ReLU"
+  bottom: "OctDecnv3"
+  top: "OctDecnv3"
+}
+layer {
+  name: "OctConv12"
+  type: "OctreeConv"
+  bottom: "OctDecnv3"
+  bottom: "OctGrow4"
+  top: "OctConv12"
+  convolution_param {
+    num_output: 32
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 4
+  }
+}
+layer {
+  name: "BN20"
+  type: "BatchNorm"
+  bottom: "OctConv12"
+  top: "OctConv12"
+}
+layer {
+  name: "Scale20"
+  type: "Scale"
+  bottom: "OctConv12"
+  top: "OctConv12"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU19"
+  type: "ReLU"
+  bottom: "OctConv12"
+  top: "OctConv12"
+}
+layer {
+  name: "Conv7"
+  type: "Convolution"
+  bottom: "OctConv12"
+  top: "Conv7"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "BN21"
+  type: "BatchNorm"
+  bottom: "Conv7"
+  top: "Conv7"
+}
+layer {
+  name: "Scale21"
+  type: "Scale"
+  bottom: "Conv7"
+  top: "Conv7"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU20"
+  type: "ReLU"
+  bottom: "Conv7"
+  top: "Conv7"
+}
+layer {
+  name: "Conv8"
+  type: "Convolution"
+  bottom: "Conv7"
+  top: "Conv8"
+  convolution_param {
+    num_output: 3
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "Conv9"
+  type: "Convolution"
+  bottom: "Conv7"
+  top: "Conv9"
+  convolution_param {
+    num_output: 4
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "ArgMax3"
+  type: "ArgMax"
+  bottom: "Conv8"
+  top: "ArgMax3"
+  argmax_param {
+    out_max_val: false
+    top_k: 1
+    axis: 1
+  }
+}
+layer {
+  name: "OctUpt3"
+  type: "OctreeUpdateLabel"
+  bottom: "OctGrow4"
+  bottom: "ArgMax3"
+  top: "OctUpt3"
+  octree_param {
+    curr_depth: 4
+    mask: 1
+  }
+}
+
+layer {
+  name: "OctreeMask1"
+  type: "OctreeZeroize"
+  bottom: "Conv9"
+  bottom: "ArgMax3"
+  top: "OctreeMask1"
+  octree_param {
+    mask: 0
+  }
+}
+layer {
+  name: "Slice1"
+  type: "Slice"
+  bottom: "OctreeMask1"
+  top: "Slice1"
+  top: "Slice2"
+  slice_param {
+    slice_point: 3
+    axis: 1
+  }
+}
+layer {
+  name: "Normalize1"
+  type: "Normalize"
+  bottom: "Slice1"
+  top: "Normalize1"
+}
+layer {
+  name: "TanH2"
+  type: "TanH"
+  bottom: "Slice2"
+  top: "TanH2"
+}
+layer {
+  name: "Concat1"
+  type: "Concat"
+  bottom: "Normalize1"
+  bottom: "TanH2"
+  top: "Concat1"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "normal_4"
+  type: "Split"
+  bottom: "Concat1"
+   top: "normal_4"
+}
+
+
+
+layer {
+  name: "OctGrow5"
+  type: "OctreeGrow"
+  bottom: "OctUpt3"
+  top: "OctGrow5"
+  octree_param {
+    curr_depth: 5
+  }
+}
+layer {
+  name: "OctDecnv4"
+  type: "OctreeDeconv"
+  bottom: "OctConv12"
+  bottom: "OctGrow5"
+  top: "OctDecnv4"
+  convolution_param {
+    num_output: 16
+    bias_term: false
+    kernel_size: 2
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 4
+  }
+}
+layer {
+  name: "BN22"
+  type: "BatchNorm"
+  bottom: "OctDecnv4"
+  top: "OctDecnv4"
+}
+layer {
+  name: "Scale22"
+  type: "Scale"
+  bottom: "OctDecnv4"
+  top: "OctDecnv4"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU21"
+  type: "ReLU"
+  bottom: "OctDecnv4"
+  top: "OctDecnv4"
+}
+layer {
+  name: "OctConv13"
+  type: "OctreeConv"
+  bottom: "OctDecnv4"
+  bottom: "OctGrow5"
+  top: "OctConv13"
+  convolution_param {
+    num_output: 16
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 5
+  }
+}
+layer {
+  name: "BN23"
+  type: "BatchNorm"
+  bottom: "OctConv13"
+  top: "OctConv13"
+}
+layer {
+  name: "Scale23"
+  type: "Scale"
+  bottom: "OctConv13"
+  top: "OctConv13"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU22"
+  type: "ReLU"
+  bottom: "OctConv13"
+  top: "OctConv13"
+}
+layer {
+  name: "Conv10"
+  type: "Convolution"
+  bottom: "OctConv13"
+  top: "Conv10"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "BN24"
+  type: "BatchNorm"
+  bottom: "Conv10"
+  top: "Conv10"
+}
+layer {
+  name: "Scale24"
+  type: "Scale"
+  bottom: "Conv10"
+  top: "Conv10"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU23"
+  type: "ReLU"
+  bottom: "Conv10"
+  top: "Conv10"
+}
+layer {
+  name: "Conv11"
+  type: "Convolution"
+  bottom: "Conv10"
+  top: "Conv11"
+  convolution_param {
+    num_output: 3
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "Conv12"
+  type: "Convolution"
+  bottom: "Conv10"
+  top: "Conv12"
+  convolution_param {
+    num_output: 4
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "ArgMax4"
+  type: "ArgMax"
+  bottom: "Conv11"
+  top: "ArgMax4"
+  argmax_param {
+    out_max_val: false
+    top_k: 1
+    axis: 1
+  }
+}
+layer {
+  name: "OctUpt4"
+  type: "OctreeUpdateLabel"
+  bottom: "OctGrow5"
+  bottom: "ArgMax4"
+  top: "OctUpt4"
+  octree_param {
+    curr_depth: 5
+    mask: 1
+  }
+}
+
+layer {
+  name: "OctreeMask5"
+  type: "OctreeZeroize"
+  bottom: "Conv12"
+  bottom: "ArgMax4"
+  top: "OctreeMask5"
+  octree_param {
+    mask: 0
+  }
+}
+layer {
+  name: "Slice3"
+  type: "Slice"
+  bottom: "OctreeMask5"
+  top: "Slice3"
+  top: "Slice4"
+  slice_param {
+    slice_point: 3
+    axis: 1
+  }
+}
+layer {
+  name: "Normalize2"
+  type: "Normalize"
+  bottom: "Slice3"
+  top: "Normalize2"
+}
+layer {
+  name: "TanH3"
+  type: "TanH"
+  bottom: "Slice4"
+  top: "TanH3"
+}
+layer {
+  name: "Concat2"
+  type: "Concat"
+  bottom: "Normalize2"
+  bottom: "TanH3"
+  top: "Concat2"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "normal_5"
+  type: "Split"
+  bottom: "Concat2"
+   top: "normal_5"
+}
+
+
+layer {
+  name: "OctGrow6"
+  type: "OctreeGrow"
+  bottom: "OctUpt4"
+  top: "OctGrow6"
+  octree_param {
+    curr_depth: 6
+  }
+}
+layer {
+  name: "OctDecnv5"
+  type: "OctreeDeconv"
+  bottom: "OctConv13"
+  bottom: "OctGrow6"
+  top: "OctDecnv5"
+  convolution_param {
+    num_output: 12
+    bias_term: false
+    kernel_size: 2
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 5
+  }
+}
+layer {
+  name: "BN25"
+  type: "BatchNorm"
+  bottom: "OctDecnv5"
+  top: "OctDecnv5"
+}
+layer {
+  name: "Scale25"
+  type: "Scale"
+  bottom: "OctDecnv5"
+  top: "OctDecnv5"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU24"
+  type: "ReLU"
+  bottom: "OctDecnv5"
+  top: "OctDecnv5"
+}
+layer {
+  name: "OctConv14"
+  type: "OctreeConv"
+  bottom: "OctDecnv5"
+  bottom: "OctGrow6"
+  top: "OctConv14"
+  convolution_param {
+    num_output: 12
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 6
+  }
+}
+layer {
+  name: "BN26"
+  type: "BatchNorm"
+  bottom: "OctConv14"
+  top: "OctConv14"
+}
+layer {
+  name: "Scale26"
+  type: "Scale"
+  bottom: "OctConv14"
+  top: "OctConv14"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU25"
+  type: "ReLU"
+  bottom: "OctConv14"
+  top: "OctConv14"
+}
+layer {
+  name: "Conv13"
+  type: "Convolution"
+  bottom: "OctConv14"
+  top: "Conv13"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "BN27"
+  type: "BatchNorm"
+  bottom: "Conv13"
+  top: "Conv13"
+}
+layer {
+  name: "Scale27"
+  type: "Scale"
+  bottom: "Conv13"
+  top: "Conv13"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU26"
+  type: "ReLU"
+  bottom: "Conv13"
+  top: "Conv13"
+}
+layer {
+  name: "Conv14"
+  type: "Convolution"
+  bottom: "Conv13"
+  top: "Conv14"
+  convolution_param {
+    num_output: 3
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "Conv15"
+  type: "Convolution"
+  bottom: "Conv13"
+  top: "Conv15"
+  convolution_param {
+    num_output: 4
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "ArgMax5"
+  type: "ArgMax"
+  bottom: "Conv14"
+  top: "ArgMax5"
+  argmax_param {
+    out_max_val: false
+    top_k: 1
+    axis: 1
+  }
+}
+layer {
+  name: "OctUpt5"
+  type: "OctreeUpdateLabel"
+  bottom: "OctGrow6"
+  bottom: "ArgMax5"
+  top: "OctUpt5"
+  octree_param {
+    curr_depth: 6
+    mask: 1
+  }
+}
+
+layer {
+  name: "OctreeMask9"
+  type: "OctreeZeroize"
+  bottom: "Conv15"
+  bottom: "ArgMax5"
+  top: "OctreeMask9"
+  octree_param {
+    mask: 0
+  }
+}
+layer {
+  name: "Slice5"
+  type: "Slice"
+  bottom: "OctreeMask9"
+  top: "Slice5"
+  top: "Slice6"
+  slice_param {
+    slice_point: 3
+    axis: 1
+  }
+}
+layer {
+  name: "Normalize3"
+  type: "Normalize"
+  bottom: "Slice5"
+  top: "Normalize3"
+}
+layer {
+  name: "TanH4"
+  type: "TanH"
+  bottom: "Slice6"
+  top: "TanH4"
+}
+layer {
+  name: "Concat3"
+  type: "Concat"
+  bottom: "Normalize3"
+  bottom: "TanH4"
+  top: "Concat3"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "normal_6"
+  type: "Split"
+  bottom: "Concat3"
+   top: "normal_6"
+}
+
+
+layer {
+  name: "OctGrow7"
+  type: "OctreeGrow"
+  bottom: "OctUpt5"
+  top: "OctGrow7"
+  octree_param {
+    curr_depth: 7
+  }
+}
+layer {
+  name: "OctDecnv6"
+  type: "OctreeDeconv"
+  bottom: "OctConv14"
+  bottom: "OctGrow7"
+  top: "OctDecnv6"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 2
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 6
+  }
+}
+layer {
+  name: "BN28"
+  type: "BatchNorm"
+  bottom: "OctDecnv6"
+  top: "OctDecnv6"
+}
+layer {
+  name: "Scale28"
+  type: "Scale"
+  bottom: "OctDecnv6"
+  top: "OctDecnv6"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU27"
+  type: "ReLU"
+  bottom: "OctDecnv6"
+  top: "OctDecnv6"
+}
+layer {
+  name: "OctConv15"
+  type: "OctreeConv"
+  bottom: "OctDecnv6"
+  bottom: "OctGrow7"
+  top: "OctConv15"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+  octree_param {
+    curr_depth: 7
+  }
+}
+layer {
+  name: "BN29"
+  type: "BatchNorm"
+  bottom: "OctConv15"
+  top: "OctConv15"
+}
+layer {
+  name: "Scale29"
+  type: "Scale"
+  bottom: "OctConv15"
+  top: "OctConv15"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU28"
+  type: "ReLU"
+  bottom: "OctConv15"
+  top: "OctConv15"
+}
+layer {
+  name: "Conv16"
+  type: "Convolution"
+  bottom: "OctConv15"
+  top: "Conv16"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "BN30"
+  type: "BatchNorm"
+  bottom: "Conv16"
+  top: "Conv16"
+}
+layer {
+  name: "Scale30"
+  type: "Scale"
+  bottom: "Conv16"
+  top: "Conv16"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "ReLU29"
+  type: "ReLU"
+  bottom: "Conv16"
+  top: "Conv16"
+}
+layer {
+  name: "Conv17"
+  type: "Convolution"
+  bottom: "Conv16"
+  top: "Conv17"
+  convolution_param {
+    num_output: 3
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "Conv18"
+  type: "Convolution"
+  bottom: "Conv16"
+  top: "Conv18"
+  convolution_param {
+    num_output: 4
+    bias_term: true
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "ArgMax6"
+  type: "ArgMax"
+  bottom: "Conv17"
+  top: "ArgMax6"
+  argmax_param {
+    out_max_val: false
+    top_k: 1
+    axis: 1
+  }
+}
+layer {
+  name: "OctUpt6"
+  type: "OctreeUpdateLabel"
+  bottom: "OctGrow7"
+  bottom: "ArgMax6"
+  top: "OctUpt6"
+  octree_param {
+    curr_depth: 7
+    mask: 1
+  }
+}
+
+layer {
+  name: "OctreeMask13"
+  type: "OctreeZeroize"
+  bottom: "Conv18"
+  bottom: "ArgMax6"
+  top: "OctreeMask13"
+  octree_param {
+    mask: 0
+  }
+}
+layer {
+  name: "Slice7"
+  type: "Slice"
+  bottom: "OctreeMask13"
+  top: "Slice7"
+  top: "Slice8"
+  slice_param {
+    slice_point: 3
+    axis: 1
+  }
+}
+layer {
+  name: "Normalize4"
+  type: "Normalize"
+  bottom: "Slice7"
+  top: "Normalize4"
+}
+layer {
+  name: "TanH5"
+  type: "TanH"
+  bottom: "Slice8"
+  top: "TanH5"
+}
+layer {
+  name: "Concat4"
+  type: "Concat"
+  bottom: "Normalize4"
+  bottom: "TanH5"
+  top: "Concat4"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "normal_7"
+  type: "Split"
+  bottom: "Concat4"
+ 
+  top: "normal_7"
+}
+
+
+layer {
+  name: "output.octree"
+  type: "OctreeSetFeature"
+  bottom: "OctUpt6"
+  bottom: "normal_4"
+  bottom: "normal_5"
+  bottom: "normal_6"
+  bottom: "normal_7"
+  top: "output.octree"
+  octree_param {
+    curr_depth: 7
+    is_adaptive: true
+    adapt_depth: 4
+  }
+}

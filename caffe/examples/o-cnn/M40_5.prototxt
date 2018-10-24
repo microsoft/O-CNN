@@ -9,9 +9,13 @@ layer {
     phase: TRAIN
   }
   data_param {
-    source: "./LMDB/M40_5_2_12_train_lmdb"
+    source: "lmdb/train_5_2_0.55_lmdb"
     batch_size: 32
     backend: LMDB
+  }
+  octree_param {
+    curr_depth: 5
+    signal_channel: 3
   }
 }
 
@@ -24,9 +28,13 @@ layer {
     phase: TEST
   }
   data_param {
-    source: "./LMDB/M40_5_2_12_test_lmdb"
+    source: "lmdb/test_5_2_0.55_lmdb"
     batch_size: 32
     backend: LMDB
+  }
+  octree_param {
+    curr_depth: 5    
+    signal_channel: 3
   }
 }
 layer {
@@ -180,6 +188,7 @@ layer {
   top: "oct3vxl"
   octree_param {
     curr_depth: 2
+    batch_size: 32
   }
 }
 layer {

@@ -16,6 +16,10 @@ layer {
     batch_size: 32
     backend: LMDB
   }
+  octree_param {
+    curr_depth: 5    
+    signal_channel: 3
+  }
 }
 layer {
   name: "data"
@@ -29,6 +33,10 @@ layer {
     source: "./M40_5_2_12_test_lmdb"
     batch_size: 32
     backend: LMDB
+  }
+  octree_param {
+    curr_depth: 5    
+    signal_channel: 3
   }
 }
 layer {
@@ -884,6 +892,7 @@ layer {
   top: "Oct2Vox1"
   octree_param {
     curr_depth: 2
+    batch_size: 32
   }
 }
 layer {

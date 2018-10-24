@@ -308,7 +308,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 148 (last added: octree_param)
+// LayerParameter next available layer-specific ID: 149 (last added: octree_param)
 message LayerParameter {
   optional string name = 1; // the layer name
   optional string type = 2; // the layer type
@@ -389,6 +389,7 @@ message LayerParameter {
   optional MVNParameter mvn_param = 120;
   optional OctreeParameter octree_param = 147;
   optional ParameterParameter parameter_param = 145;
+  optional PermuteParameter permute_param = 148;
   optional PoolingParameter pooling_param = 121;
   optional PowerParameter power_param = 122;
   optional PReLUParameter prelu_param = 131;
@@ -701,6 +702,7 @@ message EltwiseParameter {
     PROD = 0;
     SUM = 1;
     MAX = 2;
+    MIN = 3;
   }
   optional EltwiseOp operation = 1 [default = SUM]; // element-wise operation
   repeated float coeff = 2; // blob-wise coefficient for SUM operation
@@ -892,16 +894,29 @@ message MVNParameter {
 }
 
 message OctreeParameter {
-  // the octree depth of the bottom blob(s) in current CNN layer
-  required uint32 curr_depth = 1;
+  optional uint32 curr_depth = 1;
   optional bool full_octree = 2 [default = false];
   optional uint32 batch_size = 3 [default = 1];
-  optional bool segmentation = 4 [default = false];
+  optional bool is_adaptive = 4 [default = false];
+  optional bool auto_pad = 5 [default = true];
+  repeated int32 mask = 6; 
+  optional string content_flag = 8;   // key, child, neigh, feature, label, split
+  repeated uint32 dropout_depth = 9;
+  repeated float dropout_ratio = 10;
+  optional uint32 tile_depth = 11;
+  optional uint32 signal_channel = 12 [default = 3];
+  optional uint32 adapt_depth = 13;
 }
-
 
 message ParameterParameter {
   optional BlobShape shape = 1;
+}
+
+message PermuteParameter {
+  // The new orders of the axes of data. Notice it should be with
+  // in the same range as the input data, and it starts from 0.
+  // Do not provide repeated order.
+  repeated uint32 order = 1;
 }
 
 message PoolingParameter {

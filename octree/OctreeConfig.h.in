@@ -1,0 +1,5 @@
+// the configured options and settings for Octree
+#define OCTREE_VERSION_MAJOR @OCTREE_VERSION_MAJOR@
+#define OCTREE_VERSION_MINOR @OCTREE_VERSION_MINOR@
+#cmakedefine USE_MINIBALL
+#cmakedefine USE_WINDOWS_IO
