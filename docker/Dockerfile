@@ -52,14 +52,17 @@ WORKDIR $OCNN_ROOT/octree/Octree2PLY
 RUN c++ Octree2Ply.cpp  -O3 -DNDEBUG --std=c++11 -fPIC -Wall -Wno-sign-compare -Wno-uninitialized -fopenmp -o octree2ply && \
 cp octree2ply $WORKSPACE/bin
 
+ARG NCCL_COMMIT=286916a1a37ca1fe8cd43e280f5c42ec29569fc5
+WORKDIR $WORKSPACE
+RUN git clone https://github.com/NVIDIA/nccl.git && cd nccl && git reset --hard $NCCL_COMMIT && \
+    make -j install && cd .. && rm -rf nccl
+
 ENV CAFFE_ROOT=/opt/caffe
 WORKDIR $CAFFE_ROOT
-
 ARG CAFFE_COMMIT=6bfc5ca8f7c2a4b7de09dfe7a01cf9d3470d22b3
 RUN git clone https://github.com/BVLC/caffe.git . && git reset --hard $CAFFE_COMMIT && \
     rsync -a $OCNN_ROOT/caffe/ ./ && ex -sc '83i|set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")' -cx CMakeLists.txt && \
     cd python && for req in $(cat requirements.txt) pydot; do pip install $req; done && cd .. && \
-    git clone https://github.com/NVIDIA/nccl.git && cd nccl && make -j install && cd .. && rm -rf nccl && \
     mkdir build && cd build && \
     cmake -DUSE_CUDNN=1 -DUSE_NCCL=1 .. && \
     make -j"$(nproc)" && \
@@ -71,7 +74,6 @@ WORKDIR $OCNN_TOOLS_ROOT
 
 ARG OCNN_TOOLS_COMMIT=bbcf7e28e8500024a000b6b15eecd24652d6e11d
 RUN git clone https://github.com/wang-ps/O-CNN.git . && git reset --hard $OCNN_TOOLS_COMMIT
-
 WORKDIR $OCNN_TOOLS_ROOT/virtual_scanner/VirtualScanner
 RUN c++ main.cpp VirtualScanner.cpp  -O3 -DNDEBUG --std=c++11 -fPIC -Wall -Wno-sign-compare -Wno-uninitialized -fopenmp -lboost_filesystem -lboost_system -lCGAL -I /usr/include/eigen3 -o virtualscanner && \
 cp virtualscanner $WORKSPACE/bin
