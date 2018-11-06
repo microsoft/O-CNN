@@ -17,14 +17,13 @@ class Octree : public OctreeParser {
   Octree() {}
 
   void build(const OctreeInfo& octree_info, const Points& point_cloud);
-  void trim_octree();
   bool save(const string& filename);
-  string get_binary_string();
 
   // serialize the results of the function build() into the buffer_
   void serialize();
 
  protected:
+  void trim_octree();
   void save(ostream& stream);
   void clear(int depth = 0);
 

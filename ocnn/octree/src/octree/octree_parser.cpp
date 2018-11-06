@@ -65,6 +65,10 @@ bool OctreeParser::write_octree(const string& filename) const {
   return true;
 }
 
+std::string OctreeParser::get_binary_string() const {
+    return std::string(buffer_.cbegin(), buffer_.cend());
+}
+
 const char* OctreeParser::ptr(const OctreeInfo::PropType ptype, const int depth) const {
   const char* p = nullptr;
   int dis = info_->ptr_dis(ptype, depth);

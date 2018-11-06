@@ -45,6 +45,7 @@ class OctreeParser {
 
   bool read_octree(const string& filename);
   bool write_octree(const string& filename) const;
+  string get_binary_string() const;
 
   void octree2pts(Points& point_cloud, int depth_start, int depth_end);
   void octree2mesh(vector<float>& V, vector<int>& F, int depth_start, int depth_end);
