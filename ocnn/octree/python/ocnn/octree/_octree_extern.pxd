@@ -29,28 +29,13 @@ cdef extern from "points.h" nogil:
         void rotate(const float, const float*)
         void transform(const float*)
 
-cdef extern from "octree_info.h" namespace "OctreeInfo":
-    cdef enum PropType:
-        kKey=1
-        kChild=2
-        kNeigh=4
-        kFeature=8
-        kLabel=16
-        kSplit=32
-
 cdef extern from "octree_info.h" nogil:
     cdef cppclass OctreeInfo:
-        void set_batch_size(int)
-        void set_depth(int)
-        void set_full_layer(int)
-        void set_channel(OctreeInfo.PropType, int)
+        OctreeInfo()
+        void initialize(int, int, bool, bool, bool, bool, int, float,
+                float, bool, const Points&)
+        void set_bbox(float, const float*)
         void set_bbox(const float*, const float*)
-        void set_key2xyz(bool)
-        void set_node_dis(bool)
-        void set_adaptive(bool)
-        void set_adaptive_layer(int)
-        void set_threshold_dist(float)
-        void set_threshold_normal(float)
 
 cdef extern from "octree.h" nogil:
     cdef cppclass Octree:

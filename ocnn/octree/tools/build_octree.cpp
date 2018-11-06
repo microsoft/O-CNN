@@ -72,17 +72,18 @@ class OctreeBuilder {
   }
 
   void set_octree_info() {
-    octree_info_.reset();
-
-    octree_info_.set_batch_size(1);
-    octree_info_.set_depth(FLAGS_depth);
-    octree_info_.set_full_layer(FLAGS_full_depth);
-    octree_info_.set_adaptive_layer(FLAGS_adp_depth);
-    octree_info_.set_adaptive(FLAGS_adaptive);
-    octree_info_.set_node_dis(FLAGS_node_dis);
-    octree_info_.set_key2xyz(FLAGS_key2xyz);
-    octree_info_.set_threshold_normal(FLAGS_th_normal);
-    octree_info_.set_threshold_dist(FLAGS_th_distance);
+    octree_info_.initialize(
+            FLAGS_depth,
+            FLAGS_full_depth,
+            FLAGS_node_dis,
+            FLAGS_node_feature,
+            FLAGS_split_label,
+            FLAGS_adaptive,
+            FLAGS_adp_depth,
+            FLAGS_th_distance,
+            FLAGS_th_normal,
+            FLAGS_key2xyz,
+            point_cloud_);
 
     // the point cloud has been centralized,
     // so initializing the bbmin & bbmax in the following way
@@ -90,46 +91,12 @@ class OctreeBuilder {
     float bbmax[] = { radius_, radius_, radius_ };
     octree_info_.set_bbox(bbmin, bbmax);
 
-    // by default, the octree contains Key and Child
-    int channel = (FLAGS_key2xyz && FLAGS_depth > 8) ? 2 : 1;
-    octree_info_.set_channel(OctreeInfo::kKey, channel);
-    octree_info_.set_location(OctreeInfo::kKey, -1);
-    octree_info_.set_channel(OctreeInfo::kChild, 1);
-    octree_info_.set_location(OctreeInfo::kChild, -1);
-
-    // set feature
-    const PtsInfo& pt_info = point_cloud_.info();
-    channel = pt_info.channel(PtsInfo::kNormal) + pt_info.channel(PtsInfo::kFeature);
-    if (FLAGS_node_dis) channel += 1;
-    octree_info_.set_channel(OctreeInfo::kFeature, channel);
-    // location = -1 means the features exist on every node
-    int location = (FLAGS_node_feature || FLAGS_adaptive) ? -1 : FLAGS_depth;
-    octree_info_.set_location(OctreeInfo::kFeature, location);
-
-    // set label
-    if (pt_info.channel(PtsInfo::kLabel) == 1) {
-      // the channel of label is fixed as 1
-      octree_info_.set_channel(OctreeInfo::kLabel, 1);
-      location = (FLAGS_node_feature || FLAGS_adaptive) ? -1 : FLAGS_depth;
-      octree_info_.set_location(OctreeInfo::kLabel, location);
-    }
-
-    // set split label
-    if (FLAGS_split_label) {
-      octree_info_.set_channel(OctreeInfo::kSplit, 1);
-      octree_info_.set_location(OctreeInfo::kSplit, -1);
-    }
-
     // Skip nnum_[], nnum_cum_[], nnum_nempty_[] and ptr_dis_[],
     // these three properties can only be set when the octree is built.
   }
 
   void build_octree() {
     octree_.build(octree_info_, point_cloud_);
-  }
-
-  void adaptive_octree() {
-    if (FLAGS_adaptive) octree_.trim_octree();
   }
 
   void save_octree(const string& output_filename) {
@@ -184,7 +151,6 @@ int main(int argc, char* argv[]) {
 
       // build
       builder.build_octree();
-      builder.adaptive_octree();
 
       // save octree
       builder.save_octree(output_path + filename + file_suffix);

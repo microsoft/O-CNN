@@ -44,14 +44,14 @@ void OctreeDataBaseLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bott
   // a workaround for a valid first-time reshape
   vector<int> data_shape{ 1, signal_channel_, 8, 1 };
   top[0]->Reshape(data_shape);
-  for (int i = 0; i < prefetch_.size(); ++i) {
-    prefetch_[i]->data_.Reshape(data_shape);
+  for (int i = 0; i < this->prefetch_.size(); ++i) {
+    this->prefetch_[i]->data_.Reshape(data_shape);
   }
-  if (output_labels_) {
+  if (this->output_labels_) {
     vector<int> label_shape{ batch_size_ };
     top[1]->Reshape(label_shape);
-    for (int i = 0; i < prefetch_.size(); ++i) {
-      prefetch_[i]->label_.Reshape(label_shape);
+    for (int i = 0; i < this->prefetch_.size(); ++i) {
+      this->prefetch_[i]->label_.Reshape(label_shape);
     }
   }
   if (output_octree_) {
@@ -82,8 +82,8 @@ void OctreeDataBaseLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   if (this->output_labels_) label_data = batch->label_.mutable_cpu_data();
   for (int i = 0; i < batch_size_; ++i) {
     // get a datum
-    while (Skip()) Next();
-    datum.ParseFromString(cursor_->value());
+    while (this->Skip()) this->Next();
+    datum.ParseFromString(this->cursor_->value());
 
     //// dropout octree nodes
     //if (dropout_) {
@@ -103,7 +103,7 @@ void OctreeDataBaseLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
     if (this->output_labels_) label_data[i] = static_cast<Dtype>(datum.label());
 
     // update cursor
-    Next();
+    this->Next();
   }
 
   // merge octrees
@@ -145,9 +145,9 @@ int OctreeDataBaseLayer<Dtype>::RandDropDepth() {
 template <typename Dtype>
 void OctreeDataBaseLayer<Dtype>::Forward_cpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
-  if (prefetch_current_) prefetch_free_.push(prefetch_current_);
-  prefetch_current_ = prefetch_full_.pop("Waiting for data");
-  Blob<Dtype>& curr_octree = prefetch_current_->data_;
+  if (this->prefetch_current_) this->prefetch_free_.push(this->prefetch_current_);
+  this->prefetch_current_ = this->prefetch_full_.pop("Waiting for data");
+  Blob<Dtype>& curr_octree = this->prefetch_current_->data_;
 
   // set data - top[0]
   feature_btm_vec_[0] = &curr_octree;
@@ -155,9 +155,9 @@ void OctreeDataBaseLayer<Dtype>::Forward_cpu(
   feature_layer_->Forward(feature_btm_vec_, feature_top_vec_);
 
   // set label - top[1]
-  if (output_labels_) {
-    top[1]->ReshapeLike(prefetch_current_->label_);
-    top[1]->set_cpu_data(prefetch_current_->label_.mutable_cpu_data());
+  if (this->output_labels_) {
+    top[1]->ReshapeLike(this->prefetch_current_->label_);
+    top[1]->set_cpu_data(this->prefetch_current_->label_.mutable_cpu_data());
   }
 
   // set the global octree

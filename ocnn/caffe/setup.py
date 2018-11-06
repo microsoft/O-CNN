@@ -12,15 +12,14 @@ except ImportError:
     sys.exit(1)
 
 setup(
-    name="ocnn.base",
-    version="18.11.01",
-    description="Octree utilities",
+    name="ocnn.caffe",
+    version="18.09.05",
+    description="ONN Caffe Modules",
     author='Microsoft',
     author_email="dapisani@microsoft.com",
-    packages=['ocnn', 'ocnn.octree', 'ocnn.dataset'],
+    packages=['ocnn', 'ocnn.caffe'],
+    install_requires=['ocnn.base'],
     zip_safe=False,
-    install_requires=['six', 'Cython', 'numpy'],
     package_dir={'': 'python'},
-    package_data={'ocnn.octree': ['*.pxd'],
-                  'ocnn.dataset': ['*.pxd']}
+    package_data = {'ocnn.caffe': ['*.pxd']}
 )

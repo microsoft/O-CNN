@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "points.h"
+
 using std::string;
 
 class OctreeInfo {
@@ -15,6 +17,20 @@ class OctreeInfo {
 
  public:
   OctreeInfo() { reset(); }
+
+  void initialize(
+          int depth,
+          int full_depth,
+          bool node_displacement,
+          bool node_feature,
+          bool split_label,
+          bool adaptive,
+          int adaptive_depth,
+          float threshold_distance,
+          float threshold_normal,
+          bool key2xyz,
+          const Points& points);
+
   void reset();
   bool check_format(string& msg) const;
   bool has_property(PropType ptype) const {
@@ -53,6 +69,7 @@ class OctreeInfo {
   void set_channel(PropType ptype, int ch);
   void set_location(PropType ptype, int lc);
   void set_ptr_dis();
+  void set_bbox(float radius, const float* center);
   void set_bbox(const float* bbmin, const float* bbmax);
   void set_key2xyz(bool b) { key2xyz_ = b; }
   void set_node_dis(bool dis) { has_node_dis_ = dis; }

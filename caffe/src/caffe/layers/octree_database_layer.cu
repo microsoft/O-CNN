@@ -6,9 +6,9 @@ namespace caffe {
 template <typename Dtype>
 void OctreeDataBaseLayer<Dtype>::Forward_gpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
-  if (prefetch_current_) prefetch_free_.push(prefetch_current_);
-  prefetch_current_ = prefetch_full_.pop("Waiting for data");
-  Blob<Dtype>& curr_octree = prefetch_current_->data_;
+  if (this->prefetch_current_) this->prefetch_free_.push(this->prefetch_current_);
+  this->prefetch_current_ = this->prefetch_full_.pop("Waiting for data");
+  Blob<Dtype>& curr_octree = this->prefetch_current_->data_;
 
   // set data - top[0]
   feature_btm_vec_[0] = &curr_octree;
@@ -16,9 +16,9 @@ void OctreeDataBaseLayer<Dtype>::Forward_gpu(
   feature_layer_->Forward(feature_btm_vec_, feature_top_vec_);
 
   // set label - top[1]
-  if (output_labels_) {
-    top[1]->ReshapeLike(prefetch_current_->label_);
-    top[1]->set_gpu_data(prefetch_current_->label_.mutable_gpu_data());
+  if (this->output_labels_) {
+    top[1]->ReshapeLike(this->prefetch_current_->label_);
+    top[1]->set_gpu_data(this->prefetch_current_->label_.mutable_gpu_data());
   }
 
   // set the global octree

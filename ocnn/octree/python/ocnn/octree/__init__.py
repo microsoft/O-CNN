@@ -1,4 +1,4 @@
-from ocnn.octree._octree import Points
-from ocnn.octree._octree import PropType
-from ocnn.octree._octree import OctreeInfo
-from ocnn.octree._octree import Octree
+from ocnn.octree._octree import Points, OctreeInfo, Octree
+from ocnn.octree.octree_processor import OctreeSettings, OctreeProcessor
+from ocnn.octree.octree_augmentor import RotationAugmentor, CenteringAugmentor, DisplacingAugmentor
+

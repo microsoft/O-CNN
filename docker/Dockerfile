@@ -34,23 +34,22 @@ RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
     python get-pip.py && \
         rm get-pip.py
 
+RUN pip --no-cache-dir install \
+        scikit-build \
+        Cython
+
 ENV WORKSPACE=/workspace
 ENV PATH="${WORKSPACE}/bin:${PATH}"
-WORKDIR $WORKSPACE/bin
+ARG WORKSPACE_BIN=$WORKSPACE/bin
+WORKDIR $WORKSPACE_BIN
 
-ENV OCNN_ROOT=$WORKSPACE/ocnn
+ARG OCNN_ROOT=$WORKSPACE/ocnn
 WORKDIR $OCNN_ROOT
 
-ARG OCNN_COMMIT=origin/master
+ARG OCNN_COMMIT=origin/pre-release
 RUN git clone https://github.com/Microsoft/O-CNN.git . && git reset --hard $OCNN_COMMIT
-
-WORKDIR $OCNN_ROOT/octree/Octree
-RUN c++ main.cpp Octree.cpp  -O3 -DNDEBUG --std=c++11 -fPIC -Wall -Wno-sign-compare -Wno-uninitialized -fopenmp -o octree && \
-cp octree $WORKSPACE/bin
-
-WORKDIR $OCNN_ROOT/octree/Octree2PLY
-RUN c++ Octree2Ply.cpp  -O3 -DNDEBUG --std=c++11 -fPIC -Wall -Wno-sign-compare -Wno-uninitialized -fopenmp -o octree2ply && \
-cp octree2ply $WORKSPACE/bin
+RUN cd ocnn/octree && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DOUTPUT_DIRECTORY=$WORKSPACE_BIN .. && \
+    make && cd ../ && rm -rf build
 
 ARG NCCL_COMMIT=286916a1a37ca1fe8cd43e280f5c42ec29569fc5
 WORKDIR $WORKSPACE
@@ -69,14 +68,17 @@ RUN git clone https://github.com/BVLC/caffe.git . && git reset --hard $CAFFE_COM
     mkdir $CAFFE_ROOT/include/caffe/proto && \
     cp $CAFFE_ROOT/build/include/caffe/proto/caffe.pb.h $CAFFE_ROOT/include/caffe/proto/caffe.pb.h
 
-ENV OCNN_TOOLS_ROOT=$WORKSPACE/ocnn_tools
+WORKDIR $OCNN_ROOT
+RUN cd ocnn/octree && pip install . && cd ../caffe && pip install .
+
+ARG OCNN_TOOLS_ROOT=$WORKSPACE/ocnn_tools
 WORKDIR $OCNN_TOOLS_ROOT
 
-ARG OCNN_TOOLS_COMMIT=bbcf7e28e8500024a000b6b15eecd24652d6e11d
+ARG OCNN_TOOLS_COMMIT=origin/pre-release
 RUN git clone https://github.com/wang-ps/O-CNN.git . && git reset --hard $OCNN_TOOLS_COMMIT
-WORKDIR $OCNN_TOOLS_ROOT/virtual_scanner/VirtualScanner
-RUN c++ main.cpp VirtualScanner.cpp  -O3 -DNDEBUG --std=c++11 -fPIC -Wall -Wno-sign-compare -Wno-uninitialized -fopenmp -lboost_filesystem -lboost_system -lCGAL -I /usr/include/eigen3 -o virtualscanner && \
-cp virtualscanner $WORKSPACE/bin
+RUN cd virtual_scanner && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make && \
+    cp virtualscanner $WORKSPACE_BIN && cd ../ && rm -rf build && \
+    pip install .
 
 ENV PYCAFFE_ROOT $CAFFE_ROOT/python
 ENV PYTHONPATH $PYCAFFE_ROOT:$PYTHONPATH

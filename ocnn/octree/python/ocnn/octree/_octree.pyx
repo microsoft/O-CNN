@@ -4,6 +4,7 @@ from ocnn.dataset._writable_data cimport WritableData
 import numpy as np
 cimport numpy as np
 
+from cython.operator cimport dereference
 from libcpp cimport bool
 from libcpp.string cimport string
 
@@ -31,6 +32,10 @@ cdef class Points:
         cdef string stl_string = filename.encode('UTF-8')
         with nogil:
             self.c_points.write_points(stl_string)
+
+    def center(self):
+        _, center = self.get_points_bounds()
+        self.center_about(center)
 
     def center_about(self, np.ndarray center):
         center = _ensure_contiguous(center)
@@ -63,7 +68,9 @@ cdef class Points:
             self.c_points.transform(&mat_view[0])
 
     def get_points_bounds(self):
-        cdef _octree_extern.PointsBounds points_bounds = self.c_points.get_points_bounds()
+        cdef _octree_extern.PointsBounds points_bounds
+        with nogil:
+            points_bounds = self.c_points.get_points_bounds()
         cdef float[:] center_view = points_bounds.center
 
         center = np.empty_like (center_view)
@@ -84,24 +91,42 @@ cdef class Points:
 
         return points, normals
 
-cdef class PropType:
-    kKey = _octree_extern.PropType.kKey
-    kChild = _octree_extern.PropType.kChild
-    kNeigh = _octree_extern.PropType.kNeigh
-    kFeature = _octree_extern.PropType.kFeature
-    kLabel = _octree_extern.PropType.kLabel
-    kSplit = _octree_extern.PropType.kSplit
-
 cdef class OctreeInfo:
     cdef _octree_extern.OctreeInfo c_octree_info
-    def set_batch_size(self, int batch_size):
-        self.c_octree_info.set_batch_size(batch_size)
-    def set_depth(self, int depth):
-        self.c_octree_info.set_depth(depth)
-    def set_full_layer(self, int full_layer):
-        self.c_octree_info.set_full_layer(full_layer)
-    def set_channel(self, _octree_extern.PropType prop_type, int channel):
-        self.c_octree_info.set_channel(prop_type, channel)
+    def initialize(
+            self,
+            int depth,
+            int full_depth,
+            bool node_displacement,
+            bool node_feature,
+            bool split_label,
+            bool adaptive,
+            int adaptive_depth,
+            float threshold_distance,
+            float threshold_normal,
+            bool key2xyz,
+            Points points):
+        c_points_ptr = &points.c_points
+        self.c_octree_info.initialize(
+                depth,
+                full_depth,
+                node_displacement,
+                node_feature,
+                split_label,
+                adaptive,
+                adaptive_depth,
+                threshold_distance,
+                threshold_normal,
+                key2xyz,
+                dereference(c_points_ptr))
+
+    def set_bbox(self, float radius, np.ndarray center):
+        center = _ensure_contiguous(center)
+        _check_array(center, (3,))
+
+        cdef float[::1] center_view = center.ravel()
+        self.c_octree_info.set_bbox(radius, &center_view[0])
+
     def set_bbox(self, np.ndarray bbox_min, np.ndarray bbox_max):
 
         bbox_min = _ensure_contiguous(bbox_min)
@@ -113,27 +138,15 @@ cdef class OctreeInfo:
         cdef float[::1] bbox_max_view = bbox_max.ravel()
 
         self.c_octree_info.set_bbox(&bbox_min_view[0], &bbox_max_view[0])
-    def set_key2xyz(self, bool key2xyz):
-        self.c_octree_info.set_key2xyz(key2xyz)
-    def set_node_dis(self, bool node_dis):
-        self.c_octree_info.set_node_dis(node_dis)
-    def set_adaptive(self, bool adaptive):
-        self.c_octree_info.set_adaptive(adaptive)
-    def set_adaptive_layer(self, int adaptive_layer):
-        self.c_octree_info.set_adaptive_layer(adaptive_layer)
-    def set_threshold_dist(self, float threshold_dist):
-        self.c_octree_info.set_threshold_dist(threshold_dist)
-    def set_threshold_normal(self, float threshold_normal):
-        self.c_octree_info.set_threshold_normal(threshold_normal)
 
 cdef class Octree(WritableData):
     cdef _octree_extern.Octree c_octree
 
     def __cinit__(self, OctreeInfo info, Points points):
-        c_points = points.c_points
-        c_info = info.c_octree_info
+        c_points_ptr = &points.c_points
+        c_info_ptr = &info.c_octree_info
         with nogil:
-            self.c_octree.build(c_info, c_points)
+            self.c_octree.build(dereference(c_info_ptr), dereference(c_points_ptr))
             self.cpp_string = self.c_octree.get_binary_string()
 
     def write_file(self, filename):

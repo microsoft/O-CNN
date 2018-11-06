@@ -48,6 +48,8 @@ void Octree::build(const OctreeInfo& octree_info, const Points& point_cloud) {
 
   // serialization
   serialize();
+
+  trim_octree();
 }
 
 void Octree::clear(int depth) {
@@ -558,11 +560,6 @@ bool Octree::save(const std::string& filename)
     return true;
 }
 
-std::string Octree::get_binary_string() {
-    std::stringstream ss;
-    save(ss);
-    return ss.str();
-}
 void Octree::save(std::ostream& stream) {
   int depth_ = oct_info_.depth();
   int full_layer_ = oct_info_.full_layer();

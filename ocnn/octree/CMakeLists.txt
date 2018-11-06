@@ -5,6 +5,8 @@ project(Octree)
 set(OCTREE_VERSION_MAJOR 1)
 set(OCTREE_VERSION_MINOR 0)
 
+set(OUTPUT_DIRECTORY "" CACHE STRING "Binary output directory. Defaults to build directory")
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # should we use the Miniball.hpp
@@ -19,7 +21,7 @@ configure_file(
 
 # miniball
 if(USE_MINIBALL)
-  set(miniball_path "${PROJECT_SOURCE_DIR}/external/miniball") 
+  set(miniball_path "${PROJECT_SOURCE_DIR}/external/miniball")
   set(miniball_hpp  "${miniball_path}/Miniball.hpp")
   if(NOT EXISTS ${miniball_hpp})
     file(DOWNLOAD
@@ -32,7 +34,7 @@ if(USE_MINIBALL)
 endif()
 
 # rply
-file(GLOB  src_rply 
+file(GLOB  src_rply
   "${PROJECT_SOURCE_DIR}/external/rply-1.1.4/*.h"
   "${PROJECT_SOURCE_DIR}/external/rply-1.1.4/*.c")
 if(NOT src_rply)
@@ -43,11 +45,11 @@ if(NOT src_rply)
     ${rply_file}
     SHOW_PROGRESS
   )
-  execute_process(COMMAND ${CMAKE_COMMAND} -E tar xfz 
-    ${rply_file} 
+  execute_process(COMMAND ${CMAKE_COMMAND} -E tar xfz
+    ${rply_file}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/external)
   file(REMOVE ${rply_file})
-  file(GLOB  src_rply 
+  file(GLOB  src_rply
     "${PROJECT_SOURCE_DIR}/external/rply-1.1.4/*.h"
     "${PROJECT_SOURCE_DIR}/external/rply-1.1.4/*.c")
 endif()
@@ -55,7 +57,7 @@ include_directories("${PROJECT_SOURCE_DIR}/external/rply-1.1.4")
 add_library(rply ${src_rply})
 
 # files
-file(GLOB  src_octree_lib 
+file(GLOB  src_octree_lib
   "${PROJECT_SOURCE_DIR}/include/octree/*.h"
   "${PROJECT_SOURCE_DIR}/src/octree/*.cpp")
 
@@ -83,12 +85,16 @@ else()
     file(GLOB_RECURSE srcs "${PROJECT_SOURCE_DIR}/tools/*.cpp")
     foreach(source ${srcs})
       get_filename_component(name ${source} NAME_WE)
-      if(name MATCHES "build_octree") 
-        set(name "octree") 
+      if(name MATCHES "build_octree")
+        set(name "octree")
       endif()
       add_executable(${name} ${source})
+      if (OUTPUT_DIRECTORY)
+        set_target_properties(${name} PROPERTIES
+          RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}")
+      endif()
       target_link_libraries(${name} octree_lib)
-      if(name MATCHES "ply2points") 
+      if(name MATCHES "ply2points")
         target_link_libraries(${name} rply)
       endif()
     endforeach(source)
