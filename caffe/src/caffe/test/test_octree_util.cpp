@@ -5,14 +5,11 @@
 namespace caffe {
 
 template <typename TypeParam>
-class OctreeBatchTest : public OctreeTest<TypeParam> {
+class OctreeUtilTest : public OctreeTest<TypeParam> {
  protected:
   typedef typename TypeParam::Dtype Dtype;
-
-  OctreeBatchTest()  {}
-
-  virtual void SetUp() {
-  }
+  OctreeUtilTest()  {}
+  virtual void SetUp() {}
 
   // todo: add test for the label
   void test_octree_batch(const string& octree1, const string& octree2) {
@@ -23,7 +20,7 @@ class OctreeBatchTest : public OctreeTest<TypeParam> {
     this->load_test_data(vector<string> {octree1, octree2});
     Blob<Dtype> octree_batch;
     octree::merge_octrees(octree_batch, this->octree_buffer_);
-    
+
     OctreeParser parser_batch, parser1, parser2;
     parser_batch.set_cpu(octree_batch.cpu_data());
     parser1.set_cpu(oct_ptr1);
@@ -42,9 +39,9 @@ class OctreeBatchTest : public OctreeTest<TypeParam> {
       // compare key
       ASSERT_TRUE(parser_batch.info().key2xyz()); // todo: compare the other condition
       ASSERT_TRUE(parser_batch.info().has_property(OctreeInfo::kKey));
-      const int* key1 = parser1.key_cpu(d);
-      const int* key2 = parser2.key_cpu(d);
-      const int* key_batch = parser_batch.key_cpu(d);
+      const unsigned int* key1 = parser1.key_cpu(d);
+      const unsigned int* key2 = parser2.key_cpu(d);
+      const unsigned int* key_batch = parser_batch.key_cpu(d);
       for (int i = 0; i < nnumb; ++i) {
         int src = 0, idx = 0;
         if (i < nnum1) {
@@ -120,7 +117,6 @@ class OctreeBatchTest : public OctreeTest<TypeParam> {
       }
     }
   }
-
 
   void test_octree_batch_legacy(const string& octree1, const string& octree2) {
     this->load_test_data(vector<string> {octree1, octree2});
@@ -227,32 +223,52 @@ class OctreeBatchTest : public OctreeTest<TypeParam> {
       }
     }
   }
+
 };
 
-TYPED_TEST_CASE(OctreeBatchTest, TestDtypesAndDevices);
+TYPED_TEST_CASE(OctreeUtilTest, TestDtypesAndDevices);
 
-TYPED_TEST(OctreeBatchTest, TestOctree1) {
+TYPED_TEST(OctreeUtilTest, TestOctreeBatch1) {
   // same octrees, ordinary octrees
   test_octree_batch("octree_1", "octree_1");
   test_octree_batch("octree_2", "octree_2");
 }
 
-TYPED_TEST(OctreeBatchTest, TestOctree2) {
+TYPED_TEST(OctreeUtilTest, TestOctreeBatch2) {
   // different octrees, ordinary octrees
   test_octree_batch("octree_2", "octree_1");
   test_octree_batch("octree_1", "octree_2");
 }
 
-TYPED_TEST(OctreeBatchTest, TestOctree3) {
+TYPED_TEST(OctreeUtilTest, TestOctreeBatch3) {
   // same octrees, adaptive octrees
   test_octree_batch("octree_3", "octree_3");
   test_octree_batch("octree_4", "octree_4");
 }
 
-TYPED_TEST(OctreeBatchTest, TestOctree4) {
+TYPED_TEST(OctreeUtilTest, TestOctreeBatch4) {
   // different octrees, adaptive octrees
   test_octree_batch("octree_3", "octree_4");
   test_octree_batch("octree_4", "octree_3");
+}
+
+TYPED_TEST(OctreeUtilTest, TestXYZ2Key) {
+  const int num = 3, depth = 5;
+  unsigned char xyz[] = { 0, 0, 0, 1, 1, 1, 1, 2, 1, 2, 3, 0 };
+  unsigned char key[] = { 0, 0, 0, 1, 7, 0, 0, 2, 29, 0, 0, 0 };
+  Blob<unsigned int> blob_xyz(vector<int> {3}), blob_key(vector<int> {3});
+  memcpy(blob_xyz.mutable_cpu_data(), xyz, sizeof(xyz));
+  if (Caffe::mode() == Caffe::CPU) {
+    octree::xyz2key_cpu(blob_key.mutable_cpu_data(), blob_xyz.cpu_data(), num, depth);
+  } else {
+    octree::xyz2key_gpu(blob_key.mutable_gpu_data(), blob_xyz.gpu_data(), num, depth);
+  }
+
+  const unsigned int* rst = blob_key.cpu_data();
+  unsigned int* rst_gt = reinterpret_cast<unsigned int*>(key);
+  for (int i = 0; i < num; ++i) {
+    EXPECT_EQ(rst[i], rst_gt[i]);
+  }
 }
 
 } // namespace caffe
