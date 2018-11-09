@@ -1,0 +1,24 @@
+octree_settings:
+  depth: 6
+  full_depth: 2
+  node_displacement: True
+  node_feature: False
+  split_label: False
+  adaptive: False
+  adaptive_depth: 4
+  threshold_distance: 0.866
+  threshold_normal: 0.2
+  key2xyz: False
+
+scanner_settings:
+  view_num: 6
+  normalize: True
+  flags: False
+
+augmentation:
+  total_aug: 10
+  augmentors:
+    - centering
+    - displacing:
+        displacement: 0.55
+    - rotation

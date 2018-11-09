@@ -11,12 +11,20 @@ import six
 class DataProcessor:
     """Base class defining DataProcessor."""
 
-    def __init__(self, augmentors=None):
+    def __init__(self, augmentor_collection=None):
         """ Initializes DataProcessor
         Args:
-          augmentors: List of augmentors before data is processed
+          augmentor_collection: AugmentorCollection object
         """
-        self.augmentors = augmentors if augmentors else []
+        self.augmentor_collection = augmentor_collection
+
+    @property
+    def num_aug(self):
+        """ Total number of augmentations to perform on an object """
+        if self.augmentor_collection is None:
+            return 1
+
+        return self.augmentor_collection.num_aug
 
     @abc.abstractmethod
     def process(self, file_path, aug_index):

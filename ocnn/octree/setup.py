@@ -19,7 +19,7 @@ setup(
     author_email="dapisani@microsoft.com",
     packages=['ocnn', 'ocnn.octree', 'ocnn.dataset'],
     zip_safe=False,
-    install_requires=['six', 'Cython', 'numpy'],
+    install_requires=['six', 'Cython', 'numpy', 'pyyaml'],
     package_dir={'': 'python'},
     package_data={'ocnn.octree': ['*.pxd'],
                   'ocnn.dataset': ['*.pxd']}

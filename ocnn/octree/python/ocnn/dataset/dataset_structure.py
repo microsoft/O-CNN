@@ -103,6 +103,8 @@ class CsvMappedStructure(DatasetStructure):
         except StopIteration:
             raise RuntimeError("CSV File {0} is empty".format(self.class_map_path))
 
+        return csv_reader
+
     def generate_class_map(self):
         """ Generator of dataset items in dataset.
         Yields split, class, and file_path of a dataset item.

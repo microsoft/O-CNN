@@ -9,29 +9,23 @@ import os
 
 import numpy as np
 
+from ocnn.dataset.file_utils import dump_dictionary
 from ocnn.dataset.ordered_producer_consumer import OrderedProducerConsumer
 
 class Dataset:
     """Class to create datasets"""
 
     SPLITS = ('train', 'test', 'val')
+    LABEL_MAP_FILE_NAME = 'label_map.txt'
 
-    def __init__(self, dataset_structure, data_processor, builder, output_folder, num_aug, num_threads=8):
+    def __init__(self, dataset_structure):
         """ Initialzes Dataset
         Args:
           dataset_structure: DatasetStructure object.
-          data_processor: DataProcessor object.
-          builder: Builder object.
-          output_folder: Folder to output dataset.
-          num_aug: Total number of augmentations on dataset objects.
-          num_threads: Number of worker threads to generate dataset.
         """
         self.dataset_structure = dataset_structure
-        self.data_processor = data_processor
-        self.builder = builder
-        self.output_folder = output_folder
-        self.num_aug = num_aug
-        self.num_threads = num_threads
+        self.data_processor = None
+        self.builder = None
 
     def _consume_function(self, item):
         """ Consume function used by builder object.
@@ -66,8 +60,18 @@ class Dataset:
             class_set = class_set.union(split_class_set)
         return dict(zip(class_set, range(len(class_set))))
 
-    def produce_dataset(self):
-        """ Produces dataset """
+    def produce_dataset(self, data_processor, builder, output_folder, num_threads=8):
+        """ Produces dataset
+        Args:
+          data_processor: DataProcessor object.
+          builder: Builder object.
+          output_folder: Folder to output dataset.
+          num_threads: Number of worker threads to generate dataset.
+        """
+
+        self.data_processor = data_processor
+        self.builder = builder
+
         dataset_map = {split: defaultdict(list) for split in Dataset.SPLITS}
 
         for split, class_type, path in self.dataset_structure.generate_class_map():
@@ -75,16 +79,20 @@ class Dataset:
 
         class_label_map = self._generate_class_label_map(dataset_map)
 
+        dump_dictionary(
+            dictionary=class_label_map,
+            output_path=os.path.join(output_folder, Dataset.LABEL_MAP_FILE_NAME))
+
         for split in dataset_map:
             class_model_map = dataset_map[split]
             if class_model_map:
-                self.builder.open(os.path.join(self.output_folder, 'db_') + split)
+                self.builder.open(os.path.join(output_folder, 'db_') + split)
 
-                class_position_cumsum = np.cumsum([len(x) * self.num_aug for x in class_model_map.values()], dtype=np.int64)
+                class_position_cumsum = np.cumsum([len(x) * self.data_processor.num_aug for x in class_model_map.values()], dtype=np.int64)
                 permutation_sequence = np.random.permutation(class_position_cumsum[-1])
                 class_list = list(class_model_map.keys())
 
-                with OrderedProducerConsumer(self.num_threads,
+                with OrderedProducerConsumer(num_threads,
                                              self._produce_function,
                                              self._consume_function) as pc:
                     for permutation_idx in permutation_sequence:
@@ -95,8 +103,8 @@ class Dataset:
                                 break
                             prev_sum = cur_sum
                         shift_idx = permutation_idx - prev_sum
-                        model_idx = int(shift_idx / self.num_aug)
-                        aug_idx = shift_idx % self.num_aug
+                        model_idx = int(shift_idx / self.data_processor.num_aug)
+                        aug_idx = shift_idx % self.data_processor.num_aug
                         file_path = class_model_map[class_type][model_idx]
                         pc.put((file_path, class_label_map[class_type], aug_idx))
 
