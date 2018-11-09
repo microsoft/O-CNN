@@ -54,14 +54,14 @@ class OctreeSettings:
 
 class OctreeProcessor(DataProcessor):
     """ Reads points files and processes them into octrees"""
-    def __init__(self, octree_settings, augmentors=None):
+    def __init__(self, octree_settings, augmentor_collection=None):
         """ Initialies OctreeProcessor
         Args:
           octree_settings: OctreeSettings object
-          augmentors: List of octree augmentors to augment processing.
+          augmentor_collection: AugmentorCollection object.
         """
         self.octree_settings = octree_settings
-        super(OctreeProcessor, self).__init__(augmentors)
+        super(OctreeProcessor, self).__init__(augmentor_collection)
 
     def process(self, file_path, aug_index):
         """ Processess points file into octree
@@ -84,8 +84,7 @@ class OctreeProcessor(DataProcessor):
             self.octree_settings.key2xyz,
             points)
 
-        for augmentor in self.augmentors:
-            augmentor.augment(points, aug_index)
+        self.augmentor_collection.augment(points, aug_index)
 
         radius, center = points.get_points_bounds()
         octree_info.set_bbox(radius, center)

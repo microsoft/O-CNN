@@ -4,25 +4,24 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
-import numpy as np
 import os
+import shutil
 import time
 
 from ocnn.caffe import LmdbBuilder
 from ocnn.dataset import CsvMappedStructure, FolderMappedStructure
 from ocnn.dataset import Dataset
-from ocnn.octree import OctreeProcessor, OctreeSettings
-from ocnn.octree import RotationAugmentor, CenteringAugmentor, DisplacingAugmentor
+from ocnn.octree import OctreeProcessor, OctreeYamlReader
 
 FILE_PATTERNS = ['*.points']
 
-def generate_set(num_threads, num_aug, model_folder, db_folder, class_map_path=''):
+def generate_set(num_threads, yaml_filepath, model_folder, db_folder, class_map_path=''):
     """ Generates a dataset with rotationally augmented octrees from points
     files.
 
     Args:
       num_threads: Number of worker threads.
-      num_aug: Number of rotationally augmentation per points file.
+      yaml_filepath: Yaml filepath containing octree dataset settings.
       model_folder: Base folder containing the training, validation and testing
         data.  Base folder must be organized like ShapeNet or ModelNet.
       db_folder: Output folder of database.
@@ -46,20 +45,22 @@ def generate_set(num_threads, num_aug, model_folder, db_folder, class_map_path='
             base_folder=model_folder,
             patterns=FILE_PATTERNS)
 
-    octree_settings = OctreeSettings()
-    augmentors = [CenteringAugmentor(), DisplacingAugmentor(0.55, octree_settings.depth)]
-    if num_aug > 1:
-        augmentors.append(RotationAugmentor(num_aug))
-    processor = OctreeProcessor(octree_settings, augmentors=augmentors)
+    shutil.copyfile(
+        src=yaml_filepath,
+        dst=os.path.join(db_folder, os.path.basename(yaml_filepath)))
+    yaml_reader = OctreeYamlReader(yaml_filepath)
 
-    dataset = Dataset(dataset_structure=structure,
-                      data_processor=processor,
-                      builder=builder,
-                      output_folder=db_folder,
-                      num_aug=num_aug,
-                      num_threads=num_threads)
+    processor = OctreeProcessor(
+        yaml_reader.octree_settings,
+        yaml_reader.augmentor_collection)
 
-    dataset.produce_dataset()
+    dataset = Dataset(structure)
+
+    dataset.produce_dataset(
+        processor,
+        builder,
+        db_folder,
+        num_threads)
 
     t_end = time.time()
     print('Total time: ' + str(t_end - t_start))
@@ -89,12 +90,11 @@ if __name__ == '__main__':
                         required=False,
                         default='')
 
-    parser.add_argument("--augnum",
-                        "-a",
-                        type=int,
-                        help="Number of rotation augmentations to points file",
-                        required=False,
-                        default=1)
+    parser.add_argument("--yamlfile",
+                        "-y",
+                        type=str,
+                        help="File path to yaml file containing octree dataset parameters",
+                        required=True)
 
     parser.add_argument("--threadnum",
                         "-t",
@@ -107,7 +107,7 @@ if __name__ == '__main__':
 
     generate_set(
         args.threadnum,
-        args.augnum,
+        args.yamlfile,
         args.datadir,
         args.outputdir,
         args.mappath)
