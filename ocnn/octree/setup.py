@@ -17,7 +17,7 @@ setup(
     description="Octree utilities",
     author='Microsoft',
     author_email="dapisani@microsoft.com",
-    packages=['ocnn', 'ocnn.octree', 'ocnn.dataset'],
+    packages=['ocnn', 'ocnn.octree', 'ocnn.dataset', 'ocnn.utils'],
     zip_safe=False,
     install_requires=['six', 'Cython', 'numpy', 'pyyaml'],
     package_dir={'': 'python'},

@@ -9,7 +9,7 @@ import os
 
 import numpy as np
 
-from ocnn.dataset.file_utils import dump_dictionary
+from ocnn.utils.file_utils import dump_dictionary
 from ocnn.dataset.ordered_producer_consumer import OrderedProducerConsumer
 
 class Dataset:

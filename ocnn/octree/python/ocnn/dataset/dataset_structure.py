@@ -9,7 +9,7 @@ import csv
 import os
 import six
 
-from ocnn.dataset.file_utils import find_files
+from ocnn.utils.file_utils import find_files
 
 @six.add_metaclass(abc.ABCMeta)
 class DatasetStructure:
