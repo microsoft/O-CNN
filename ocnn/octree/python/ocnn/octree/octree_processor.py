@@ -13,45 +13,6 @@ from ocnn.octree._octree import Octree
 from ocnn.octree._octree import OctreeInfo
 from ocnn.octree._octree import Points
 
-#TODO Reduce calls to get_points_bounds for augmentors.
-
-class OctreeSettings:
-    """ Octree settings variables"""
-    def __init__(self,
-                 depth=6,
-                 full_depth=2,
-                 node_displacement=True,
-                 node_feature=False,
-                 split_label=False,
-                 adaptive=False,
-                 adaptive_depth=4,
-                 threshold_distance=0.866,
-                 threshold_normal=0.2,
-                 key2xyz=False):
-        """ Initializes OctreeSettings
-        Args:
-          depth: Maximum depth of the octree.
-          full_depth: Full layer of the octree.
-          node_displacement: Output per-node displacement.
-          node_feature: Compute per node feature.
-          split_label: Compute per node splitting label.
-          adaptive: Build adaptive octree.
-          adaptive_depth: Starting depth of adaptive octree.
-          threshold_distance: The threshold for simplifying octree.
-          threshold_normal: The threshold for simplying octree.
-          key2xyz: Convert the key to xyz when serialized.
-        """
-        self.depth = depth
-        self.full_depth = full_depth
-        self.node_displacement = node_displacement
-        self.node_feature = node_feature
-        self.split_label = split_label
-        self.adaptive = adaptive
-        self.adaptive_depth = adaptive_depth
-        self.threshold_distance = threshold_distance
-        self.threshold_normal = threshold_normal
-        self.key2xyz = key2xyz
-
 class OctreeProcessor(DataProcessor):
     """ Reads points files and processes them into octrees"""
     def __init__(self, octree_settings, augmentor_collection=None):
