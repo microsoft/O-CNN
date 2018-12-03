@@ -74,6 +74,9 @@ class OctreeYamlReader:
                     depth=self.octree_settings.depth)
             elif augmentor_name == 'rotation':
                 augmentor_collection.add_rotation_augmentor()
+            elif augmentor_name == 'axial_rotation':
+                augmentor_collection.add_axial_rotation_augmentor(
+                    axis=augmentor_param['axis'])
             else:
                 raise RuntimeError('Unknown augmentor {0}'.format(augmentor_name))
         return augmentor_collection

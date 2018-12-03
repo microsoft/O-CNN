@@ -21,4 +21,5 @@ augmentation:
     - centering
     - displacing:
         displacement: 0.55
-    - rotation
+    - axial_rotation:
+        axis: [0, 0, 1]
