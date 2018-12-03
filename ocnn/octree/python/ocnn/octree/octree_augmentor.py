@@ -26,6 +26,33 @@ class OctreeAugmentorCollection(AugmentorCollection):
     def add_centering_augmentor(self):
         """Add centering augmentor"""
         self._augmentors.append(CenteringAugmentor())
+    def add_axial_rotation_augmentor(self, axis):
+        """Add axial rotation augmentor
+        Args:
+          axis: axis to rotate about.
+        """
+        self._augmentors.append(AxialRotationAugmentor(self.num_aug, axis))
+
+class AxialRotationAugmentor(Augmentor):
+    """Rotates points object evenly about a given axis """
+    def __init__(self, total_aug, axis):
+        """ Initializes AxialRotationAugmentor
+        Args:
+          total_aug: number of steps to rotate about given axis
+          axis: 3 dimensional vector
+        """
+        self.angular_step = 2 * np.pi / total_aug
+
+        self.axis = np.array(axis, dtype=np.float32)
+        self.axis = self.axis / np.linalg.norm(self.axis)
+
+    def augment(self, item, aug_index=0):
+        """ Displaces points objects points along their normals
+        Args:
+          item: Points object to augment
+        """
+        angle = self.angular_step * aug_index
+        item.rotate(angle, self.axis)
 
 class RotationAugmentor(Augmentor):
     """Rotates points object to align with points on Fibonacci sphere """
