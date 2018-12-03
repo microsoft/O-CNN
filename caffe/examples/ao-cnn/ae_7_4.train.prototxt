@@ -6,7 +6,7 @@ layer {
     phase: TRAIN
   }
   data_param {
-    source: "lmdb/0515_shapenet_train_7_2_adp4_aug_upgrade"
+    source: "train_7_2_adp4_aug_upgrade"
     batch_size: 32
     backend: LMDB
   }
@@ -23,7 +23,7 @@ layer {
     phase: TEST
   }
   data_param {
-    source: "lmdb/0515_shapenet_test_7_2_adpt4_upgrade"
+    source: "test_7_2_adpt4_upgrade"
     batch_size: 32
     backend: LMDB
   }
@@ -39,7 +39,7 @@ layer {
   top: "OctLData1"
   octree_param {
     curr_depth: 4
-    content_flag: 8
+    content_flag: 'feature'
     signal_channel: 4
   }
 }
@@ -88,7 +88,7 @@ layer {
   top: "OctLData2"
   octree_param {
     curr_depth: 5
-    content_flag: 8
+    content_flag: 'feature'
     signal_channel: 4
   }
 }
@@ -138,7 +138,7 @@ layer {
   top: "OctLData3"
   octree_param {
     curr_depth: 6
-    content_flag: 8
+    content_flag: 'feature'
     signal_channel: 4
   }
 }
@@ -748,7 +748,7 @@ layer {
   top: "OctLData5"
   octree_param {
     curr_depth: 2
-    content_flag: 32
+    content_flag: 'split'
     signal_channel: 1
   }
 }
@@ -902,7 +902,7 @@ layer {
   top: "OctLData6"
   octree_param {
     curr_depth: 3
-    content_flag: 32
+    content_flag: 'split'
     signal_channel: 1
   }
 }
@@ -1056,7 +1056,7 @@ layer {
   top: "OctLData7"
   octree_param {
     curr_depth: 4
-    content_flag: 32
+    content_flag: 'split'
     signal_channel: 1
   }
 }
@@ -1297,7 +1297,7 @@ layer {
   top: "OctLData8"
   octree_param {
     curr_depth: 5
-    content_flag: 32
+    content_flag: 'split'
     signal_channel: 1
   }
 }
@@ -1538,7 +1538,7 @@ layer {
   top: "OctLData9"
   octree_param {
     curr_depth: 6
-    content_flag: 32
+    content_flag: 'split'
     signal_channel: 1
   }
 }
@@ -1779,7 +1779,7 @@ layer {
   top: "OctLData10"
   octree_param {
     curr_depth: 7
-    content_flag: 32
+    content_flag: 'split'
     signal_channel: 1
   }
 }

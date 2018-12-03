@@ -1,11 +1,10 @@
 # The train/test net protocol buffer definition
-net: "ae_7_4.train.prototxt"
+net: "cls_M40_5.prototxt"
 
 # test_iter specifies how many forward passes the test should carry out.
-test_iter: 248
+test_iter: 925
 # Carry out testing every 1000 training iterations.
 test_interval: 2000
-test_compute_loss: true
 
 # The base learning rate, momentum and the weight decay of the network.
 base_lr: 0.1 
@@ -16,28 +15,19 @@ weight_decay: 0.0005
 # lr_policy: "inv"
 # gamma: 0.0001
 # power: 0.75
-lr_policy: "multistep"
+lr_policy: "step"
 gamma: 0.1
-# stepsize: 100000
-stepvalue: 100000
-stepvalue: 200000
-stepvalue: 250000
-# stepvalue: 300000
-
+stepsize: 40000
 
 # Display every 100 iterations
 display: 10
 
 # The maximum number of iterations
-# max_iter: 350000
-max_iter: 350000
-
+max_iter: 160000
 
 # snapshot intermediate results
-snapshot: 2000
-snapshot_prefix: "0922_ae_7_4.train"
+snapshot: 4000
+snapshot_prefix: "cls_caffe/1011_"
 
 # solver mode: CPU or GPU
-solver_mode: CPU
-
-# random_seed: 3
+solver_mode: GPU

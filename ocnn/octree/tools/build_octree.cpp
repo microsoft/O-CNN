@@ -22,13 +22,13 @@ DEFINE_int(depth, kOptional, 6, "The maximum depth of the octree");
 DEFINE_int(full_depth, kOptional, 2, "The full layer of the octree");
 DEFINE_int(rot_num, kOptional, 12, "Number of poses rotated along the upright axis");
 DEFINE_float(offset, kOptional, 0.55f, "The offset value for handing thin shapes");
-DEFINE_bool(node_dis, kOptional, true, "Output per-node displacement");
+DEFINE_bool(node_dis, kOptional, false, "Output per-node displacement");
 DEFINE_bool(node_feature, kOptional, false, "Compute per node feature");
 DEFINE_bool(split_label, kOptional, false, "Compute per node splitting label");
 DEFINE_bool(adaptive, kOptional, false, "Build adaptive octree");
 DEFINE_int(adp_depth, kOptional, 4, "The starting depth of adaptive octree");
-DEFINE_float(th_distance, kOptional, 0.866f, "The threshold for simplifying octree");
-DEFINE_float(th_normal, kOptional, 0.2f, "The threshold for simplifying octree");
+DEFINE_float(th_distance, kOptional, 2.0f, "The threshold for simplifying octree");
+DEFINE_float(th_normal, kOptional, 0.1f, "The threshold for simplifying octree");
 DEFINE_bool(key2xyz, kOptional, false, "Convert the key to xyz when serialization");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 

@@ -42,7 +42,7 @@ layer {
   top: "label"
   octree_param {
     curr_depth: 5
-    content_flag: 16
+    content_flag: 'label'
     signal_channel: 1
   }
 }

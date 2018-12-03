@@ -2,7 +2,7 @@
 
 ## Introduction <a name="introduction"></a>
 
-This repository contains the implementation of *O-CNN*  and  *AO-CNN* introduced in our SIGGRAPH 2017 paper and SIGGRAPH Asia 2018 paper.  The code is released under the MIT license.
+This repository contains the implementation of *O-CNN*  and  *Aadptive O-CNN* introduced in our SIGGRAPH 2017 paper and SIGGRAPH Asia 2018 paper.  The code is released under the MIT license.
 
 
 * **[O-CNN: Octree-based Convolutional Neural Networks](https://wang-ps.github.io/O-CNN.html)**<br/>
@@ -12,7 +12,6 @@ ACM Transactions on Graphics (SIGGRAPH), 36(4), 2017
 * **[Adaptive O-CNN: A Patch-based Deep Representation of 3D Shapes](https://wang-ps.github.io/AO-CNN.html)**<br/>
 By [Peng-Shuai Wang](https://wang-ps.github.io/), Chun-Yu Sun, [Yang Liu](https://xueyuhanlang.github.io/) and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
 ACM Transactions on Graphics (SIGGRAPH Asia), 37(6), 2018<br/>
-[_**The code for AO-CNN is coming soon...**_]
 
 
 If you use our code or models, please cite our paper.
@@ -40,11 +39,12 @@ If you use our code or models, please cite our paper.
 ### 1.1 &nbsp; Manual Setup
 O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it supports octree-based convolution, deconvolution, pooling, and unpooling. The code has been tested on the Windows 10 x64 (It can be also built on the Ubuntu 16.04). Its installation is as follows:
 
-- Clone [Caffe](https://github.com/BVLC/caffe) with revision `6bfc5ca`: `git clone https://github.com/BVLC/caffe.git && cd caffe && git checkout 6bfc5ca`.
+- Clone [Caffe](https://github.com/BVLC/caffe) into the caffe directory with revision `6bfc5ca`: `git clone https://github.com/BVLC/caffe.git && cd caffe && git checkout 6bfc5ca`.
 - Clone the code for O-CNN, then copy the code contained in the directory `O-CNN/caffe` into the caffe directory to override the original [Caffe](https://github.com/BVLC/caffe) code. 
 - Follow the installation [instructions](http://caffe.berkeleyvision.org/installation.html) of Caffe to build the code to get the executive files `caffe`, `convert_octree_data` and `feature_pooling` etc.
-- Our O-CNN takes the octree representation of 3D objects as input. The code for converting a point cloud into octree representation is contained in the folder `O-CNN/octree`, which can be built via [cmake](https://cmake.org/): `cd O-CNN/octree && mkdir build && cd build && cmake .. && cmake --build . --config Release` .
+- Our O-CNN takes the octree representation of 3D objects as input. The code for converting a point cloud into octree representation is contained in the folder `O-CNN/ocnn/octree`, which can be built via [cmake](https://cmake.org/): `cd O-CNN/ocnn/octree && mkdir build && cd build && cmake ..  && cmake --build . --config Release` .
 - We also provide one tool to pre-process meshes from online dataset, which can be downloaded [here](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
+
 
 After the building, you will get the executable files which is useful for conducting the experiments: 
 
@@ -77,7 +77,8 @@ You will now find yourself in a container environment where you can automaticall
 
 ### 2.1 &nbsp; General procedure
 - Download and unzip the corresponding 3D model dataset (like the [ModelNet40](http://modelnet.cs.princeton.edu) dataset) into a folder.
-- Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in `POINTS` format) with the tool [`virtualscanner`](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner). 
+- Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in `POINTS` format) with the tool [`virtualscanner`](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).  This tool is specially designed for the 3D model from ModelNet40 and ShapeNet. If your mesh is of good quality, there are many more efficient methods to sample points.
+
 ```
 Usage:  
     VirtualScanner <file_name> [nviews] [flags] [normalize]
@@ -107,10 +108,11 @@ Usage:
         [--output_path  <The output path>=.]
         [--rot_num  <Number of poses rotated along the upright axis>=12]
         [--split_label  <Compute per node splitting label>=0]
-        [--th_distance  <The threshold for simplifying octree>=0.866]
-        [--th_normal  <The threshold for simplifying octree>=0.5]
+        [--th_distance  <The threshold for simplifying octree>=2.0f]
+        [--th_normal  <The threshold for simplifying octree>=0.2f]
 Example:
-    octree --filenames filelist.txt --depth 5  // process all the points into octrees of depth 5
+    // process all the points into octrees of depth 5
+    octree --filenames filelist.txt --depth 5  --axis z
 ```
 - Store all the octree files in a  `leveldb` or `lmdb` database by the tool `convert_octree_data`, which serves as the input of Caffe. For the ones who are new to the [Caffe](http://caffe.berkeleyvision.org/) framework and do not know how to use the generated database to run the neural network training and tesing, the tutorial on [this page](http://caffe.berkeleyvision.org/gathered/examples/mnist.html) are highly recommanded. 
 ```
@@ -155,27 +157,26 @@ Usage:
 ### 3.1 &nbsp; O-CNN for Shape Classification 
 The instruction to run the shape classification experiment:
 
-- Download the [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset, and convert it to a `lmdb` database as described above. [Here](https://www.dropbox.com/s/vzmxsqkp2lwwwp8/ModelNet40_5.zip?dl=0) we provide a `lmdb` database with 5-depth octrees for convenience.
+- Download the [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset, and convert it to a `lmdb` database as described above. [Here](https://www.dropbox.com/s/vzmxsqkp2lwwwp8/ModelNet40_5.zip?dl=0) we provide a `lmdb` database with 5-depth octrees for convenience. Since we upgraded the octree format in this version of code, please run the following command to upgrade the lmdb: `upgrade_octree_database.exe <input lmdb> <output lmdb>`. 
 - Download the `O-CNN` protocol buffer files, which are contained in the folder `caffe/examples/o-cnn`.
 - Configure the path of the database and run `caffe.exe` according to the instructions of [Caffe](http://caffe.berkeleyvision.org/tutorial/interfaces.html). We also provide our pre-trained Caffe model in `caffe/examples/o-cnn`.
 
 ### 3.2 &nbsp; O-CNN for Shape Retrieval
 The instruction to run the shape retrieval experiment:
 
-- Download the dataset from  [SHREC16](http://shapenet.cs.stanford.edu/shrec16/), and convert it to a `lmdb` database as described above. 
-`Note`: the upright direction of the 3D models in the `ShapeNet55` is `Y` axis. When generating octree files, please uncomment `line 95` in the file `octree/Octree/main.cpp` and rebuild the code.
-[Here](http://pan.baidu.com/s/1mieF2J2) we provide the lmdb databases with 5-depth octrees for convenience, just download the files prefixed with `S55` and un-zip them.
+- Download the dataset from  [SHREC16](http://shapenet.cs.stanford.edu/shrec16/), and convert it to a `lmdb` database as described above.  Note that the upright direction of the 3D models in the `ShapeNet55` is `Y` axis, so the octree command is: `octree --filenames filelist.txt --depth 5  --axis z`
+[Here](http://pan.baidu.com/s/1mieF2J2) we provide the lmdb databases with 5-depth octrees for convenience, just download the files prefixed with `S55` and un-zip them. Since we upgraded the octree format in this version of code, please run the following command to upgrade the lmdb: `upgrade_octree_database.exe <input lmdb> <output lmdb>`.
 - Follow the same approach as the classification task to train the O-CNN with the `O-CNN` protocal files `S55_5.prototxt` and `solver_S55_5.prototxt`, which are contained in the folder `caffe/examples/o-cnn`.
 - In the retrieval experiment, the `orientation pooling` is used to achieve better performance, which can be perfromed following the steps below.
     - Generate feature for each object. For example, to generate the feature for the training data, open the file `S55_5.prototxt`, uncomment line 275~283, set the `source` in line 27 to the `training lmdb`, set the `batch_size` in line 28  to 1, and run the following command.
             
-            caffe.exe test --model=S55_5.prototxt --weights=S55_5.caffemodel --blob_prefix=feature/S55_5_train_ 
+            caffe.exe test --model=S55_5.prototxt --weights=S55_5.caffemodel --blob_prefix=feature/S55_5_train_ ^
             --gpu=0 --save_seperately=false --iterations=[the training object number]
 
     Similarly, the feature for the validation data and testing data can also be generated. Then we can get three binary files, `S55_5_train_feature.dat, S55_5_val_feature.dat and S55_5_test_feature.dat`, containing the features of the training, validation and testing data respectively.
     - Pool the features of the same object. There are 12 features for each object since each object is rotated 12 times. We use max-pooling to merge these features.
             
-            feature_pooling.exe --feature=feature/S55_5_train_feature.dat --number=12 
+            feature_pooling.exe --feature=feature/S55_5_train_feature.dat --number=12 ^
             --dbname=feature/S55_5_train_lmdb --data=[the data list file name]
 
     Then we can get the feature of training, validation and testing data after pooling, contained in the `lmdb` database `S55_5_train_lmdb`, `S55_5_val_lmdb` and `S55_5_test_lmdb`.
@@ -185,7 +186,7 @@ The instruction to run the shape retrieval experiment:
 
     - Finally, dump the probabilities of each testing objects. Open the file `S55_5_finetune.prototxt`, uncomment the line 120 ~ 129, set the `batch_size` in line 27 to 1, change the `source` in line 26 to `feature/S55_5_test_lmdb`, and run the following command.
             
-            caffe.exe test --model=S55_5_finetune.prototxt --weights=S55_5_finetune.caffemodel 
+            caffe.exe test --model=S55_5_finetune.prototxt --weights=S55_5_finetune.caffemodel ^
             --blob_prefix=feature/S55_test_ --gpu=0 --save_seperately=false --iterations=[...]
             
 - Use the matlab script `retrieval.m`, contained in the folder `caffe/examples/o-cnn`, to generate the final retrieval result. And evaluated it by the javascript code provided by [SHREC16](http://shapenet.cs.stanford.edu/shrec16/code/Evaluator.zip).
@@ -193,7 +194,8 @@ The instruction to run the shape retrieval experiment:
 ### 3.3 &nbsp; O-CNN for Shape Segmentation
 The instruction to run the segmentation experiment: 
 
-- The original part annotation data is provided as the supplemental material of the work "[A Scalable Active Framework for Region Annotation in 3D Shape Collections](http://cs.stanford.edu/~ericyi/project_page/part_annotation/index.html)". As detailed in Section 5.3 of our paper, the point cloud in the original dataset is relatively sparse and the normal information is missing. We convert the sparse point clouds to dense points with normal information and correct part annotation.  Here is [one converted dataset](http://pan.baidu.com/s/1gfN5tPh) for your convenience, and the dense point clouds with `segmentation labels` can be downloaded [here](http://pan.baidu.com/s/1mieF2J2).  
+- The original part annotation data is provided as the supplemental material of the work "[A Scalable Active Framework for Region Annotation in 3D Shape Collections](http://cs.stanford.edu/~ericyi/project_page/part_annotation/index.html)". As detailed in Section 5.3 of our paper, the point cloud in the original dataset is relatively sparse and the normal information is missing. We convert the sparse point clouds to dense points with normal information and correct part annotation.  Here is [one converted dataset](http://pan.baidu.com/s/1gfN5tPh) for your convenience. Since we upgraded the octree format in this version of code, please run the following command to upgrade the lmdb: `upgrade_octree_database.exe  --node_label <input lmdb> <output lmdb>`. 
+And the dense point clouds with `segmentation labels` can be downloaded [here](http://pan.baidu.com/s/1mieF2J2). Again, before using them, upgrade with the following command: `upgrade_points.exe --filenames <the txt file containing the filenames> --has_label 1 `.
 - Run the `octree.exe` to convert these point clouds to octree files. Note that you should set the parameter `Segmentation` to 1 when running the `octree.exe`. Then you can get the octree files, which also contains the segmentation label.
 - Convert the dataset to a `lmdb` database. Since the segmentation label is contained in each octree file, the object label for each octree file can be set to any desirable value. And the object label is just ignored in the segmentation task.
 - Download the protocol buffer files, which are contained in the folder `caffe/examples/o-cnn`. `NOTE:` as detailed in our paper, the training parameters are tuned and the pre-trained model from the retrieval task is used when the training dataset is relatively small. More details will be released soon.
@@ -203,20 +205,30 @@ The instruction to run the segmentation experiment:
         --blob_prefix=feature/segmentation_5_test_ --binary_mode=false --save_seperately=true --iterations=[...]
 
 
-- For CRF refinement, please refer to the code provided [here](https://github.com/wang-ps/O-CNN/tree/master/densecrf).  We will provide the automated tool soon.
+- For CRF refinement, please refer to the code provided [here](https://github.com/wang-ps/O-CNN/tree/master/densecrf).  
 
 ## 4 &nbsp; AO-CNN in Action
 
 ### 4.1 &nbsp; AO-CNN for Classification
+- Download the [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset, and convert it to a `lmdb` database as described above. To generating the adaptive octree, the octree command changes to: `octree --filenames filelist.txt --depth 5  --adaptive 1 --node_dis 1`. 
+<!-- `TODO`: this parameter settings for `octree` is slightly different with the settings in our paper.  -->
+- Download the protocol buffer files `cls_5.solver.prototxt` and `cls_5.prototxt`, which are contained in the folder `caffe/examples/ao-cnn`.
+- Configure the path of the database and run `caffe.exe` according to the instructions of [Caffe](http://caffe.berkeleyvision.org/tutorial/interfaces.html). 
+
 
 ### 4.2 &nbsp; AO-CNN for Autoencoder
 
-- Download dataset from this [link](https://github.com/ThibaultGROUEIX/AtlasNet).
-- 
+- Download points with normals from this [link](https://cloud.enpc.fr/s/j2ECcKleA1IKNzk), and download the rendered views from this [link](https://cloud.enpc.fr/s/S6TCx1QJzviNHq0). Unzip them after downloading.
+- Run the script `O-CNN/caffe/examples/ao-cnn/dataset.py` to generate the lmdbs: `oct_test_lmdb`, `oct_train_aug_lmdb`, `oct_train_lmdb`, `img_test_lmdb` and `img_train_lmdb`, of which `oct_train_aug_lmdb` and `oct_test_lmdb` are used in the autoencoder task.
+- Download the protocol  buffer files `O-CNN/caffe/examples/ao-cnn/ae_7_4.train.prototxt` and `O-CNN/caffe/examples/ao-cnn/ae_7_4.solver.prototxt`. Configure the training and tesing lmdb files and training the network.
+- After training, download the protocol buffer file `O-CNN/caffe/examples/ao-cnn/ae_7_4.test.prototxt` to testing the network.
 
-### 4.3 &nbsp; AO-CNN for Shape completion
+<!-- ### 4.3 &nbsp; AO-CNN for Shape completion -->
 
 ### 4.4 &nbsp; AO-CNN for Image2Shape
+- The lmdbs used in this experiment are `oct_test_lmdb`, `oct_train_lmdb`, `img_test_lmdb` and `img_train_lmdb`,  which are generated by the script `O-CNN/caffe/examples/ao-cnn/dataset.py`, as detailed in section 4.2.
+- Download the protocol  buffer files `O-CNN/caffe/examples/ao-cnn/image2shape.train.prototxt` and `O-CNN/caffe/examples/ao-cnn/image2shape.solver.prototxt`. Configure the training and tesing lmdb files and training the network.
+- After training, download the protocol buffer file `O-CNN/caffe/examples/ao-cnn/image2shape.test.prototxt` to testing the network.
 
 
 ## 5 &nbsp; Acknowledgments
