@@ -37,7 +37,7 @@ void Octree::build(const OctreeInfo& octree_info, const Points& point_cloud) {
     covered_depth_nodes();
 
     bool calc_norm_err = oct_info_.is_adaptive();
-    bool calc_dist_err = oct_info_.is_adaptive();
+    bool calc_dist_err = oct_info_.is_adaptive() && oct_info_.has_displace();
     calc_signal(calc_norm_err, calc_dist_err);
   }
 
@@ -250,7 +250,6 @@ void Octree::calc_signal(const Points& point_cloud, const vector<float>& pts_sca
   const float* normals = point_cloud.ptr(PtsInfo::kNormal);
   const float* features = point_cloud.ptr(PtsInfo::kFeature);
   const float* labels = point_cloud.ptr(PtsInfo::kLabel);
-  const float* pts = pts_scaled.data();
   const int nnum = oct_info_.nnum(depth);
 
   const vector<int>& children = children_[depth];
@@ -436,11 +435,14 @@ void Octree::calc_signal(const bool calc_normal_err, const bool calc_dist_err) {
       }
 
       float count = ESP; // the non-empty leaf node in the finest layer
+      for (int j = didx_d[i]; j < didx_d[i] + dnum_d[i]; ++j) {
+        if (node_type(children_depth[j]) != kLeaf) count += 1.0f;
+      }
+
       vector<float> pt_avg(channel_pt, 0.0f);
       if (has_pt) {
         for (int j = didx_d[i]; j < didx_d[i] + dnum_d[i]; ++j) {
           if (node_type(children_depth[j]) == kLeaf) continue;
-          count += 1.0f;
           for (int c = 0; c < channel_pt; ++c) {
             pt_avg[c] += pt_depth[c * nnum_depth + j];
           }
@@ -502,7 +504,6 @@ void Octree::calc_signal(const bool calc_normal_err, const bool calc_dist_err) {
         normal_err_d[i] = nm_err;
       }
 
-      float dist_err = 0.0f;
       if (calc_dist_err && has_pt && d >= depth_adp) {
         // the error from the original geometry to the averaged geometry
         float distance_max1 = -1.0f;
@@ -714,9 +715,8 @@ void Octree::covered_depth_nodes() {
 
   // layer-(depth_-1)
   nnum = oct_info_.nnum(depth_ - 1);
-  const vector<int>& children_d = children_[depth_ - 1];
   for (int i = 0; i < nnum; ++i) {
-    int t = children_d[i];
+    int t = children_[depth_ - 1][i];
     if (node_type(t) == kLeaf) continue;
     dnum_[depth_ - 1][i] = 8;
     didx_[depth_ - 1][i] = t * 8;
@@ -749,6 +749,7 @@ void Octree::trim_octree() {
   const int depth_adp = oct_info_.adaptive_layer();
   const float th_dist = oct_info_.threshold_distance();
   const float th_norm = oct_info_.threshold_normal();
+  const bool has_dis = oct_info_.has_displace();
 
   // generate the drop flag
   enum TrimType { kDrop = 0, kDropChildren = 1,  kKeep = 2 };
@@ -779,7 +780,8 @@ void Octree::trim_octree() {
           // distance_err_[d][i] is equal to 1.0e20f, so if it enters the following
           // "if" body, the node_type(children_d[idx]) must be kInternelNode
           //if (distance_err_[d][idx] < th_dist) {
-          if (distance_err_[d][idx] < th_dist && normal_err_[d][idx] < th_norm) {
+          if ((!has_dis || (has_dis && distance_err_[d][idx] < th_dist)) &&
+              normal_err_[d][idx] < th_norm) {
             drop_d[idx] = kDropChildren;
           }
         } else {
@@ -805,8 +807,8 @@ void Octree::trim_octree() {
         for (int j = 0; j < 8; ++j) {
           int idx = t * 8 + j;
           if (node_type(children_d[idx]) == kInternelNode &&
-              distance_err_[d][idx] > max_err) {
-            max_err = distance_err_[d][idx];
+              normal_err_[d][idx] > max_err) {
+            max_err = normal_err_[d][idx];
             max_idx = idx;
           }
         }
