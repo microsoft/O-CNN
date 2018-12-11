@@ -72,27 +72,15 @@ class OctreeBuilder {
   }
 
   void set_octree_info() {
-    octree_info_.initialize(
-            FLAGS_depth,
-            FLAGS_full_depth,
-            FLAGS_node_dis,
-            FLAGS_node_feature,
-            FLAGS_split_label,
-            FLAGS_adaptive,
-            FLAGS_adp_depth,
-            FLAGS_th_distance,
-            FLAGS_th_normal,
-            FLAGS_key2xyz,
-            point_cloud_);
+    octree_info_.initialize(FLAGS_depth, FLAGS_full_depth, FLAGS_node_dis,
+        FLAGS_node_feature, FLAGS_split_label, FLAGS_adaptive, FLAGS_adp_depth,
+        FLAGS_th_distance, FLAGS_th_normal, FLAGS_key2xyz, point_cloud_);
 
     // the point cloud has been centralized,
     // so initializing the bbmin & bbmax in the following way
     float bbmin[] = { -radius_, -radius_, -radius_ };
     float bbmax[] = { radius_, radius_, radius_ };
     octree_info_.set_bbox(bbmin, bbmax);
-
-    // Skip nnum_[], nnum_cum_[], nnum_nempty_[] and ptr_dis_[],
-    // these three properties can only be set when the octree is built.
   }
 
   void build_octree() {
@@ -100,6 +88,9 @@ class OctreeBuilder {
   }
 
   void save_octree(const string& output_filename) {
+    // Modify the bounding box before saving, because the center of
+    // the point cloud is translated to (0, 0, 0) when building the octree
+    octree_.mutable_info().set_bbox(radius_, center_);
     octree_.write_octree(output_filename);
   }
 

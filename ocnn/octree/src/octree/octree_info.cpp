@@ -4,58 +4,52 @@
 
 const char OctreeInfo::kMagicStr[16] = "_OCTREE_1.0_";
 
-void OctreeInfo::initialize(
-          int depth,
-          int full_depth,
-          bool node_displacement,
-          bool node_feature,
-          bool split_label,
-          bool adaptive,
-          int adaptive_depth,
-          float threshold_distance,
-          float threshold_normal,
-          bool key2xyz,
-          const Points& points) {
+void OctreeInfo::initialize(int depth, int full_depth, bool node_displacement,
+    bool node_feature, bool split_label, bool adaptive, int adaptive_depth,
+    float threshold_distance, float threshold_normal, bool key2xyz,
+    const Points& points) {
+  set_batch_size(1);
+  set_depth(depth);
+  set_full_layer(full_depth);
+  set_adaptive_layer(adaptive_depth);
+  set_adaptive(adaptive);
+  set_node_dis(node_displacement);
+  set_key2xyz(key2xyz);
+  set_threshold_normal(threshold_normal);
+  set_threshold_dist(threshold_distance);
 
-    set_batch_size(1);
-    set_depth(depth);
-    set_full_layer(full_depth);
-    set_adaptive_layer(adaptive_depth);
-    set_adaptive(adaptive);
-    set_node_dis(node_displacement);
-    set_key2xyz(key2xyz);
-    set_threshold_normal(threshold_normal);
-    set_threshold_dist(threshold_distance);
+  // by default, the octree contains Key and Child
+  int channel = (key2xyz && depth > 8) ? 2 : 1;
+  set_channel(OctreeInfo::kKey, channel);
+  set_location(OctreeInfo::kKey, -1);
+  set_channel(OctreeInfo::kChild, 1);
+  set_location(OctreeInfo::kChild, -1);
 
-    // by default, the octree contains Key and Child
-    int channel = (key2xyz && depth > 8) ? 2 : 1;
-    set_channel(OctreeInfo::kKey, channel);
-    set_location(OctreeInfo::kKey, -1);
-    set_channel(OctreeInfo::kChild, 1);
-    set_location(OctreeInfo::kChild, -1);
+  // set split label
+  if (split_label) {
+    set_channel(OctreeInfo::kSplit, 1);
+    set_location(OctreeInfo::kSplit, -1);
+  }
 
-    // set split label
-    if (split_label) {
-      set_channel(OctreeInfo::kSplit, 1);
-      set_location(OctreeInfo::kSplit, -1);
-    }
+  // set feature
+  const PtsInfo& pt_info = points.info();
+  channel = pt_info.channel(PtsInfo::kNormal) + pt_info.channel(PtsInfo::kFeature);
+  if (node_displacement) channel += 1;
+  set_channel(OctreeInfo::kFeature, channel);
+  // location = -1 means the features exist on every node
+  int location = (node_feature || adaptive) ? -1 : depth;
+  set_location(OctreeInfo::kFeature, location);
 
-    // set feature
-    const PtsInfo& pt_info = points.info();
-    channel = pt_info.channel(PtsInfo::kNormal) + pt_info.channel(PtsInfo::kFeature);
-    if (node_displacement) channel += 1;
-    set_channel(OctreeInfo::kFeature, channel);
-    // location = -1 means the features exist on every node
-    int location = (node_feature || adaptive) ? -1 : depth;
-    set_location(OctreeInfo::kFeature, location);
+  // set label
+  if (pt_info.channel(PtsInfo::kLabel) == 1) {
+    // the channel of label is fixed as 1
+    set_channel(OctreeInfo::kLabel, 1);
+    location = (node_feature || adaptive) ? -1 : depth;
+    set_location(OctreeInfo::kLabel, location);
+  }
 
-    // set label
-    if (pt_info.channel(PtsInfo::kLabel) == 1) {
-      // the channel of label is fixed as 1
-      set_channel(OctreeInfo::kLabel, 1);
-      location = (node_feature || adaptive) ? -1 : depth;
-      set_location(OctreeInfo::kLabel, location);
-    }
+  // !!! Skip nnum_[], nnum_cum_[], nnum_nempty_[] and ptr_dis_[],
+  // these three properties can only be set when the octree is built.
 }
 
 void OctreeInfo::reset() {
