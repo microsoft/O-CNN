@@ -37,11 +37,11 @@ If you use our code or models, please cite our paper.
 ## 1 &nbsp; Installation <a name="installation"></a>
 
 ### 1.1 &nbsp; Manual Setup
-O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it supports octree-based convolution, deconvolution, pooling, and unpooling. The code has been tested on the Windows 10 x64 (It can be also built on the Ubuntu 16.04). Its installation is as follows:
+O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it supports octree-based convolution, deconvolution, pooling, and unpooling. The code has been tested on the Windows 10 x64 (It can also be built on the Ubuntu 16.04). Its installation is as follows:
 
 - Clone [Caffe](https://github.com/BVLC/caffe) into the caffe directory with revision `6bfc5ca`: `git clone https://github.com/BVLC/caffe.git && cd caffe && git checkout 6bfc5ca`.
 - Clone the code for O-CNN, then copy the code contained in the directory `O-CNN/caffe` into the caffe directory to override the original [Caffe](https://github.com/BVLC/caffe) code. 
-- Follow the installation [instructions](http://caffe.berkeleyvision.org/installation.html) of Caffe to build the code to get the executive files `caffe`, `convert_octree_data` and `feature_pooling` etc.
+- Follow the installation [instructions](http://caffe.berkeleyvision.org/installation.html) of Caffe to build the code to get the executive files `caffe`, `convert_octree_data` and `feature_pooling` etc. Note that the code should be compiled with c++11 support, which is not enabled by default for some compilers. So please check your compiler settings and enable the compiler to support c++11.
 - Our O-CNN takes the octree representation of 3D objects as input. The code for converting a point cloud into octree representation is contained in the folder `O-CNN/ocnn/octree`, which can be built via [cmake](https://cmake.org/): `cd O-CNN/ocnn/octree && mkdir build && cd build && cmake ..  && cmake --build . --config Release` .
 - We also provide one tool to pre-process meshes from online dataset, which can be downloaded [here](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
 
@@ -56,7 +56,7 @@ After the building, you will get the executable files which is useful for conduc
 - `feature_pooling` - pools features and outputs them to an lmdb  
 
 **NOTE**: Compared with the original code used in the experiments of the O-CNN paper, the code in this repository is refactored for the readability and maintainability, with the sacrifice of speed (it is about 10% slower, but it is more memory-efficient). If you want to try the original code or do some speed comparisons with our `O-CNN`, feel free to drop me an email, we can share the original code with you. <br/>
-To build the octree, the bounding sphere of the object is needed to be computed. The initial version of our code is built upon the bound sphere library from this [link](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). However, we remove it from our code due to the licence issue. To reproduce the results in our paper, it is highly recommended to download the [bound sphere library](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). 
+<!-- To build the octree, the bounding sphere of the object is needed to be computed. The initial version of our code is built upon the bound sphere library from this [link](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). However, we remove it from our code due to the licence issue. To reproduce the results in our paper, it is highly recommended to download the [bound sphere library](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html).  -->
 
 
 ### 1.2 &nbsp; Docker Setup
@@ -98,7 +98,7 @@ Usage:
         --filenames  <A file contains the absolute filenames of input POINTS each line>
         [--adaptive  <Build adaptive octree>=0]
         [--adp_depth  <The starting depth of adaptive octree>=4]
-        [--axis  <The upright axis of the input model>=y]
+        [--axis  <The upright axis of the input model>=z]
         [--depth  <The maximum depth of the octree>=6]
         [--full_depth  <The full layer of the octree>=2]
         [--key2xyz  <Convert the key to xyz when serialization>=0]
@@ -114,7 +114,7 @@ Example:
     // process all the points into octrees of depth 5
     octree --filenames filelist.txt --depth 5  --axis z
 ```
-- Store all the octree files in a  `leveldb` or `lmdb` database by the tool `convert_octree_data`, which serves as the input of Caffe. For the ones who are new to the [Caffe](http://caffe.berkeleyvision.org/) framework and do not know how to use the generated database to run the neural network training and tesing, the tutorial on [this page](http://caffe.berkeleyvision.org/gathered/examples/mnist.html) are highly recommanded. 
+- Store all the octree files in a  `leveldb` or `lmdb` database by the tool `convert_octree_data`, which serves as the input of Caffe. For the ones who are new to the [Caffe](http://caffe.berkeleyvision.org/) framework and do not know how to use the generated database to train and test the neural network, the tutorial on [this page](http://caffe.berkeleyvision.org/gathered/examples/mnist.html) is highly recommanded. 
 ```
 Usage: 
     convert_octree_data <rootfolder> <listfile> <db_name>
@@ -157,14 +157,14 @@ Usage:
 ### 3.1 &nbsp; O-CNN for Shape Classification 
 The instruction to run the shape classification experiment:
 
-- Download the [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset, and convert it to a `lmdb` database as described above. [Here](https://www.dropbox.com/s/vzmxsqkp2lwwwp8/ModelNet40_5.zip?dl=0) we provide a `lmdb` database with 5-depth octrees for convenience. Since we upgraded the octree format in this version of code, please run the following command to upgrade the lmdb: `upgrade_octree_database.exe <input lmdb> <output lmdb>`. 
+- Download the [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset, and convert it to a `lmdb` database as described above. [Here](https://www.dropbox.com/s/vzmxsqkp2lwwwp8/ModelNet40_5.zip?dl=0) we provide a `lmdb` database with 5-depth octrees for convenience. Since we upgraded the octree format in this version of code, please run the following command to upgrade the lmdb: `upgrade_octree_database.exe <input lmdb> <output lmdb>`. When manually generating the dataset, note that the upright direction of the 3D models in the `ModelNet40` is `z` axis, so the octree command is: `octree --filenames filelist.txt --depth 5  --axis z`
 - Download the `O-CNN` protocol buffer files, which are contained in the folder `caffe/examples/o-cnn`.
 - Configure the path of the database and run `caffe.exe` according to the instructions of [Caffe](http://caffe.berkeleyvision.org/tutorial/interfaces.html). We also provide our pre-trained Caffe model in `caffe/examples/o-cnn`.
 
 ### 3.2 &nbsp; O-CNN for Shape Retrieval
 The instruction to run the shape retrieval experiment:
 
-- Download the dataset from  [SHREC16](http://shapenet.cs.stanford.edu/shrec16/), and convert it to a `lmdb` database as described above.  Note that the upright direction of the 3D models in the `ShapeNet55` is `Y` axis, so the octree command is: `octree --filenames filelist.txt --depth 5  --axis z`
+- Download the dataset from  [SHREC16](http://shapenet.cs.stanford.edu/shrec16/), and convert it to a `lmdb` database as described above.  Note that the upright direction of the 3D models in the `ShapeNet55` is `Y` axis, so the octree command is: `octree --filenames filelist.txt --depth 5  --axis y`.
 [Here](http://pan.baidu.com/s/1mieF2J2) we provide the lmdb databases with 5-depth octrees for convenience, just download the files prefixed with `S55` and un-zip them. Since we upgraded the octree format in this version of code, please run the following command to upgrade the lmdb: `upgrade_octree_database.exe <input lmdb> <output lmdb>`.
 - Follow the same approach as the classification task to train the O-CNN with the `O-CNN` protocal files `S55_5.prototxt` and `solver_S55_5.prototxt`, which are contained in the folder `caffe/examples/o-cnn`.
 - In the retrieval experiment, the `orientation pooling` is used to achieve better performance, which can be perfromed following the steps below.
