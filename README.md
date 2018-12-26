@@ -50,7 +50,7 @@ After the building, you will get the executable files which is useful for conduc
 
 - [`virtualscanner`](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner) - used to convert obj/off files to points files  
 - [`octree`](#octree) - used to convert point files to octree files  
-- [`octree2ply`](#octree-2-ply) - used to convert octree files to ply files  
+<!-- - [`octree2ply`](#octree-2-ply) - used to convert octree files to ply files   -->
 - [`convert_octree_data`](#convert-octree-data) - used to convert octree files to lmdb files  
 - `caffe` - executable for training / evaluating models  
 - `feature_pooling` - pools features and outputs them to an lmdb  
