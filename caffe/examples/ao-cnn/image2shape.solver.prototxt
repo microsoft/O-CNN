@@ -1,5 +1,5 @@
 # The train/test net protocol buffer definition
-net: "D:/v-pewan/AOCNN/Image2Shape/image2shape_resnet.train.prototxt"
+net: "D:/v-pewan/AOCNN/Image2Shape/image2shape.train.prototxt"
 
 # test_iter specifies how many forward passes the test should carry out.
 test_iter: 248
