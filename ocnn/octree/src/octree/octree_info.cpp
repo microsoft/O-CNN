@@ -65,8 +65,8 @@ bool OctreeInfo::check_format(string& msg) const {
   if (batch_size_ < 0) {
     msg += "The batch_size_ should be larger than 0.\n";
   }
-  if (depth_ <= 0 || depth_ >= 8) {
-    msg += "The depth_ should be in range [0, 8].\n";
+  if (depth_ < 1 || depth_ > 8) {
+    msg += "The depth_ should be in range [1, 8].\n";
   }
   if (full_layer_ < 0 || full_layer_ > depth_) {
     msg += "The full_layer_ should be in range [1, depth_].\n";
