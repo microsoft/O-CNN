@@ -49,8 +49,7 @@ O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it 
 After the building, you will get the executable files which is useful for conducting the experiments: 
 
 - [`virtualscanner`](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner) - used to convert obj/off files to points files  
-- [`octree`](#octree) - used to convert point files to octree files  
-<!-- - [`octree2ply`](#octree-2-ply) - used to convert octree files to ply files   -->
+- [`octree`](#octree) - used to convert point files to octree files  <!-- - [`octree2ply`](#octree-2-ply) - used to convert octree files to ply files   -->
 - [`convert_octree_data`](#convert-octree-data) - used to convert octree files to lmdb files  
 - `caffe` - executable for training / evaluating models  
 - `feature_pooling` - pools features and outputs them to an lmdb  
@@ -59,13 +58,13 @@ After the building, you will get the executable files which is useful for conduc
 <!-- To build the octree, the bounding sphere of the object is needed to be computed. The initial version of our code is built upon the bound sphere library from this [link](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). However, we remove it from our code due to the licence issue. To reproduce the results in our paper, it is highly recommended to download the [bound sphere library](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html).  -->
 
 
-### 1.2 &nbsp; Docker Setup
+### 1.2 &nbsp; Docker Setup (For Ubuntu only)
 A docker build file is provided to automatically build your environments so you don't have to worry about project dependencies. To get your environment up and running, execute the following:
 
 ```
 cd docker
-docker build -t ocnn .
-docker run --name ocnn -it ocnn /bin/bash
+docker build --network=host --tag=ocnn .
+docker run --runtime=nvidia --network=host --name=ocnn -it ocnn /bin/bash
 ```
 
 You will now find yourself in a container environment where you can automatically prepare datasets and train/test an o-cnn. 
@@ -126,7 +125,7 @@ Example:
     convert_octree_data D:/octrees/ D:/octrees/list.txt D:/octrees_lmdb
 ```
 
-### 2.2 &nbsp; Automated Dataset Setup
+### 2.2 &nbsp; Automated Dataset Setup (For Ubuntu only)
 For the dataset `ModelNet10` and `ModelNet40`, we provide some scripts to automatically prepare the datasets. The code is contained in the python folder. (We will update the prepare_dataset.py to support other datasets such as ShapeNet55.)
 ```
 Usage: 

@@ -46,7 +46,7 @@ WORKDIR $WORKSPACE_BIN
 ARG OCNN_ROOT=$WORKSPACE/ocnn
 WORKDIR $OCNN_ROOT
 
-ARG OCNN_COMMIT=origin/pre-release
+ARG OCNN_COMMIT=origin/master
 RUN git clone https://github.com/Microsoft/O-CNN.git . && git reset --hard $OCNN_COMMIT
 RUN cd ocnn/octree && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DOUTPUT_DIRECTORY=$WORKSPACE_BIN .. && \
     make && cd ../ && rm -rf build
@@ -74,7 +74,7 @@ RUN cd ocnn/octree && pip install . && cd ../caffe && pip install .
 ARG OCNN_TOOLS_ROOT=$WORKSPACE/ocnn_tools
 WORKDIR $OCNN_TOOLS_ROOT
 
-ARG OCNN_TOOLS_COMMIT=origin/pre-release
+ARG OCNN_TOOLS_COMMIT=origin/master
 RUN git clone https://github.com/wang-ps/O-CNN.git . && git reset --hard $OCNN_TOOLS_COMMIT
 RUN cd virtual_scanner && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make && \
     cp virtualscanner $WORKSPACE_BIN && cd ../ && rm -rf build && \

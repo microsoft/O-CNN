@@ -55,6 +55,7 @@ if(NOT src_rply)
 endif()
 include_directories("${PROJECT_SOURCE_DIR}/external/rply-1.1.4")
 add_library(rply ${src_rply})
+set_target_properties(rply PROPERTIES LINKER_LANGUAGE CXX)
 
 # files
 file(GLOB  src_octree_lib
