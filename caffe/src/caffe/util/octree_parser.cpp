@@ -10,6 +10,16 @@ void OctreeParser::set_cpu(const void* ptr) {
   info_ = reinterpret_cast<OctreeInfo*>(h_metadata_);
 }
 
+void OctreeParser::set_cpu(void* ptr, OctreeInfo* octinfo) {
+  const_ptr_ = false;
+  h_metadata_ = reinterpret_cast<char*>(ptr);
+  info_ = reinterpret_cast<OctreeInfo*>(ptr);
+  if (octinfo != nullptr) { // update the OctreeInfo with octinfo
+    memcpy(info_, octinfo, sizeof(OctreeInfo));
+  }
+}
+
+#ifndef CPU_ONLY
 void OctreeParser::set_gpu(const void* ptr, const void* oct_info) {
   const_ptr_ = true;
   d_metadata_ = reinterpret_cast<char*>(const_cast<void*>(ptr));
@@ -20,15 +30,6 @@ void OctreeParser::set_gpu(const void* ptr, const void* oct_info) {
     CUDA_CHECK(cudaMemcpy(info_, ptr, sizeof(OctreeInfo), cudaMemcpyDeviceToHost));
   } else {
     info_ = reinterpret_cast<OctreeInfo*>(const_cast<void*>(oct_info));
-  }
-}
-
-void OctreeParser::set_cpu(void* ptr, OctreeInfo* octinfo) {
-  const_ptr_ = false;
-  h_metadata_ = reinterpret_cast<char*>(ptr);
-  info_ = reinterpret_cast<OctreeInfo*>(ptr);
-  if (octinfo != nullptr) { // update the OctreeInfo with octinfo
-    memcpy(info_, octinfo, sizeof(OctreeInfo));
   }
 }
 
@@ -43,6 +44,19 @@ void OctreeParser::set_gpu(void* ptr, OctreeInfo* octinfo) {
     CUDA_CHECK(cudaMemcpy(info_, d_metadata_, sizeof(OctreeInfo), cudaMemcpyDeviceToHost));
   }
 }
+
+#else
+
+void OctreeParser::set_gpu(const void* ptr, const void* oct_info) {
+  NO_GPU;
+}
+
+void OctreeParser::set_gpu(void* ptr, OctreeInfo* octinfo) {
+  NO_GPU;
+}
+
+#endif
+
 
 OctreeParser::NodeType OctreeParser::node_type(const int t) const {
   NodeType ntype = kInternelNode;

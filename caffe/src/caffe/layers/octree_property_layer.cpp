@@ -1,10 +1,5 @@
 #include "caffe/layers/octree_property_layer.hpp"
 
-#include <vector>
-#include <thrust/functional.h>
-#include <thrust/execution_policy.h>
-#include <thrust/transform.h>
-
 namespace caffe {
 
 template<typename Dtype>
