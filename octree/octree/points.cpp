@@ -1,0 +1,164 @@
+#include "points.h"
+#include "math_functions.h"
+
+#include <cstring>
+#include <fstream>
+
+bool Points::read_points(const string& filename) {
+  std::ifstream infile(filename, std::ios::binary);
+  if (!infile) return false;
+
+  infile.seekg(0, infile.end);
+  size_t len = infile.tellg();
+  infile.seekg(0, infile.beg);
+  if (len < sizeof(PointsInfo)) {
+    // the file should at least contain a PtsInfo structure
+    infile.close();
+    return false;
+  }
+
+  buffer_.resize(len);
+  char* ptr_ = buffer_.data();
+  infile.read(ptr_, len);
+  this->set(ptr_, (PointsInfo*)ptr_);
+
+  infile.close();
+  return true;
+}
+
+bool Points::write_points(const string& filename) const {
+  std::ofstream outfile(filename, std::ios::binary);
+  if (!outfile) return false;
+  outfile.write(buffer_.data(), buffer_.size());
+  outfile.close();
+  return true;
+}
+
+bool Points::write_ply(const string & filename) const {
+  std::ofstream outfile(filename, std::ios::binary);
+  if (!outfile) return false;
+
+  // write header
+  int n = info_->pt_num();
+  outfile << "ply\nformat ascii 1.0\nelement vertex " << n
+      << "\nproperty float x\nproperty float y\nproperty float z\n"
+      << "property float nx\nproperty float ny\nproperty float nz\n"
+      << "element face 0\nproperty list uchar int vertex_indices\n"
+      << "end_header" << std::endl;
+
+  // wirte contents
+  const int len = 128;
+  vector<char> str(n * len, 0);
+  char* pstr = str.data();
+  const float* pts = ptr(PointsInfo::kPoint);
+  const float* normals = ptr(PointsInfo::kNormal);
+  for (int i = 0; i < n; ++i) {
+    sprintf(pstr + i * len,
+        "%.6f %.6f %.6f %.6f %.6f %.6f\n",
+        pts[3 * i], pts[3 * i + 1], pts[3 * i + 2],
+        normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]);
+  }
+  int k = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = len * i; j < len * (i + 1); ++j) {
+      if (str[j] == 0) break;
+      str[k++] = str[j];
+    }
+  }
+  outfile.write(str.data(), k);
+
+  outfile.close();
+  return false;
+}
+
+
+bool Points::set_points(const vector<float>& pts, const vector<float>& normals,
+    const vector<float>& features, const vector<float>& labels) {
+  /// set info
+  int num = pts.size() / 3;
+  // !!! Empty input is not allowed
+  if (num == 0) return false;
+  PointsInfo info;
+  info.set_pt_num(num);
+  info.set_channel(PointsInfo::kPoint, 3);
+
+  if (!normals.empty()) {
+    int c = normals.size() / num;
+    int r = normals.size() % num;
+    // !!! The channel of normal has to be 3
+    if (3 != c || 0 != r) return false;
+    info.set_channel(PointsInfo::kNormal, c);
+  }
+
+  if (!features.empty()) {
+    int c = features.size() / num;
+    int r = features.size() % num;
+    // !!! The channel of feature has to larger than 0
+    if (0 == c || 0 != r) return false;
+    info.set_channel(PointsInfo::kFeature, c);
+  }
+
+  if (!labels.empty()) {
+    int c = labels.size() / num;
+    int r = labels.size() % num;
+    // !!! The channel of label has to be 1
+    if (1 != c || 0 != r) return false;
+    info.set_channel(PointsInfo::kLabel, c);
+  }
+
+  info.set_ptr_dis();
+
+  /// set buffer
+  int sz = info.sizeof_points();
+  buffer_.resize(sz);
+  this->set(buffer_.data(), &info);
+  copy(pts.begin(), pts.end(), mutable_ptr(PointsInfo::kPoint));
+  if (!normals.empty()) {
+    copy(normals.begin(), normals.end(), mutable_ptr(PointsInfo::kNormal));
+  }
+  if (!features.empty()) {
+    copy(features.begin(), features.end(), mutable_ptr(PointsInfo::kFeature));
+  }
+  if (!labels.empty()) {
+    copy(labels.begin(), labels.end(), mutable_ptr(PointsInfo::kLabel));
+  }
+
+  return true;
+}
+
+void Points::set_points(vector<char>& data) {
+  buffer_.swap(data);
+  char* ptr_ = buffer_.data();
+  this->set(ptr_, (PointsInfo*)ptr_);
+}
+
+//void Points::set_bbox(float* bbmin, float* bbmax) {
+//  const int dim = 3;
+//  for (int i = 0; i < dim; ++i) {
+//    bbmin_[i] = bbmin[i];
+//    bbmax_[i] = bbmax[i];
+//  }
+//}
+//
+//void Points::set_bbox() {
+//  const int dim = 3, npt = info_->pt_num();
+//  const float* pt = mutable_ptr(PtsInfo::kPoint);
+//  if (npt < 1) {
+//    for (int c = 0; c < dim; ++c) {
+//      bbmin_[c] = bbmax_[c] = 0.0f;
+//    }
+//    return;
+//  }
+//
+//  for (int c = 0; c < dim; ++c) {
+//    bbmin_[c] = bbmax_[c] = pt[c];
+//  }
+//  for (int i = 1; i < npt; ++i) {
+//    int i3 = i * 3;
+//    for (int j = 0; j < dim; ++j) {
+//      float tmp = pt[i3 + j];
+//      if (tmp < bbmin_[j]) bbmin_[j] = tmp;
+//      if (tmp > bbmax_[j]) bbmax_[j] = tmp;
+//    }
+//  }
+//}
