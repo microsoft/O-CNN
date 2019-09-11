@@ -4,6 +4,8 @@
 
 This repository contains the implementation of *O-CNN*  and  *Aadptive O-CNN* introduced in our SIGGRAPH 2017 paper and SIGGRAPH Asia 2018 paper.  The code is released under the MIT license.
 
+We have released the TensorFlow-based implementation under the `tf` branch, and our future development will be focused on this implementation.
+If you would like to have a try with the beta version, please pull the code and run the following command: `git checkout -b tf`.
 
 * **[O-CNN: Octree-based Convolutional Neural Networks](https://wang-ps.github.io/O-CNN.html)**<br/>
 By [Peng-Shuai Wang](https://wang-ps.github.io/), [Yang Liu](https://xueyuhanlang.github.io/), Yu-Xiao Guo, Chun-Yu Sun and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
