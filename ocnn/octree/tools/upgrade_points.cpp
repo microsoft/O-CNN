@@ -11,6 +11,7 @@ using namespace std;
 
 DEFINE_string(filenames, kRequired, "", "The input filenames");
 DEFINE_string(output_path, kOptional, ".", "The output path");
+DEFINE_bool(has_label, kOptional, false, "The file contains label");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
 
@@ -20,7 +21,7 @@ void load_pointcloud(vector<float>& pt, vector<float>& normal,
   std::ifstream infile(filename, std::ios::binary);
 
   infile.seekg(0, infile.end);
-  int len = infile.tellg();
+  size_t len = infile.tellg();
   infile.seekg(0, infile.beg);
 
   int n;
@@ -30,7 +31,8 @@ void load_pointcloud(vector<float>& pt, vector<float>& normal,
   normal.resize(channel * n);
   infile.read((char*)normal.data(), sizeof(float) * channel * n);
 
-  if (6 * n * sizeof(float) + (n + 1) * sizeof(int) == len) {
+  if (FLAGS_has_label &&
+      6 * n * sizeof(float) + (n + 1) * sizeof(int) == len) {
     seg.resize(n);
     infile.read((char*)seg.data(), sizeof(int)*n);
   }
@@ -52,7 +54,7 @@ void gen_test_pointcloud(vector<float>& pt, vector<float>& normal,
 int main(int argc, char* argv[]) {
   bool succ = cflags::ParseCmd(argc, argv);
   if (!succ) {
-    cflags::PrintHelpInfo("\nUsage: update_octree.exe");
+    cflags::PrintHelpInfo("\nUsage: upgrade_points.exe");
     return 0;
   }
 
@@ -65,18 +67,26 @@ int main(int argc, char* argv[]) {
 
   vector<string> all_files;
   get_all_filenames(all_files, file_path);
+  //#pragma omp parallel for
   for (int i = 0; i < all_files.size(); ++i) {
+    string filename = extract_filename(all_files[i]);
+
     /// from the old formate to this new format
     vector<float> pts, normals, labels;
     vector<int> seg;
     load_pointcloud(pts, normals, seg, all_files[i]);
+    if (FLAGS_has_label && seg.size() == 0) {
+      cout << "Error in " << filename << endl;
+      continue;
+    }
     labels.assign(seg.begin(), seg.end());
 
     Points points;
     points.set_points(pts, normals, vector<float>(), labels);
 
-    string filename = extract_filename(all_files[i]);
     points.write_points(output_path + filename + ".upgrade.points");
+
+    if (FLAGS_verbose) cout << "Processing: " + filename + "\n";
   }
   cout << "Done: " << FLAGS_filenames << endl;
   //// generate testing points
