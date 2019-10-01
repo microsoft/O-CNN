@@ -1,5 +1,5 @@
 #include "logs.h"
-#include "octree_util.h"
+#include "octree_nn.h"
 #include <cstring>
 #include <algorithm>
 
@@ -103,11 +103,27 @@ void memset_cpu(const int N, const Dtype alpha, Dtype* Y) {
   }
 }
 
+
 int num_elements(const vector<int>& vec) {
   int count = vec.empty() ? 0 : 1;
   for (auto v : vec) { count *= v; }
   return count;
 }
+
+
+void resize_with_last_val(vector<int>& vec, const int size) {
+  int len = vec.size();
+  if (len == 0) return;
+  if (len < size) {
+    int v = vec[len - 1];
+    for (int i = len; i < size; ++i) {
+      vec.push_back(v);
+    }
+  } else {
+    vec.resize(size);
+  }
+}
+
 
 template <typename Dtype>
 void memcpy_cpu(const int N, const Dtype* X, Dtype* Y) {

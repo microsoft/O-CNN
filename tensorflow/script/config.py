@@ -21,7 +21,7 @@ tf_flags.DEFINE_integer('num_class', 40, 'The class number.')
 tf_flags.DEFINE_integer('depth', 5, 'The octree depth.')
 tf_flags.DEFINE_integer('channel', 3, 'The input feature channel.')
 tf_flags.DEFINE_integer('padding_size', 2, 'The input feature padding size.')
-tf_flags.DEFINE_integer('num_residual_blocks', 3, 'The resblock number.')
+tf_flags.DEFINE_integer('res_block_num', 3, 'The resblock number.')
 tf_flags.DEFINE_multi_integer('step_size', None, 'SGD lr step size.')
 
 

@@ -1,7 +1,6 @@
 #include "octree_parser.h"
-#include "octree_util.h"
+#include "octree_nn.h"
 
-#include <tensorflow/core/framework/common_shape_fns.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <tensorflow/core/framework/shape_inference.h>
@@ -40,14 +39,13 @@ class OctreePadBase : public OpKernel {
     CHECK_GE(depth_, 1) << "Depth should be larger than 1";
   }
 
-  void set_octree_parser(OpKernelContext* context) {
-    auto in_octree_ptr = context->input(1).flat<int8>().data();
-    octree_.set_gpu(in_octree_ptr);
+  void set_octree_parser(OpKernelContext* context, OctreeParser& octree_) {
+    auto octree_ptr = context->input(1).flat<int8>().data();
+    octree_.set_gpu(octree_ptr);
   }
 
  protected:
   int depth_;
-  OctreeParser octree_;
 };
 
 
@@ -58,7 +56,8 @@ class OctreePadOp : public OctreePadBase {
 
   void Compute(OpKernelContext* context) override {
     // in octree
-    this->set_octree_parser(context);
+    OctreeParser octree_;
+    this->set_octree_parser(context, octree_);
 
     // btm data
     const Tensor& btm_data = context->input(0);
@@ -69,11 +68,11 @@ class OctreePadOp : public OctreePadBase {
 
     // check
     int depth = this->depth_;
-    CHECK_EQ(this->octree_.info().node_num_nempty(depth), btm_h);
+    CHECK_EQ(octree_.info().node_num_nempty(depth), btm_h);
 
     // top data
     TensorShape top_shape = btm_shape;
-    int top_h = this->octree_.info().node_num(depth);
+    int top_h = octree_.info().node_num(depth);
     top_shape.set_dim(2, top_h);
     Tensor* top_data = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(0, top_shape, &top_data));
@@ -81,7 +80,7 @@ class OctreePadOp : public OctreePadBase {
 
     // padding data
     pad_forward_gpu(top_ptr, top_h, channel,
-      btm_ptr, btm_h, this->octree_.children_gpu(depth));
+      btm_ptr, btm_h, octree_.children_gpu(depth));
   }
 };
 
@@ -93,7 +92,8 @@ class OctreeDepadOp : public OctreePadBase {
 
   void Compute(OpKernelContext* context) override {
     // in octree
-    this->set_octree_parser(context);
+    OctreeParser octree_;
+    this->set_octree_parser(context, octree_);
 
     // top grad
     const Tensor& top_data = context->input(0);
@@ -104,11 +104,11 @@ class OctreeDepadOp : public OctreePadBase {
 
     // check
     int depth = this->depth_;
-    CHECK_EQ(this->octree_.info().node_num(depth), top_h) << "depth :" << depth;
+    CHECK_EQ(octree_.info().node_num(depth), top_h) << "depth :" << depth;
     
     // btm grad
     TensorShape btm_shape = top_shape;
-    int btm_h = this->octree_.info().node_num_nempty(depth);
+    int btm_h = octree_.info().node_num_nempty(depth);
     btm_shape.set_dim(2, btm_h);
     Tensor* btm_data = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(0, btm_shape, &btm_data));
@@ -116,7 +116,7 @@ class OctreeDepadOp : public OctreePadBase {
        
     // padding data
     pad_backward_gpu(btm_ptr, btm_h, channel,
-      top_ptr, top_h, this->octree_.children_gpu(depth));
+      top_ptr, top_h, octree_.children_gpu(depth));
   }
 };
 

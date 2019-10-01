@@ -4,12 +4,15 @@ sys.path.append("..")
 from libs import *
 
 
-def get_variables_with_name(name=None, train_only=True, verbose=False):
+def get_variables_with_name(name=None, without=None, train_only=True, verbose=False):
   if name is None:
     raise Exception("please input a name")
 
   t_vars = tf.trainable_variables() if train_only else tf.all_variables()
   d_vars = [var for var in t_vars if name in var.name]
+
+  if without is not None:
+    d_vars = [var for var in d_vars if without not in var.name]
 
   if verbose:
     print("  [*] geting variables with %s" % name)
@@ -17,7 +20,6 @@ def get_variables_with_name(name=None, train_only=True, verbose=False):
       print("  got {:3}: {:15}   {}".format(idx, v.name, str(v.get_shape())))
 
   return d_vars
-
 
 
 def dense(inputs, nout, use_bias=False):
@@ -66,32 +68,58 @@ def downsample(data, channel, training):
 
 
 def octree_upsample(data, octree, depth, channel, training):
-  if depth > 1:
-    data = octree_depad(data, octree, depth)
-  return upsample(data, channel, training)
+  with tf.variable_scope('octree_upsample'):
+    depad = octree_depad(data, octree, depth)
+    up = upsample(depad, channel, training)
+  return up
 
 
 def octree_downsample(data, octree, depth, channel, training):
-  down = downsample(data, channel, training)
-  return octree_padding(data, octree, depth)
+  with tf.variable_scope('octree_downsample'):
+    down = downsample(data, channel, training)
+    pad = octree_pad(down, octree, depth)
+  return pad
 
 
-def octree_conv_bn(data, octree, depth, channel, training, fast_mode=False):
+def octree_conv_bn(data, octree, depth, channel, training, kernel_size=[3],
+                   stride=1, fast_mode=False):
   if fast_mode == True:
-    conv = octree_conv_fast(data, octree, depth, channel)
+    conv = octree_conv_fast(data, octree, depth, channel, kernel_size, stride)
   else:
-    conv = octree_conv_memory(data, octree, depth, channel)
+    conv = octree_conv_memory(data, octree, depth, channel, kernel_size, stride)
   return tf.layers.batch_normalization(conv, axis=1, training=training)
 
 
-def octree_conv_bn_relu(data, octree, depth, channel, training):
-  cb = octree_conv_bn(data, octree, depth, channel, training)
-  return tf.nn.relu(cb)
+def octree_conv_bn_relu(data, octree, depth, channel, training, kernel_size=[3],
+                        stride=1, fast_mode=False):
+  with tf.variable_scope('conv_bn_relu'):
+    conv_bn = octree_conv_bn(data, octree, depth, channel, training, kernel_size, 
+                             stride, fast_mode)
+    rl = tf.nn.relu(conv_bn)
+  return rl
 
 
 def octree_conv_bn_leakyrelu(data, octree, depth, channel, training):
   cb = octree_conv_bn(data, octree, depth, channel, training) 
   return tf.nn.leaky_relu(cb, alpha=0.2)
+
+
+def octree_deconv_bn(data, octree, depth, channel, training, kernel_size=[3],
+                     stride=1, fast_mode=False):
+  if fast_mode == True:
+    conv = octree_deconv_fast(data, octree, depth, channel, kernel_size, stride)
+  else:
+    conv = octree_deconv_memory(data, octree, depth, channel, kernel_size, stride)
+  return tf.layers.batch_normalization(conv, axis=1, training=training)
+
+
+def octree_deconv_bn_relu(data, octree, depth, channel, training, kernel_size=[3],
+                          stride=1, fast_mode=False):
+  with tf.variable_scope('deconv_bn_relu'):
+    conv_bn = octree_deconv_bn(data, octree, depth, channel, training, kernel_size, 
+                               stride, fast_mode)
+    rl = tf.nn.relu(conv_bn)
+  return rl
 
 
 def octree_resblock(data, octree, depth, num_out, stride, training):
@@ -119,35 +147,42 @@ def octree_resblock(data, octree, depth, num_out, stride, training):
   return tf.nn.relu(block3 + block4)
 
 
+def octree_resblock2(data, octree, depth, num_out, training):
+  # 2 conv layers and stride 1
+  with tf.variable_scope("conv_1"):
+    conv = octree_conv_bn_relu(data, octree, depth,  num_out/4, training)
+  with tf.variable_scope("conv_2"):
+    conv = octree_conv_bn(conv, octree, depth, num_out, training)
+  out  = tf.nn.relu(conv + data)
+  return out
 
-def predict_module(data, nout, training):
-  conv = tf.layers.conv2d(data, 32, kernel_size=1, strides=1,
-      data_format='channels_first', use_bias=False,
-      kernel_initializer=tf.contrib.layers.xavier_initializer())
-  conv = tf.layers.batch_normalization(conv, axis=1, training=training)
-  conv = tf.nn.relu(conv)
-  logit = tf.layers.conv2d(conv, nout, kernel_size=1, strides=1,
+
+def predict_module(data, num_output, num_hidden, training):
+  # MLP with one hidden layer 
+  conv = conv2d_bn_relu(data, num_hidden, 1, 1, training)  
+  logit = tf.layers.conv2d(conv, num_output, kernel_size=1, strides=1,
       data_format='channels_first', use_bias=True,
       kernel_initializer=tf.contrib.layers.xavier_initializer())
   return logit
 
 
-def predict_label(data, training):
-  logit = predict_module(data, 2, training)
-  prob = tf.nn.softmax(logit, axis=1) # logit (1,2,?,1)
-  label = tf.argmax(prob, axis=1)     # predict (1,?,1)
-  label = tf.reshape(tf.cast(label, tf.int32), [-1])
+def predict_label(data, num_output, num_hidden, training):
+  logit = predict_module(data, num_output, num_hidden, training)
+  # prob = tf.nn.softmax(logit, axis=1)   # logit   (1, num_output, ?, 1)
+  label = tf.argmax(logit, axis=1, output_type=tf.int32)  # predict (1, ?, 1)
+  label = tf.reshape(label, [-1]) # flatten
   return logit, label
 
 
-def predict_signal(data, channel, training):
-  return tf.nn.tanh(predict_module(data, channel, training))
+def predict_signal(data, num_output, num_hidden, training):
+  return tf.nn.tanh(predict_module(data, num_output, num_hidden, training))
 
 
 def softmax_loss(logit, label_gt, num_class): 
-  label_gt = tf.cast(label_gt, tf.int32)
-  onehot = tf.one_hot(label_gt, depth=num_class)
-  loss = tf.losses.softmax_cross_entropy(onehot, logit)
+  with tf.name_scope('softmax_loss'):
+    label_gt = tf.cast(label_gt, tf.int32)
+    onehot = tf.one_hot(label_gt, depth=num_class)
+    loss = tf.losses.softmax_cross_entropy(onehot, logit)
   return loss
 
 
@@ -163,10 +198,11 @@ def label_accuracy(label, label_gt):
   return accuracy
 
 
-def softmax_accuracy(logit, label): 
-  probability = tf.nn.softmax(logit)
-  predict = tf.argmax(probability, axis=1)
-  return label_accuracy(label, predict)
+def softmax_accuracy(logit, label):
+  with tf.name_scope('softmax_accuracy'):
+    predict = tf.argmax(logit, axis=1, output_type=tf.int32)
+    accu = label_accuracy(predict, tf.cast(label, tf.int32))
+  return accu
 
 
 def regress_loss(signal, signal_gt):
@@ -185,3 +221,43 @@ def normalize(data):
     else:
       output = tf.nn.l2_normalize(data, axis=1)
   return output
+
+
+def build_solver(total_loss, learning_rate_handle):
+  with tf.name_scope('solver'):
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+      global_step = tf.Variable(0, trainable=False, name='global_step')
+      lr = learning_rate_handle(global_step)
+      solver = tf.train.MomentumOptimizer(lr, 0.9) \
+                       .minimize(total_loss, global_step=global_step)
+  return solver
+
+
+def summary_train(names, tensors):
+  with tf.name_scope('summary_train'):
+    summaries = []
+    for it in zip(names, tensors):
+      summaries.append(tf.summary.scalar(it[0], it[1]))
+    summ = tf.summary.merge(summaries)
+  return summ
+
+
+def summary_test(names):
+  with tf.name_scope('summary_test'):
+    summaries = []
+    summ_placeholder = []
+    for name in names:
+      summ_placeholder.append(tf.placeholder(tf.float32))
+      summaries.append(tf.summary.scalar(name, summ_placeholder[-1]))
+    summ = tf.summary.merge(summaries)
+  return summ, summ_placeholder
+
+
+
+def loss_functions(logit, label_gt, num_class, weight_decay, var_name):
+  with tf.name_scope('loss'):
+    loss = softmax_loss(logit, label_gt, num_class)
+    accu = softmax_accuracy(logit, label_gt)
+    regularizer = l2_regularizer(var_name, weight_decay)
+  return loss, accu, regularizer

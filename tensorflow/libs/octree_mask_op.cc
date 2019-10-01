@@ -1,4 +1,4 @@
-#include "octree_util.h"
+#include "octree_nn.h"
 
 #include <cuda_runtime.h>
 #include <tensorflow/core/framework/op.h>

@@ -1,4 +1,4 @@
-#include "octree_util.h"
+#include "octree_nn.h"
 #include "octree_parser.h"
 
 #include <cuda_runtime.h>

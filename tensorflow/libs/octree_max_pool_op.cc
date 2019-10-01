@@ -1,4 +1,4 @@
-#include "octree_util.h"
+#include "octree_nn.h"
 #include "octree_parser.h"
 
 #include <tensorflow/core/framework/op.h>
@@ -61,14 +61,13 @@ class OctreePoolBase : public OpKernel {
     CHECK_GT(depth_, 1) << "Depth should be larger than 1";
   }
 
-  void set_octree_parser(OpKernelContext* context, int idx) {
-    auto in_octree_ptr = context->input(idx).flat<int8>().data();
-    octree_.set_gpu(in_octree_ptr);
+  void set_octree_parser(OpKernelContext* context, int idx, OctreeParser& octree_) {
+    auto octree_ptr = context->input(idx).flat<int8>().data();
+    octree_.set_gpu(octree_ptr);
   }
 
  protected:
   int depth_;
-  OctreeParser octree_;
 };
 
 class OctreeMaxPoolOp : public OctreePoolBase {
@@ -78,7 +77,8 @@ class OctreeMaxPoolOp : public OctreePoolBase {
 
   void Compute(OpKernelContext* context) override {
     // in octree
-    this->set_octree_parser(context, 1);
+    OctreeParser octree_;
+    this->set_octree_parser(context, 1, octree_);
 
     // btm data
     const Tensor& btm_data = context->input(0);
@@ -89,7 +89,7 @@ class OctreeMaxPoolOp : public OctreePoolBase {
 
     // check
     int btm_depth = this->depth_;
-    CHECK_EQ(this->octree_.info().node_num(btm_depth), btm_h);
+    CHECK_EQ(octree_.info().node_num(btm_depth), btm_h);
 
     // top data
     TensorShape top_shape = btm_shape;
@@ -116,7 +116,8 @@ class OctreeMaxUnpoolOp : public OctreePoolBase {
 
   void Compute(OpKernelContext* context) override {
     // in octree
-    this->set_octree_parser(context, 2);
+    OctreeParser octree_;
+    this->set_octree_parser(context, 2, octree_);
 
     // top data
     const Tensor& top_data = context->input(0);
@@ -133,7 +134,7 @@ class OctreeMaxUnpoolOp : public OctreePoolBase {
     // check
     int btm_depth = this->depth_;
     CHECK(mask_shape == top_shape);
-    CHECK_EQ(top_h, this->octree_.info().node_num_nempty(btm_depth - 1));
+    CHECK_EQ(top_h, octree_.info().node_num_nempty(btm_depth - 1));
 
     // top data
     TensorShape btm_shape = top_shape;
@@ -155,7 +156,8 @@ class OctreeMaskPoolOp : public OctreePoolBase {
 
   void Compute(OpKernelContext* context) override {
     // in octree
-    this->set_octree_parser(context, 2);
+    OctreeParser octree_;
+    this->set_octree_parser(context, 2, octree_);
 
     // btm data
     const Tensor& btm_data = context->input(0);
@@ -172,7 +174,7 @@ class OctreeMaskPoolOp : public OctreePoolBase {
 
     // check
     int btm_depth = this->depth_;
-    CHECK_EQ(this->octree_.info().node_num(btm_depth), btm_h);
+    CHECK_EQ(octree_.info().node_num(btm_depth), btm_h);
     CHECK_EQ(top_h, btm_h >> 3);
 
     // top data

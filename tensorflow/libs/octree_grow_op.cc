@@ -1,4 +1,4 @@
-#include "octree_util.h"
+#include "octree_nn.h"
 #include "octree_parser.h"
 
 #include <cuda_runtime.h>
@@ -35,8 +35,9 @@ class OctreeGrowOP : public OpKernel {
     // out info
     batch_size_ = octree_in.info().batch_size();
     node_num_ = octree_in.info().node_num_nempty(target_depth_ - 1) << 3;
+    OctreeInfo oct_info_;
     oct_info_ = octree_in.info();
-    update_octreeinfo();
+    update_octreeinfo(oct_info_);
 
     // out octree
     Tensor* tensor_out = nullptr;
@@ -73,7 +74,7 @@ class OctreeGrowOP : public OpKernel {
   }
 
  private:
-  void update_octreeinfo() {
+  void update_octreeinfo(OctreeInfo& oct_info_) {
     oct_info_.set_depth(target_depth_);
     if (full_octree_) {
       oct_info_.set_full_layer(target_depth_);
@@ -110,14 +111,14 @@ class OctreeGrowOP : public OpKernel {
 
   void init_neigh_ptrs(OpKernelContext* ctx, Tensor& parent, Tensor& dis) {
     const vector<int>& dis_cpu = NeighHelper::Get().get_dis_array();
-    TensorShape dshape({ dis_cpu.size() });
+    TensorShape dshape({ (long long int) dis_cpu.size() });
     OP_REQUIRES_OK(ctx, ctx->allocate_temp(DT_INT32, dshape, &dis));
     ptr_dis_ = dis.flat<int>().data();
     cudaMemcpy(ptr_dis_, dis_cpu.data(), dis_cpu.size() * sizeof(int),
         cudaMemcpyHostToDevice);
 
     const vector<int>& parent_cpu = NeighHelper::Get().get_parent_array();
-    TensorShape pshape({ parent_cpu.size() });
+    TensorShape pshape({ (long long int) parent_cpu.size() });
     OP_REQUIRES_OK(ctx, ctx->allocate_temp(DT_INT32, pshape, &parent));
     ptr_parent_ = parent.flat<int>().data();
     cudaMemcpy(ptr_parent_, parent_cpu.data(), parent_cpu.size() * sizeof(int),
@@ -131,7 +132,6 @@ class OctreeGrowOP : public OpKernel {
   bool full_octree_;
   int* ptr_parent_;
   int* ptr_dis_;
-  OctreeInfo oct_info_;
 };
 
 

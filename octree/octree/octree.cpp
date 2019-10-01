@@ -12,7 +12,7 @@
 #include <cstring>
 
 #include "math_functions.h"
-#include "octree_util.h"
+#include "octree_nn.h"
 #include "marching_cube.h"
 
 

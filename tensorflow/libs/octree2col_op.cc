@@ -1,7 +1,6 @@
-#include "octree_util.h"
+#include "octree_nn.h"
 #include "octree_parser.h"
 
-#include <cuda_runtime.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <tensorflow/core/framework/shape_inference.h>
@@ -12,14 +11,15 @@ REGISTER_OP("OctreeToCol")
     .Input("btm_data: float")
     .Input("in_octree: int8")
     .Attr("depth: int")
-    .Attr("kernel_size: int")
+    .Attr("kernel_size: list(int)")
     .Attr("stride: int")
     .Output("top_data: float")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
       // (1, C, H, 1) -> (C, kernel_dim, H')
-      int kernel_size;
+      vector<int> kernel_size;
       TF_RETURN_IF_ERROR(c->GetAttr("kernel_size", &kernel_size));
-      int kernel_dim = kernel_size * kernel_size * kernel_size;
+      resize_with_last_val(kernel_size, 3);
+      int kernel_dim = num_elements(kernel_size);
       c->set_output(0,
           c->MakeShape({c->Dim(c->input(0), 1), kernel_dim, c->UnknownDim()}));
       return Status::OK();
@@ -31,7 +31,7 @@ REGISTER_OP("ColToOctree")
     .Input("top_grad: float")
     .Input("in_octree: int8")
     .Attr("depth: int")
-    .Attr("kernel_size: int")
+    .Attr("kernel_size: list(int)")
     .Attr("stride: int")
     .Output("btm_grad: float")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
@@ -51,31 +51,31 @@ class Octree2ColBase : public OpKernel {
     OP_REQUIRES_OK(context, context->GetAttr("depth", &depth_));
     OP_REQUIRES_OK(context, context->GetAttr("stride", &stride_));
     OP_REQUIRES_OK(context, context->GetAttr("kernel_size", &kernel_size_));
+    resize_with_last_val(kernel_size_, 3);
 
-    CHECK_GT(depth_, 1) << "Depth should be larger than 1";
-    CHECK_EQ(kernel_size_, 3) << "Only support kernel_size == 3 now";
+    CHECK_GT(depth_, 0) << "Depth should be larger than 0";
+    for(auto k : kernel_size_) { CHECK(0 < k && k < 4) << "Invalide kernel size"; }
     CHECK(stride_ == 1 || stride_ == 2) << "Unsupport stride";
   }
 
   void init_ni_ptr(OpKernelContext* ctx, Tensor& ni_gpu) {
-    vector<int> op_kernel_size_{ kernel_size_, kernel_size_, kernel_size_ };
-    vector<int>& ni_cpu = NeighHelper::Get().get_ni(op_kernel_size_);
+    vector<int>& ni_cpu = NeighHelper::Get().get_ni(kernel_size_);
     int count = ni_cpu.size();
     OP_REQUIRES_OK(ctx, ctx->allocate_temp(DT_INT32, TensorShape({ count }), &ni_gpu));
-    int* ni_ptr = ni_gpu.flat<int>().data();
-    cudaMemcpy(ni_ptr, ni_cpu.data(), sizeof(int) * count, cudaMemcpyHostToDevice);
+    // int* ni_ptr = ni_gpu.flat<int>().data();
+    // cudaMemcpy(ni_ptr, ni_cpu.data(), sizeof(int) * count, cudaMemcpyHostToDevice);
+    memcpy_gpu(count, ni_cpu.data(), ni_gpu.flat<int>().data());
   }
 
-  void set_octree_parser(OpKernelContext* context) {
-    auto in_octree_ptr = context->input(1).flat<int8>().data();
-    octree_.set_gpu(in_octree_ptr);
+  void set_octree_parser(OpKernelContext* context, OctreeParser& octree_) {
+    auto octree_ptr = context->input(1).flat<int8>().data();
+    octree_.set_gpu(octree_ptr);
   }
 
  protected:
   int depth_;
   int stride_;
-  int kernel_size_;
-  OctreeParser octree_;
+  vector<int> kernel_size_;
 };
 
 
@@ -86,7 +86,8 @@ class OctreeToColOp : public Octree2ColBase {
 
   void Compute(OpKernelContext* context) override {
     // init
-    this->set_octree_parser(context);
+    OctreeParser octree_;
+    this->set_octree_parser(context, octree_);
     Tensor ni_gpu;
     this->init_ni_ptr(context, ni_gpu);
     auto ni_ptr =ni_gpu.flat<int>().data();
@@ -97,18 +98,17 @@ class OctreeToColOp : public Octree2ColBase {
     int btm_depth = this->depth_;
     int channel = btm_shape.dim_size(1);
     int btm_height = btm_shape.dim_size(2);
-    CHECK_EQ(this->octree_.info().node_num(btm_depth), btm_height);
+    CHECK_EQ(octree_.info().node_num(btm_depth), btm_height);
 
     // output data
     int top_height = btm_height;
     if (this->stride_ == 2) {
       top_height = btm_height / 8;
       int top_depth = btm_depth - 1;
-      CHECK_EQ(top_height, this->octree_.info().node_num_nempty(top_depth));
+      CHECK_EQ(top_height, octree_.info().node_num_nempty(top_depth));
     }
-    int kernel_size = this->kernel_size_;
-    int kernel_sdim = kernel_size * kernel_size * kernel_size;
     Tensor* top_data = nullptr;
+    int kernel_sdim = num_elements(this->kernel_size_);
     TensorShape top_shape({channel, kernel_sdim, top_height});
     OP_REQUIRES_OK(context, context->allocate_output(0, top_shape, &top_data));
 
@@ -116,7 +116,7 @@ class OctreeToColOp : public Octree2ColBase {
     auto btm_ptr = btm_data.flat<float>().data();
     auto top_ptr = top_data->flat<float>().data();
     octree2col_gpu(top_ptr, btm_ptr, channel, top_height,
-        kernel_sdim, this->stride_, this->octree_.neighbor_gpu(btm_depth),
+        kernel_sdim, this->stride_, octree_.neighbor_gpu(btm_depth),
         ni_ptr, top_height, 0);
   }
 };
@@ -129,7 +129,8 @@ class ColToOctreeOp : public Octree2ColBase {
 
   void Compute(OpKernelContext* context) override {
     // init
-    this->set_octree_parser(context);
+    OctreeParser octree_;
+    this->set_octree_parser(context, octree_);
     Tensor ni_gpu;
     this->init_ni_ptr(context, ni_gpu);
     auto ni_ptr =ni_gpu.flat<int>().data();
@@ -142,9 +143,9 @@ class ColToOctreeOp : public Octree2ColBase {
 
     // out grad
     int btm_depth = this->depth_;
-    int btm_height = this->octree_.info().node_num(btm_depth);
+    int btm_height = octree_.info().node_num(btm_depth);
     if (this->stride_ == 2) {
-      CHECK_EQ(top_height, this->octree_.info().node_num_nempty(btm_depth + 1));
+      CHECK_EQ(top_height, octree_.info().node_num_nempty(btm_depth - 1));
     }
     Tensor* btm_grad = nullptr;
     TensorShape btm_shape({1, channel, btm_height, 1});
@@ -153,10 +154,10 @@ class ColToOctreeOp : public Octree2ColBase {
     // execute
     auto top_ptr = top_grad.flat<float>().data();
     auto btm_ptr = btm_grad->flat<float>().data();
-    int kernel_size = this->kernel_size_;
-    int kernel_sdim = kernel_size * kernel_size * kernel_size;
+    // int kernel_size = this->kernel_size_;
+    int kernel_sdim = num_elements(this->kernel_size_);
     col2octree_gpu(top_ptr, btm_ptr, channel, top_height,
-        kernel_sdim, this->stride_, this->octree_.neighbor_gpu(btm_depth),
+        kernel_sdim, this->stride_, octree_.neighbor_gpu(btm_depth),
         ni_ptr, top_height, 0);
   }
 };

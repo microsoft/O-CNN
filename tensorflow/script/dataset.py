@@ -5,7 +5,8 @@ from libs import *
 
 
 class PointsPreprocessor:
-  def __init__(self, distort, x_alias='octree', y_alias='label'):
+  def __init__(self, depth, distort, x_alias='octree', y_alias='label'):
+    self._depth = depth
     self._distort = distort
     self._x_alias = x_alias
     self._y_alias = y_alias
@@ -23,9 +24,12 @@ class PointsPreprocessor:
       jitter = tf.random.uniform(shape=[], minval=-2.0, maxval=2.0, dtype=tf.float32)
 
     points, label = self.parse_example(record)
+    radius, center = bounding_sphere(points)
     points = transform_points(points, rotate=angle, scale=scale, jitter=jitter, 
-                              axis='z', depth=5, offset=0.55)
-    octree = points2octree(points, depth=5, full_depth=2, node_dis=False, split_label=False)
+                              radius=radius, center=center, axis='z', 
+                              depth=self._depth, offset=0.55)
+    octree = points2octree(points, depth=self._depth, full_depth=2, node_dis=False, 
+                           split_label=False)
     return octree, label
 
   def parse_example(self, record):
@@ -35,13 +39,13 @@ class PointsPreprocessor:
     return parsed[self._x_alias], parsed[self._y_alias]
 
 
-def octree_dataset(record_name, batch_size):
+def octree_dataset(record_name, batch_size, x_alias='octree', y_alias='label'):
   def octree_record_parser(record):
-    features = {"octree": tf.FixedLenFeature([], tf.string),
-                "label" : tf.FixedLenFeature([], tf.int64)}
+    features = {x_alias: tf.FixedLenFeature([], tf.string),
+                y_alias: tf.FixedLenFeature([], tf.int64)}
     parsed = tf.parse_example(record, features)
-    octree = octree_database(parsed["octree"]) # merge_octrees
-    label = parsed["label"]
+    octree = octree_batch(parsed[x_alias]) # merge_octrees
+    label = parsed[y_alias]
     return octree, label
 
   with tf.name_scope('octree_dataset'):
@@ -50,13 +54,14 @@ def octree_dataset(record_name, batch_size):
                   .make_one_shot_iterator().get_next()
 
 
-def points_dataset(record_name, batch_size, distort=False, x_alias='octree', y_alias='label'):
+def points_dataset(record_name, batch_size, depth=5, distort=False, 
+                   x_alias='octree', y_alias='label'):
   def merge_octrees(octrees, labels):
-    octree = octree_database(octrees)
+    octree = octree_batch(octrees)
     return octree, labels
 
   with tf.name_scope('points_dataset'):
     return tf.data.TFRecordDataset([record_name]).repeat().shuffle(1000) \
-                  .map(PointsPreprocessor(distort, x_alias, y_alias), num_parallel_calls=8) \
-                  .batch(batch_size).map(merge_octrees, num_parallel_calls=4)\
+                  .map(PointsPreprocessor(depth, distort, x_alias, y_alias), num_parallel_calls=8) \
+                  .batch(batch_size).map(merge_octrees, num_parallel_calls=8) \
                   .prefetch(8).make_one_shot_iterator().get_next()

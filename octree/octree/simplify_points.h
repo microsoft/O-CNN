@@ -62,6 +62,7 @@ class SimplifyPoints {
       int y = static_cast<int>(y0);
       int z = static_cast<int>(z0);
 
+      // hash
       int h = (x * dim_ + y) * dim_ + z;
       if (spatial_hash_[h] == -1) {
         spatial_hash_[h] = id++;

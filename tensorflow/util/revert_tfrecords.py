@@ -11,7 +11,7 @@ parser.add_argument('--list_file', type=str, required=False, default='filelist.t
                     help='File to record the list of the data')
 parser.add_argument('--count', type=int, required=False, default=0,
                     help='Specify the count of the data to extract')
-parser.add_argument('--file_type', type=str, required=False, default='octree',
+parser.add_argument('--file_type', type=str, required=False, default='data',
                     help='File type')
 
 

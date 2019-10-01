@@ -3,6 +3,8 @@
 
 #include <cstring>
 #include <fstream>
+#include <sstream>
+#include <cassert>
 
 bool Points::read_points(const string& filename) {
   std::ifstream infile(filename, std::ios::binary);
@@ -34,41 +36,79 @@ bool Points::write_points(const string& filename) const {
   return true;
 }
 
+//bool Points::write_ply(const string & filename) const {
+//  std::ofstream outfile(filename, std::ios::binary);
+//  if (!outfile) return false;
+//
+//  // write header
+//  int n = info_->pt_num();
+//  outfile << "ply\nformat ascii 1.0\nelement vertex " << n
+//    << "\nproperty float x\nproperty float y\nproperty float z\n"
+//    << "property float nx\nproperty float ny\nproperty float nz\n"
+//    << "element face 0\nproperty list uchar int vertex_indices\n"
+//    << "end_header" << std::endl;
+//
+//  // wirte contents
+//  const float* pts = ptr(PointsInfo::kPoint);
+//  const float* normals = ptr(PointsInfo::kNormal);
+//  if (normals == nullptr) {
+//    outfile.close();
+//    return false;
+//  }
+
 bool Points::write_ply(const string & filename) const {
   std::ofstream outfile(filename, std::ios::binary);
   if (!outfile) return false;
 
-  // write header
   int n = info_->pt_num();
-  outfile << "ply\nformat ascii 1.0\nelement vertex " << n
-      << "\nproperty float x\nproperty float y\nproperty float z\n"
-      << "property float nx\nproperty float ny\nproperty float nz\n"
-      << "element face 0\nproperty list uchar int vertex_indices\n"
-      << "end_header" << std::endl;
+  const float* ptr_pts = points();
+  const float* ptr_normal = normal();
+  const float* ptr_feature = feature();
+  const float* ptr_label = label();
+  const int channel_pts = info_->channel(PointsInfo::kPoint);       // 3 channel
+  const int channel_normal = info_->channel(PointsInfo::kNormal);   // 3 channel
+  const int channel_feature = info_->channel(PointsInfo::kFeature); // x channel
+  const int channel_label = info_->channel(PointsInfo::kLabel);     // 1 channel
+  assert(channel_pts == 3 && channel_normal == 3 && channel_label == 1);
 
-  // wirte contents
-  const int len = 128;
-  vector<char> str(n * len, 0);
-  char* pstr = str.data();
-  const float* pts = ptr(PointsInfo::kPoint);
-  const float* normals = ptr(PointsInfo::kNormal);
-  for (int i = 0; i < n; ++i) {
-    sprintf(pstr + i * len,
-        "%.6f %.6f %.6f %.6f %.6f %.6f\n",
-        pts[3 * i], pts[3 * i + 1], pts[3 * i + 2],
-        normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]);
+  // write header
+  std::ostringstream oss;
+  oss << "ply\nformat ascii 1.0\nelement vertex " << n
+      << "\nproperty float x\nproperty float y\nproperty float z\n";
+  if (ptr_normal != nullptr) {
+    oss << "property float nx\nproperty float ny\nproperty float nz\n";
   }
-  int k = 0;
-  for (int i = 0; i < n; ++i) {
-    for (int j = len * i; j < len * (i + 1); ++j) {
-      if (str[j] == 0) break;
-      str[k++] = str[j];
+  if (ptr_feature != nullptr) {
+    for (int i = 0; i < channel_feature; ++i) {
+      oss << "property float feature" << i << "\n";
     }
   }
-  outfile.write(str.data(), k);
+  if (ptr_label != nullptr) {
+    oss << "property float label\n";
+  }
+  oss << "element face 0\nproperty list uchar int vertex_indices\nend_header\n";
+  
+  // write content
+  for (int i = 0; i < n; ++i) {
+    for (int c = 0; c < channel_pts; ++c) {
+      oss << ptr_pts[i*channel_pts + c] << " ";
+    }
+    for (int c = 0; c < channel_normal; ++c) {
+      oss << ptr_normal[i*channel_normal + c] << " ";
+    }
+    for (int c = 0; c < channel_feature; ++c) {
+      oss << ptr_feature[i*channel_feature + c] << " ";
+    }
+    if (channel_label != 0) {
+      oss << ptr_label[i];
+    }
+    oss << std::endl;
+  }
 
+  // write to file
+  outfile << oss.str() << std::endl;
   outfile.close();
-  return false;
+  return true;
 }
 
 

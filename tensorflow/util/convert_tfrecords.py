@@ -10,7 +10,7 @@ parser.add_argument('--list_file', type=str, required=True,
                     help='File containing the list of data')
 parser.add_argument('--records_name', type=str, required=True,
                     help='Name of tfrecords')
-parser.add_argument('--file_type', type=str, required=False, default='octree',
+parser.add_argument('--file_type', type=str, required=False, default='data',
                     help='File type')
 parser.add_argument('--shuffle', type=str, required=False, default='',
                     help='Whether to shuffle the data order')

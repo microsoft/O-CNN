@@ -15,6 +15,8 @@ DEFINE_float(offset, kOptional, 0.55f, "The offset value for handing thin shapes
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
 
+// The points must have normals! Can not deal with labela and feature! (TODO)
+
 int main(int argc, char* argv[]) {
   bool succ = cflags::ParseCmd(argc, argv);
   if (!succ) {

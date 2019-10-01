@@ -46,7 +46,7 @@ class NeighHelper {
 // !!! TODO: support gpu stream for gpu functions !!!
 
 int num_elements(const vector<int>& vec);
-
+void resize_with_last_val(vector<int>& vec, const int size);
 
 template <typename Dtype>
 void memset_cpu(const int N, const Dtype alpha, Dtype *X);

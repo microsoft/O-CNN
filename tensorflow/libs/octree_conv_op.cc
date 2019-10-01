@@ -1,5 +1,5 @@
 #include "octree_conv.h"
-#include "octree_util.h"
+#include "octree_nn.h"
 #include "tensorflow_gpu_gemm.h"
 
 #include <cuda_runtime.h>
@@ -31,7 +31,7 @@ REGISTER_OP("OctreeConv")
     .Input("octree: int8")
     .Attr("depth: int")
     .Attr("num_output: int")
-    .Attr("kernel_size: int")
+    .Attr("kernel_size: list(int)")
     .Attr("stride: int")
     .Output("top_data: float")
     .SetShapeFn(conv_forward_fun)
@@ -43,7 +43,7 @@ REGISTER_OP("OctreeDeconv")
     .Input("octree: int8")
     .Attr("depth: int")
     .Attr("num_output: int")
-    .Attr("kernel_size: int")
+    .Attr("kernel_size: list(int)")
     .Attr("stride: int")
     .Output("top_data: float")
     .SetShapeFn(conv_forward_fun)
@@ -56,7 +56,7 @@ REGISTER_OP("OctreeConvGrad")
     .Input("top_diff: float")
     .Attr("depth: int")
     .Attr("num_output: int")
-    .Attr("kernel_size: int")
+    .Attr("kernel_size: list(int)")
     .Attr("stride: int")
     .Output("btm_diff: float")
     .Output("weight_diff: float")
@@ -70,7 +70,7 @@ REGISTER_OP("OctreeDeconvGrad")
     .Input("top_diff: float")
     .Attr("depth: int")
     .Attr("num_output: int")
-    .Attr("kernel_size: int")
+    .Attr("kernel_size: list(int)")
     .Attr("stride: int")
     .Output("btm_diff: float")
     .Output("weight_diff: float")
@@ -82,12 +82,16 @@ class OctreeConvTF : public OpKernel, public OctreeBaseConv<float> {
  public:
   explicit OctreeConvTF(OpKernelConstruction* context)
     : OpKernel(context), OctreeBaseConv<float>() {
-    int ksize = 0;
-    OP_REQUIRES_OK(context, context->GetAttr("depth", &op_curr_depth_));
-    OP_REQUIRES_OK(context, context->GetAttr("num_output", &op_num_output_));
-    OP_REQUIRES_OK(context, context->GetAttr("kernel_size", &ksize));
-    OP_REQUIRES_OK(context, context->GetAttr("stride", &op_stride_));
-    op_kernel_size_ = vector<int> { ksize, ksize, ksize };
+    OP_REQUIRES_OK(context, context->GetAttr("depth", &depth_));
+    OP_REQUIRES_OK(context, context->GetAttr("num_output", &num_output_));
+    OP_REQUIRES_OK(context, context->GetAttr("kernel_size", &kernel_size_));
+    OP_REQUIRES_OK(context, context->GetAttr("stride", &stride_));
+    resize_with_last_val(kernel_size_, 3);
+
+    CHECK_GT(depth_, 0) << "The depth should be larger than 0";
+    CHECK_GT(num_output_, 0) << "The num_output should be larger than 0";
+    for (auto k : kernel_size_) { CHECK(0 < k && k < 4) << "Invalide kernel size"; }
+    CHECK(stride_ == 1 || stride_ == 2) << "Unsupport stride";
   }
 
   void setup_op(OpKernelContext* context) {
@@ -102,12 +106,12 @@ class OctreeConvTF : public OpKernel, public OctreeBaseConv<float> {
     // setup octree conv
     const TensorShape& shape_in = context->input(0).shape();
     int channel_in = shape_in.dim_size(1), height_btm = shape_in.dim_size(2);
-    OctreeBaseConv<float>::setup(op_kernel_size_, op_stride_, op_curr_depth_,
-                                 channel_in, op_num_output_);
-    if(op_stride_ == 2 && is_deconvolution_layer()){
-      CHECK_EQ(height_btm, this->octree_.info().node_num_nempty(op_curr_depth_));
+    OctreeBaseConv<float>::setup(kernel_size_, stride_, depth_,
+        channel_in, num_output_);
+    if (stride_ == 2 && is_deconvolution_layer()) {
+      CHECK_EQ(height_btm, this->octree_.info().node_num_nempty(depth_));
     } else {
-      CHECK_EQ(height_btm, this->octree_.info().node_num(op_curr_depth_));
+      CHECK_EQ(height_btm, this->octree_.info().node_num(depth_)) << " d: " << depth_;
     }
   }
 
@@ -116,29 +120,29 @@ class OctreeConvTF : public OpKernel, public OctreeBaseConv<float> {
     OctreeBaseConv<float>::reshape();
 
     int count = num_elements(this->workspace_shape_);
-    OP_REQUIRES_OK(ctx, 
-        ctx->allocate_temp(DT_FLOAT, TensorShape({count}), workspace));
+    OP_REQUIRES_OK(ctx,
+        ctx->allocate_temp(DT_FLOAT, TensorShape({ count }), workspace));
     this->workspace_ = workspace->flat<float>().data();
 
     count = num_elements(this->result_buffer_shape_);
     if (count != 0) {
-      OP_REQUIRES_OK(ctx, 
-          ctx->allocate_temp(DT_FLOAT, TensorShape({count}), result_buffer));
+      OP_REQUIRES_OK(ctx,
+          ctx->allocate_temp(DT_FLOAT, TensorShape({ count }), result_buffer));
       this->result_buffer_ = result_buffer->flat<float>().data();
     } else {
       this->result_buffer_ = nullptr;
     }
 
-    count = num_elements(this->data_buffer_shape_); 
+    count = num_elements(this->data_buffer_shape_);
     if (count != 0) {
-      OP_REQUIRES_OK(ctx, 
-          ctx->allocate_temp(DT_FLOAT, TensorShape({count}), data_buffer));
+      OP_REQUIRES_OK(ctx,
+          ctx->allocate_temp(DT_FLOAT, TensorShape({ count }), data_buffer));
       this->data_buffer_ = data_buffer->flat<float>().data();
     } else {
       this->data_buffer_ = nullptr;
     }
 
-    vector<int>& ni_cpu = NeighHelper::get_ni(op_kernel_size_);
+    vector<int>& ni_cpu = NeighHelper::get_ni(kernel_size_);
     count = ni_cpu.size();
     if (count != 0) {
       OP_REQUIRES_OK(ctx,
@@ -150,10 +154,10 @@ class OctreeConvTF : public OpKernel, public OctreeBaseConv<float> {
   }
 
  private:
-  int op_curr_depth_;
-  int op_num_output_;
-  int op_stride_;
-  vector<int> op_kernel_size_;
+  int depth_;
+  int num_output_;
+  int stride_;
+  vector<int> kernel_size_;
   GEMMEngineTF tf_gemm_gpu_;
 };
 
@@ -214,12 +218,12 @@ class OctreeConvGradOp : public OctreeConvTF {
 
   virtual bool is_deconvolution_layer() { return false; }
 
-  void alloc_output_memory(OpKernelContext* context, 
+  void alloc_output_memory(OpKernelContext* context,
       Tensor** btm_out, Tensor** weights_out) {
-    OP_REQUIRES_OK(context, 
-       context->allocate_output(0, context->input(0).shape(), btm_out));
-    OP_REQUIRES_OK(context, 
-       context->allocate_output(1, context->input(1).shape(), weights_out));
+    OP_REQUIRES_OK(context,
+        context->allocate_output(0, context->input(0).shape(), btm_out));
+    OP_REQUIRES_OK(context,
+        context->allocate_output(1, context->input(1).shape(), weights_out));
   }
 };
 
@@ -274,18 +278,18 @@ class OctreeDeconvGradOp : public OctreeConvTF {
     auto weights_diff = weights_out->flat<float>().data();
 
     // backward
-    this->weight_gpu_gemm(weights_diff, btm_data, top_diff);
+    this->weight_gpu_gemm(weights_diff, top_diff, btm_data);
     this->forward_gpu_gemm(btm_diff, top_diff, weights);
   }
 
   virtual bool is_deconvolution_layer() { return true; }
 
-  void alloc_output_memory(OpKernelContext* context, 
+  void alloc_output_memory(OpKernelContext* context,
       Tensor** btm_out, Tensor** weights_out) {
-    OP_REQUIRES_OK(context, 
-       context->allocate_output(0, context->input(0).shape(), btm_out));
-    OP_REQUIRES_OK(context, 
-       context->allocate_output(1, context->input(1).shape(), weights_out));
+    OP_REQUIRES_OK(context,
+        context->allocate_output(0, context->input(0).shape(), btm_out));
+    OP_REQUIRES_OK(context,
+        context->allocate_output(1, context->input(1).shape(), weights_out));
   }
 };
 
@@ -293,6 +297,6 @@ class OctreeDeconvGradOp : public OctreeConvTF {
 REGISTER_KERNEL_BUILDER(Name("OctreeConv").Device(DEVICE_GPU), OctreeConvOp);
 REGISTER_KERNEL_BUILDER(Name("OctreeDeconv").Device(DEVICE_GPU), OctreeDeconvOp);
 REGISTER_KERNEL_BUILDER(Name("OctreeConvGrad").Device(DEVICE_GPU), OctreeConvGradOp);
-REGISTER_KERNEL_BUILDER(Name("OctreeDeonvGrad").Device(DEVICE_GPU), OctreeDeconvGradOp);
+REGISTER_KERNEL_BUILDER(Name("OctreeDeconvGrad").Device(DEVICE_GPU), OctreeDeconvGradOp);
 
 }  // namespace tensorflow

@@ -1,5 +1,5 @@
 #include "merge_octrees.h"
-#include "octree_util.h"
+#include "octree_nn.h"
 #include "logs.h"
 
 void merge_octrees(vector<char>& octree_out, const vector<const char *> octrees_in) {

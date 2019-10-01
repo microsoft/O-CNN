@@ -1,4 +1,4 @@
-#include "octree_util.h"
+#include "octree_nn.h"
 #include "device_alternate.h"
 
 #include <thrust/transform_scan.h>

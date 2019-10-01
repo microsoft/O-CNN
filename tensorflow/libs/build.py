@@ -1,6 +1,14 @@
 import os
+import sys
 import tensorflow as tf
 import subprocess
+
+# OCTREE_DIR = '/home/penwan/workspace/ps/Octree'
+OCTREE_DIR = '/mnt/hd3/penwan/Projects/Octree'
+CUDA_DIR   = '/usr/local/cuda-10.1'
+if len(sys.argv) > 1: OCTREE_DIR = sys.argv[1]
+if len(sys.argv) > 2: CUDA_DIR = sys.argv[2]
+
 
 lines = []
 
@@ -8,18 +16,18 @@ TF_CFLAGS = " ".join(tf.sysconfig.get_compile_flags())
 TF_LFLAGS = " ".join(tf.sysconfig.get_link_flags())
 lines.append("TF_CFLAGS := %s" % TF_CFLAGS)
 lines.append("TF_LFLAGS := %s" % TF_LFLAGS)
-lines.append("OCT_CFLAGS := -I/home/penwan/workspace/ps/Octree/octree")
-lines.append("OCT_LFLAGS := -L/home/penwan/workspace/ps/Octree/build -loctree_lib -lrply")
+lines.append("OCT_CFLAGS := -I%s/octree" % OCTREE_DIR)
+lines.append("OCT_LFLAGS := -L%s/build -loctree_lib -lrply" % OCTREE_DIR)
 lines.append("")
 
 lines.append("NVCC_FLAGS1 := -std=c++11 -O2 -c")
-lines.append("NVCC_FLAGS2 := $(TF_CFLAGS) $(OCT_CFLAGS) -I /usr/local/cuda-10.1/include -x cu -Xcompiler -fPIC -Xcompiler -fopenmp -D GOOGLE_CUDA=1 -I /usr/local -expt-relaxed-constexpr -DNDEBUG")
+lines.append("NVCC_FLAGS2 := $(TF_CFLAGS) $(OCT_CFLAGS) -I %s/include -x cu -Xcompiler -fPIC -D GOOGLE_CUDA=1 -I /usr/local -expt-relaxed-constexpr -DNDEBUG" % CUDA_DIR)
 lines.append("CC_FLAGS1 := -std=c++11 -O2")
-lines.append("CC_FLAGS2 := $(TF_CFLAGS) $(OCT_CFLAGS) -I /usr/local/cuda-10.1/include -L /usr/local/cuda-10.1/lib64 -D GOOGLE_CUDA=1 $(TF_LFLAGS) $(OCT_LFLAGS) -fPIC -lcudart")
+lines.append("CC_FLAGS2 := $(TF_CFLAGS) $(OCT_CFLAGS) -I %s/include -L %s/lib64 -D GOOGLE_CUDA=1 $(TF_LFLAGS) $(OCT_LFLAGS) -fPIC -lcudart" % (CUDA_DIR, CUDA_DIR))
 lines.append("")
 
 lines.append("CC := g++")
-lines.append("NVCC := /usr/local/cuda-10.1/bin/nvcc")
+lines.append("NVCC := %s/bin/nvcc" % CUDA_DIR)
 lines.append("")
 
 cpu_objects = []
@@ -38,15 +46,7 @@ for filename in sorted(os.listdir(".")):
         cpu_objects.append(os.path.join("object", targetname))
     elif filename.endswith(".h"):
         all_headers.append(filename)
-# for filename in sorted(os.listdir("util")):
-#     if filename.endswith(".cu.cc") or filename.endswith(".cu"):
-#         targetname = filename + ".o"
-#         gpu_sources.append(os.path.join("util", filename))
-#         gpu_objects.append(os.path.join("object", targetname))
-#     elif filename.endswith(".cc") or filename.endswith(".cpp"):
-#         targetname = filename + ".o"
-#         cpu_sources.append(os.path.join("util", filename))
-#         cpu_objects.append(os.path.join("object", targetname))
+
 lines.append("cpu_objects := %s" % " ".join(cpu_objects))
 lines.append("gpu_objects := %s" % " ".join(gpu_objects))
 lines.append("")
