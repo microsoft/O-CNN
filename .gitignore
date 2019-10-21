@@ -287,5 +287,5 @@ __pycache__/
 *.odx.cs
 *.xsd.cs
 
-ocnn/octree/build
-ocnn/octree/external
+octree/build
+octree/external

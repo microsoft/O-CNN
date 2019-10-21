@@ -76,11 +76,11 @@ void PointsParser::rotate(const float angle, const float* axis) {
   int npt = info_->pt_num();
   vector<float> tmp(3 * npt);
   matrix_prod(tmp.data(), rot, mutable_points(), 3, npt, 3);
-  copy(tmp.begin(), tmp.end(), mutable_points());
+  std::copy(tmp.begin(), tmp.end(), mutable_points());
 
   if (this->info().has_property(PointsInfo::kNormal)) {
     matrix_prod(tmp.data(), rot, this->mutable_normal(), 3, npt, 3);
-    copy(tmp.begin(), tmp.end(), mutable_normal());
+    std::copy(tmp.begin(), tmp.end(), mutable_normal());
   }
 }
 
@@ -88,7 +88,7 @@ void PointsParser::transform(const float* mat) {
   int npt = info_->pt_num();
   vector<float> tmp(3 * npt);
   matrix_prod(tmp.data(), mat, mutable_points(), 3, npt, 3);
-  copy(tmp.begin(), tmp.end(), mutable_points());
+  std::copy(tmp.begin(), tmp.end(), mutable_points());
 
   if (this->info().has_property(PointsInfo::kNormal)) {
     float mat_it[9];
@@ -100,7 +100,7 @@ void PointsParser::transform(const float* mat) {
       normalize_nx3(tmp.data(), npt);
     }
 
-    copy(tmp.begin(), tmp.end(), mutable_normal());
+    std::copy(tmp.begin(), tmp.end(), mutable_normal());
   }
 }
 
@@ -115,6 +115,7 @@ void PointsParser::clip(const float* bbmin, const float* bbmax) {
         bbmin[2] < pts[ix3 + 2] && pts[ix3 + 2] < bbmax[2];
     npt_bbox += in_bbox[i];
   }
+  if (npt_bbox == npt) return; // early stop
 
   // Just discard the points which are out of the bbox
   for (int t = 0; t < PointsInfo::kPTypeNum; ++t) {

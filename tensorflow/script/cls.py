@@ -84,28 +84,19 @@ def test_network(reuse=True):
   return losses # loss, accu, regularizer
 
 
-def build_solver(total_loss):
-  with tf.name_scope('solver'):
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    with tf.control_dependencies(update_ops):
-      global_step = tf.Variable(0, trainable=False, name='global_step')
-      lr = learning_rate(global_step)
-      solver = tf.train.MomentumOptimizer(lr, 0.9) \
-                       .minimize(total_loss, global_step=global_step)
-  return solver
-
-
 def train():
   # build graph
   loss_train, accu_train, reg_train = train_network()
   loss_test,  accu_test,  reg_test  = test_network()
   total_loss_train = loss_train + reg_train
-  solver = build_solver(total_loss_train)
+  total_loss_test  = loss_test + reg_test
+  solver = build_solver(total_loss_train, learning_rate)
 
   # summary
   names = ['loss', 'accu', 'reg', 'total_loss']
-  tensors = [loss_train, accu_train, reg_train, total_loss_train]
-  summ_train = summary_train(names, tensors)
+  train_tensors = [loss_train, accu_train, reg_train, total_loss_train]
+  test_tensors = [loss_test, accu_test, reg_test, total_loss_test]
+  summ_train = summary_train(names, train_tensors)
   summ_test, summ_holder = summary_test(names)
 
   # checkpoint
@@ -134,14 +125,7 @@ def train():
       # testing
       if i % FLAGS.test_every_iter == 0:
         # run testing average
-        avg_test = [0, 0, 0]
-        for _ in range(FLAGS.test_iter):
-          iter_test_result = sess.run([loss_test, accu_test, reg_test])
-          for j in range(3):
-            avg_test[j] += iter_test_result[j]
-        for j in range(3):
-          avg_test[j] /= FLAGS.test_iter
-        avg_test.append(avg_test[0] + avg_test[2]) # ['loss', 'accu', 'reg', 'total_loss']
+        avg_test = run_k_iterations(sess, FLAGS.test_iter, test_tensors)
 
         # run testing summary
         summary = sess.run(summ_test, feed_dict=dict(zip(summ_holder, avg_test)))

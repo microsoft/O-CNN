@@ -12,11 +12,8 @@ class PointsPreprocessor:
     self._y_alias = y_alias
 
   def __call__(self, record): 
-    angle = 0.0
-    scale = 1.0
-    jitter = 0.0
+    angle, scale, jitter, rot_num = 0.0, 1.0, 0.0, 24
     if self._distort:
-      rot_num = 24
       kPI = 2.0 * 3.14159265
       rd = tf.random.uniform(shape=[], minval=0, maxval=rot_num, dtype=tf.int32)
       angle = kPI * tf.cast(rd, dtype=tf.float32) / float(rot_num)

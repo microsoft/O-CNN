@@ -23,7 +23,7 @@ REGISTER_OP("TransformPoints")
       c->set_output(0, c->input(0));
       return Status::OK();
     })
-    .Doc(R"doc(Points Database operator.)doc");
+    .Doc(R"doc(Transform points.)doc");
 
 REGISTER_OP("BoundingSphere")
     .Input("points: string")
@@ -74,9 +74,6 @@ class TransformPointsOP : public OpKernel {
     string msg;
     bool succ = pts.info().check_format(msg);
     CHECK(succ) << msg;
-
-    // bounding sphere
-    //bounding_sphere(radius, center, pts.points(), pts.info().pt_num());
 
     // centralize & displacement
     const float kEPS = 1.0e-10f;

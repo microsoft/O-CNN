@@ -3,8 +3,7 @@ import sys
 import tensorflow as tf
 import subprocess
 
-# OCTREE_DIR = '/home/penwan/workspace/ps/Octree'
-OCTREE_DIR = '/mnt/hd3/penwan/Projects/Octree'
+OCTREE_DIR = '../../octree'
 CUDA_DIR   = '/usr/local/cuda-10.1'
 if len(sys.argv) > 1: OCTREE_DIR = sys.argv[1]
 if len(sys.argv) > 2: CUDA_DIR = sys.argv[2]

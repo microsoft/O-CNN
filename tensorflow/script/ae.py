@@ -6,6 +6,7 @@ import tensorflow as tf
 sys.path.append("..")
 from config import *
 from ocnn import *
+from dataset import *
 
 
 def octree_encoder(octree, depth, nout, training, reuse=False):
@@ -57,7 +58,7 @@ def octree_decoder(code, octree, depth, training, reuse=False):
         data = octree_conv_bn_relu(data, octree, d, channel[d], training)        
       
       with tf.variable_scope('predict_%d' % d):
-        logit, label = predict_label(data, training)
+        logit, label = predict_label(data, 2, 32, training)
 
       with tf.variable_scope('loss_%d' % d):
         logit = tf.transpose(tf.squeeze(logit, [0,3])) # (1, C, H, 1) -> (H, C)
@@ -66,7 +67,8 @@ def octree_decoder(code, octree, depth, training, reuse=False):
 
       if d == depth:
         with tf.variable_scope('regress_%d' % d):
-          loss.append(regress_loss(predict_signal(data, FLAGS.channel, training), signal_gt))
+          signal = predict_signal(data, FLAGS.channel, 32, training)
+          loss.append(regress_loss(signal, signal_gt))
 
   return loss, accu
 
@@ -93,7 +95,7 @@ def octree_decode_shape(code, depth, training, reuse=False):
         data = octree_conv_bn_relu(data, octree, d, channel[d], training)        
       
       with tf.variable_scope('predict_%d' % d):
-        _, label = predict_label(data, training)
+        _, label = predict_label(data, 2, 32, training)
 
       with tf.variable_scope('octree_%d' % d, reuse=True):
         octree = octree_update(octree, label, depth=d, mask=1)
@@ -103,8 +105,8 @@ def octree_decode_shape(code, depth, training, reuse=False):
           octree = octree_grow(octree, target_depth=d+1, full_octree=False)
       else:
         with tf.variable_scope('regress_%d' % d):
-          signal = predict_signal(data, FLAGS.channel, training)
-          signal = normalize(signal)
+          signal = predict_signal(data, FLAGS.channel, 32, training)
+          signal = normalize_signal(signal)
           signal = octree_mask(signal, label, mask=0)
         with tf.variable_scope('octree_%d' % d, reuse=True):
           octree = octree_set_property(octree, signal, property_name="feature", depth=depth)
@@ -113,7 +115,7 @@ def octree_decode_shape(code, depth, training, reuse=False):
 
 
 def train_network():
-  octree, label = dataset(FLAGS.train_data, FLAGS.train_batch_size)
+  octree, label = octree_dataset(FLAGS.train_data, FLAGS.train_batch_size)
 
   code = octree_encoder(octree, FLAGS.depth, nout=128, training=True, reuse=False)
   loss, accu = octree_decoder(code, octree, FLAGS.depth, training=True, reuse=False)
@@ -143,7 +145,7 @@ def train_network():
 
 
 def test_network():
-  octree, label = dataset(FLAGS.train_data, FLAGS.train_batch_size)
+  octree, label = octree_dataset(FLAGS.train_data, FLAGS.train_batch_size)
   
   code = octree_encoder(octree, FLAGS.depth, nout=128, training=False, reuse=True)
   loss, accu = octree_decoder(code, octree, FLAGS.depth, training=False, reuse=True)

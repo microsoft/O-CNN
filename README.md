@@ -2,99 +2,103 @@
 
 ## Introduction <a name="introduction"></a>
 
-This repository contains the implementation of *O-CNN*  and  *Aadptive O-CNN* introduced in our SIGGRAPH 2017 paper and SIGGRAPH Asia 2018 paper.  The code is released under the MIT license.
+This repository contains the implementation of *O-CNN*  and  *Aadptive O-CNN* 
+introduced in our SIGGRAPH 2017 paper and SIGGRAPH Asia 2018 paper.  
+The code is released under the **MIT license**.
 
 We have released the TensorFlow-based implementation under the `tf` branch, and our future development will be focused on this implementation.
 If you would like to have a try with the beta version, please pull the code and run the following command: `git checkout -b tf`.
 
-* **[O-CNN: Octree-based Convolutional Neural Networks](https://wang-ps.github.io/O-CNN.html)**<br/>
-By [Peng-Shuai Wang](https://wang-ps.github.io/), [Yang Liu](https://xueyuhanlang.github.io/), Yu-Xiao Guo, Chun-Yu Sun and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
-ACM Transactions on Graphics (SIGGRAPH), 36(4), 2017
+- **[O-CNN: Octree-based Convolutional Neural Networks](https://wang-ps.github.io/O-CNN.html)**<br/>
+  By [Peng-Shuai Wang](https://wang-ps.github.io/), [Yang Liu](https://xueyuhanlang.github.io/), 
+  Yu-Xiao Guo, Chun-Yu Sun and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/) <br/>
+  ACM Transactions on Graphics (SIGGRAPH), 36(4), 2017
 
-* **[Adaptive O-CNN: A Patch-based Deep Representation of 3D Shapes](https://wang-ps.github.io/AO-CNN.html)**<br/>
-By [Peng-Shuai Wang](https://wang-ps.github.io/), Chun-Yu Sun, [Yang Liu](https://xueyuhanlang.github.io/) and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
+- **[Adaptive O-CNN: A Patch-based Deep Representation of 3D Shapes](https://wang-ps.github.io/AO-CNN.html)**<br/>
+By [Peng-Shuai Wang](https://wang-ps.github.io/), Chun-Yu Sun, [Yang Liu](https://xueyuhanlang.github.io/) 
+and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
 ACM Transactions on Graphics (SIGGRAPH Asia), 37(6), 2018<br/>
 
 
 If you use our code or models, please cite our paper.
-
-    @article {Wang-2017-OCNN,
-        title     = {{O-CNN: Octree-based Convolutional Neural Networks for 3D Shape Analysis}},
-        author    = {Wang, Peng-Shuai and Liu, Yang and Guo, Yu-Xiao and Sun, Chun-Yu and Tong, Xin},
-        journal   = {ACM Transactions on Graphics (SIGGRAPH)},
-        volume    = {36},
-        number    = {4},
-        year      = {2017},
-    }
-    @article {Wang-2018-AOCNN,
-        title     = {{Adaptive O-CNN: A Patch-based Deep Representation of 3D Shapes}},
-        author    = {Wang, Peng-Shuai and Sun, Chun-Yu and Liu, Yang and Tong, Xin},
-        journal   = {ACM Transactions on Graphics (SIGGRAPH Asia)},
-        volume    = {37},
-        number    = {6},
-        year      = {2018},
-    }
-
+```
+@article {Wang-2017-OCNN,
+    title     = {{O-CNN: Octree-based Convolutional Neural Networks for 3D Shape Analysis}},
+    author    = {Wang, Peng-Shuai and Liu, Yang and Guo, Yu-Xiao and Sun, Chun-Yu and Tong, Xin},
+    journal   = {ACM Transactions on Graphics (SIGGRAPH)},
+    volume    = {36},
+    number    = {4},
+    year      = {2017},
+}
+@article {Wang-2018-AOCNN,
+    title     = {{Adaptive O-CNN: A Patch-based Deep Representation of 3D Shapes}},
+    author    = {Wang, Peng-Shuai and Sun, Chun-Yu and Liu, Yang and Tong, Xin},
+    journal   = {ACM Transactions on Graphics (SIGGRAPH Asia)},
+    volume    = {37},
+    number    = {6},
+    year      = {2018},
+}
+```
 
 ## 1 &nbsp; Installation <a name="installation"></a>
 
-### 1.1 &nbsp; Manual Setup
-O-CNN is built upon the [Caffe](https://github.com/BVLC/caffe) framework and it supports octree-based convolution, deconvolution, pooling, and unpooling. The code has been tested on the Windows 10 x64 (It can also be built on the Ubuntu 16.04). Its installation is as follows:
 
-- Clone [Caffe](https://github.com/BVLC/caffe) into the caffe directory with revision `6bfc5ca`: `git clone https://github.com/BVLC/caffe.git && cd caffe && git checkout 6bfc5ca`.
-- Clone the code for O-CNN, then copy the code contained in the directory `O-CNN/caffe` into the caffe directory to override the original [Caffe](https://github.com/BVLC/caffe) code. 
-- Follow the installation [instructions](http://caffe.berkeleyvision.org/installation.html) of Caffe to build the code to get the executive files `caffe`, `convert_octree_data` and `feature_pooling` etc. Note that the code should be compiled with c++11 support, which is not enabled by default for some compilers. So please check your compiler settings and enable the compiler to support c++11.
-- Our O-CNN takes the octree representation of 3D objects as input. The code for converting a point cloud into octree representation is contained in the folder `O-CNN/ocnn/octree`, which can be built via [cmake](https://cmake.org/): `cd O-CNN/ocnn/octree && mkdir build && cd build && cmake ..  && cmake --build . --config Release` .
-- We also provide one tool to pre-process meshes from online dataset, which can be downloaded [here](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
+### 1.1 &nbsp; octree
 
-
-After the building, you will get the executable files which is useful for conducting the experiments: 
-
-- [`virtualscanner`](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner) - used to convert obj/off files to points files  
-- [`octree`](#octree) - used to convert point files to octree files  <!-- - [`octree2ply`](#octree-2-ply) - used to convert octree files to ply files   -->
-- [`convert_octree_data`](#convert-octree-data) - used to convert octree files to lmdb files  
-- `caffe` - executable for training / evaluating models  
-- `feature_pooling` - pools features and outputs them to an lmdb  
-
-**NOTE**: Compared with the original code used in the experiments of the O-CNN paper, the code in this repository is refactored for the readability and maintainability, with the sacrifice of speed (it is about 10% slower, but it is more memory-efficient). If you want to try the original code or do some speed comparisons with our `O-CNN`, feel free to drop me an email, we can share the original code with you. <br/>
-<!-- To build the octree, the bounding sphere of the object is needed to be computed. The initial version of our code is built upon the bound sphere library from this [link](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html). However, we remove it from our code due to the licence issue. To reproduce the results in our paper, it is highly recommended to download the [bound sphere library](https://people.inf.ethz.ch/gaertner/subdir/software/miniball.html).  -->
-
-
-### 1.2 &nbsp; Docker Setup (For Ubuntu only)
-A docker build file is provided to automatically build your environments so you don't have to worry about project dependencies. To get your environment up and running, execute the following:
-
-```
-cd docker
-docker build --network=host --tag=ocnn .
-docker run --runtime=nvidia --network=host --name=ocnn -it ocnn /bin/bash
+Our O-CNN takes the octree representation of 3D objects as input. 
+And the octree can be built from a `point cloud` representation of a 3D shape.
+The code for converting a point cloud into octree representation is contained 
+in the folder `octree`, which can be built via [cmake](https://cmake.org/):
+```bash
+cd octree && mkdir build && cd build
+cmake ..  && cmake --build . --config Release
 ```
 
-You will now find yourself in a container environment where you can automatically prepare datasets and train/test an o-cnn. 
+### 1.2 &nbsp; tensorflow
+The tensorflow-based implementation has been tested on Ubuntu 16.04. 
+To build the code, Cuda 10.1 and tensorflow 1.12/1.13/1.14 have to be installed.
+```bash
+cd tensorflow\libs && python build.py
+```
 
-**Many thanks** to David Pisani (@[dapisani](https://github.com/dapisani)) for his contribution to the docker setup!
+### 1.3 &nbsp; caffe
+The caffe-based implementation has been tested on Windows 10 x64 and Ubuntu 16.04.
+To build the code, the Cuda 8.0 and Cudnn 6.0 have to be installed.
+
+- Clone [Caffe](https://github.com/BVLC/caffe) into the caffe directory with revision `6bfc5ca`: 
+```bash
+git clone https://github.com/BVLC/caffe.git && cd caffe && git checkout 6bfc5ca
+```
+- Copy the code contained in the directory `caffe` into the caffe directory to 
+override the original [Caffe](https://github.com/BVLC/caffe) code. 
+- Follow the installation [instructions](http://caffe.berkeleyvision.org/installation.html) 
+of Caffe to build the code to get the executive files: `caffe`, `convert_octree_data` 
+and `feature_pooling` etc.
+Note that the code should be compiled with c++11 support, which is not enabled by
+default for some compilers. So please check your compiler settings and enable the
+compiler to support c++11.
+
+**NOTE**: Compared with the original code used in the experiments of the O-CNN paper, 
+the code in this repository is refactored for the readability and maintainability, 
+with the sacrifice of speed (it is about 10% slower, but it is more memory-efficient). 
+If you want to try the original code or do some speed comparisons with our `O-CNN`,
+feel free to drop me an email, we can share the original code with you. <br/>
 
 
 ## 2 &nbsp; Data preparation <a name="data"></a>
 
-### 2.1 &nbsp; General procedure
-- Download and unzip the corresponding 3D model dataset (like the [ModelNet40](http://modelnet.cs.princeton.edu) dataset) into a folder.
-- Convert all the models (in OBJ/OFF format) to dense point clouds with normals (in `POINTS` format) with the tool [`virtualscanner`](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).  This tool is specially designed for the 3D model from ModelNet40 and ShapeNet. If your mesh is of good quality, there are many more efficient methods to sample points.
+The General procedure is as follows:
 
-```
-Usage:  
-    VirtualScanner <file_name> [nviews] [flags] [normalize]
-        file_name: the name of the file (*.obj; *.off) to be processed.
-        nviews: the number of views for scanning. Default: 6
-        flags: Indicate whether to output normal flipping flag. Default: 0
-        normalize: Indicate whether to normalize input mesh. Default: 0        
-Example:
-    VirtualScanner input.obj 14             // process the file input.obj
-    VirtualScanner D:\data\ 14              // process all the obj/off files under the folder D:\Data
-```
-
+- Download and unzip the corresponding 3D model dataset 
+ (like the [ModelNet40](http://modelnet.cs.princeton.edu) dataset) into a folder.
+- Convert all the models (in OBJ/OFF format) to dense point clouds with normals 
+(in `POINTS` format).
+For the models in ModelNet40 or ShapeNet, we provide a tool 
+[`virtualscanner`](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner),
+which can be used to convert them to `POINTS` format.  
+If your mesh is of good quality, there are many more efficient methods to sample points.
 - Run the tool `octree` to convert point clouds into the octree files.
-```
-Usage: 
+<!-- Usage: 
     octree
         --filenames  <A file contains the absolute filenames of input POINTS each line>
         [--adaptive  <Build adaptive octree>=0]
@@ -111,12 +115,17 @@ Usage:
         [--split_label  <Compute per node splitting label>=0]
         [--th_distance  <The threshold for simplifying octree>=2.0f]
         [--th_normal  <The threshold for simplifying octree>=0.2f]
-Example:
-    // process all the points into octrees of depth 5
-    octree --filenames filelist.txt --depth 5  --axis z
-```
-- Store all the octree files in a  `leveldb` or `lmdb` database by the tool `convert_octree_data`, which serves as the input of Caffe. For the ones who are new to the [Caffe](http://caffe.berkeleyvision.org/) framework and do not know how to use the generated database to train and test the neural network, the tutorial on [this page](http://caffe.berkeleyvision.org/gathered/examples/mnist.html) is highly recommanded. 
-```
+Example: -->
+<!-- ```bash
+octree --filenames filelist.txt --depth 5  --axis z
+``` -->
+
+- Store all the octree files in a  `leveldb`/`lmdb` database by the tool 
+`convert_octree_data`, which serves as the input of Caffe.
+For the ones who are new to the [Caffe](http://caffe.berkeleyvision.org/) framework 
+and do not know how to use the generated database to train and test the neural network,
+the tutorial on [this page](http://caffe.berkeleyvision.org/gathered/examples/mnist.html)
+<!-- ```
 Usage: 
     convert_octree_data <rootfolder> <listfile> <db_name>
         rootfolder: base folder where db will be output and listed files are relative to
@@ -125,34 +134,12 @@ Usage:
         db_name: Name of db to be outputted
 Example:
     convert_octree_data D:/octrees/ D:/octrees/list.txt D:/octrees_lmdb
-```
-<!-- 
-### 2.2 &nbsp; Automated Dataset Setup (For Ubuntu only)
-For the dataset `ModelNet10` and `ModelNet40`, we provide some scripts to automatically prepare the datasets. The code is contained in the python folder. (We will update the prepare_dataset.py to support other datasets such as ShapeNet55.)
-```
-Usage: 
-    prepare_dataset.py [-h] --datadir DATADIR --dataset {ModelNet10,ModelNet40}
-        --points_converter_path POINTS_CONVERTER_PATH
-        --octree_converter_path OCTREE_CONVERTER_PATH
-        --lmdb_converter_path LMDB_CONVERTER_PATH
-        [--starting_action {Retrieve,Extract,Clean,CreatePoints,CreateOctree,CreateLmdb,Finished}]
-        [--depth DEPTH] [--full_layer FULL_LAYER]
-        [--displacement DISPLACEMENT] [--augmentation AUGMENTATION]
-        [--for_segmentation]
+``` -->
+- For the tensorflow code, you can store the `POINTS`/`octree` files in to `tfrecords`
+with the script `tensorflow/util/convert_tfrecords.py`
 
-        datadir: directory where to download and prepare dataset
-        dataset: dataset to prepare
-        points_converter_path: path to obj/off to points converter
-        octree_converter_path: path to points to octree converter
-        lmdb_converter_path: path to octree to lmdb converter
-        starting_action: if specified, starting action to perform from. Otherwise, continue from last completed action.
-        depth: depth of octrees to create (default 6)
-        full_layer: layer in which octree is full (default 2)
-        displacement: offset value for thin shapes (default 0.55)
-        augmentation: number of model poses converted to octrees (default 24)
-        for_segmentation: flags whether dataset is for segmentation
-```
- -->
+
+
 ## 3 &nbsp; O-CNN in action
 
 ### 3.1 &nbsp; O-CNN for Shape Classification 

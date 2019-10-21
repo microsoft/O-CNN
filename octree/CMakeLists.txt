@@ -3,11 +3,14 @@ cmake_minimum_required(VERSION 3.0)
 # options
 option(USE_MINIBALL "Use the Miniball.hpp" ON)
 option(USE_RPLY "Use the library rply in the project octree" ON)
-option(USE_WINDOWS_IO "Use the header io.h provided by Windows" ON)
+option(USE_WINDOWS_IO "Use the header io.h provided by Windows" OFF)
 option(USE_OPENMP "Use OpenMP for speed up" OFF)
-option(USE_GLOG "Use glog" ON)
-option(USE_CUDA "CPU only, without CUDA" OFF)
+option(USE_GLOG "Use glog" OFF)
+option(USE_CUDA "CPU only, without CUDA" ON)
+option(USE_PYTHON "Build the python interface with pybind11" OFF)
 set(VCPKG "<Set VCPKG path>" CACHE PATH "The VCPKG path, containing glog and gtest")
+# option(SHARED_LIB "Build share library, only feasible on Ubuntu" OFF)
+
 
 # use folder to orgnize the project
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -89,6 +92,25 @@ if(SHARED_LIB)
 else()
   add_library(rply ${src_rply})
 endif()
+
+# nanoflann
+set(nanoflann_path "${PROJECT_SOURCE_DIR}/external/nanoflann-master/include")
+if(NOT EXISTS "${nanoflann_path}/nanoflann.hpp")
+  # download and extract
+  set(nanoflann_file "${PROJECT_SOURCE_DIR}/external/nanoflann-master.zip")
+  file(DOWNLOAD
+    https://github.com/jlblancoc/nanoflann/archive/master.zip
+    ${nanoflann_file}
+    SHOW_PROGRESS
+  )
+  execute_process(COMMAND ${CMAKE_COMMAND} -E tar xfz 
+    ${nanoflann_file} 
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/external)
+  file(REMOVE ${nanoflann_file})
+endif()
+include_directories(${nanoflann_path})
+
+
 
 
 # files

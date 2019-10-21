@@ -33,21 +33,25 @@ def batch_norm(inputs, training, axis=1):
   return tf.layers.batch_normalization(inputs, axis=axis, training=training)
 
 
-def fc_bn_relu(data, nout, training):
-  fc = dense(data, nout)
+def fc_bn_relu(inputs, nout, training):
+  fc = dense(inputs, nout, use_bias=False)
   bn = batch_norm(fc, training)
   return tf.nn.relu(bn)
 
 
-def conv2d_bn(data, num_output, kernel_size, stride, training):
-  conv = tf.layers.conv2d(data, num_output, kernel_size=kernel_size, 
-            strides=stride, data_format="channels_first", use_bias=False, 
+def conv2d(inputs, nout, kernel_size, stride, padding='SAME', data_format='channels_first'):
+  return tf.layers.conv2d(inputs, nout, kernel_size=kernel_size, strides=stride,
+            padding=padding, data_format=data_format, use_bias=False, 
             kernel_initializer=tf.contrib.layers.xavier_initializer())
+
+
+def conv2d_bn(inputs, nout, kernel_size, stride, training):
+  conv = conv2d(inputs, nout, kernel_size, stride)
   return batch_norm(conv, training)
 
 
-def conv2d_bn_relu(data, num_output, kernel_size, stride, training):
-  conv = conv2d_bn(data, num_output, kernel_size, stride, training)
+def conv2d_bn_relu(inputs, nout, kernel_size, stride, training):
+  conv = conv2d_bn(inputs, nout, kernel_size, stride, training)
   return tf.nn.relu(conv)
 
 
@@ -66,6 +70,16 @@ def downsample(data, channel, training):
   bn = tf.layers.batch_normalization(deconv, axis=1, training=training)
   return tf.nn.relu(bn)
 
+
+def avg_pool2d(inputs, data_format='NCHW'):
+  return tf.nn.avg_pool2d(inputs, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
+            padding='SAME', data_format=data_format)
+
+
+def global_pool(inputs, data_format='channels_first'):
+  axis = [2, 3] if data_format == 'channels_first' else [1, 2]
+  return tf.reduce_mean(inputs, axis=axis)
+  
 
 def octree_upsample(data, octree, depth, channel, training):
   with tf.variable_scope('octree_upsample'):
@@ -194,6 +208,7 @@ def l2_regularizer(name, weight_decay):
 
 
 def label_accuracy(label, label_gt):
+  label_gt = tf.cast(label_gt, tf.int32)
   accuracy = tf.reduce_mean(tf.to_float(tf.equal(label, label_gt)))
   return accuracy
 
@@ -209,7 +224,7 @@ def regress_loss(signal, signal_gt):
   return tf.reduce_mean(tf.reduce_sum(tf.square(signal-signal_gt), 1))
 
 
-def normalize(data):
+def normalize_signal(data):
   channel = data.shape[1]
   assert(channel == 3 or channel == 4)
   with tf.variable_scope("normalize"):
@@ -254,10 +269,22 @@ def summary_test(names):
   return summ, summ_placeholder
 
 
-
 def loss_functions(logit, label_gt, num_class, weight_decay, var_name):
   with tf.name_scope('loss'):
     loss = softmax_loss(logit, label_gt, num_class)
     accu = softmax_accuracy(logit, label_gt)
     regularizer = l2_regularizer(var_name, weight_decay)
   return loss, accu, regularizer
+
+
+def run_k_iterations(sess, k, tensors):
+  num = len(tensors)
+  avg_results = [0] * num
+  for _ in range(k):
+    iter_results = sess.run(tensors)
+    for j in range(num):
+      avg_results[j] += iter_results[j]
+  
+  for j in range(num):
+    avg_results[j] /= k
+  return avg_results
