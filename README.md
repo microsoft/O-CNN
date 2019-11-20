@@ -126,7 +126,7 @@ Usage:
 Example:
     convert_octree_data D:/octrees/ D:/octrees/list.txt D:/octrees_lmdb
 ```
-
+<!-- 
 ### 2.2 &nbsp; Automated Dataset Setup (For Ubuntu only)
 For the dataset `ModelNet10` and `ModelNet40`, we provide some scripts to automatically prepare the datasets. The code is contained in the python folder. (We will update the prepare_dataset.py to support other datasets such as ShapeNet55.)
 ```
@@ -152,7 +152,7 @@ Usage:
         augmentation: number of model poses converted to octrees (default 24)
         for_segmentation: flags whether dataset is for segmentation
 ```
-
+ -->
 ## 3 &nbsp; O-CNN in action
 
 ### 3.1 &nbsp; O-CNN for Shape Classification 
