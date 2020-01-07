@@ -289,3 +289,7 @@ __pycache__/
 
 octree/build
 octree/external
+tensorflow/libs/object
+tensorflow/libs/Makefile
+tensorflow/libs/libocnn.so
+tensorflow/test

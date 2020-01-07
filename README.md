@@ -46,7 +46,7 @@ If you use our code or models, please cite our paper.
 The caffe-based implementation has been tested on Windows 10 x64 and Ubuntu 16.04.
 To build the code, the Cuda 8.0 and Cudnn 6.0 have to be installed.
 
-1. Build the code under `octree`
+1. Build the code under `octree`.
 Our O-CNN takes the octree representation of 3D objects as input. 
 And the octree can be built from a `point cloud` representation of a 3D shape.
 The code for converting a point cloud into octree representation is contained 

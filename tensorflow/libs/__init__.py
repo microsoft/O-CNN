@@ -7,7 +7,7 @@ _current_path   = os.path.dirname(os.path.realpath(__file__))
 _tf_ocnn_module = tf.load_op_library(os.path.join(_current_path, 'libocnn.so'))
 
 bounding_sphere = _tf_ocnn_module.bounding_sphere
-points_database = _tf_ocnn_module.points_database # todo: delete this operator
+# points_database = _tf_ocnn_module.points_database # todo: delete this operator
 transform_points= _tf_ocnn_module.transform_points
 octree_batch    = _tf_ocnn_module.octree_batch
 points2octree   = _tf_ocnn_module.points_to_octree
