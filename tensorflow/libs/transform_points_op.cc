@@ -1,4 +1,5 @@
-#include "octree.h"
+#include "points.h"
+#include "transform_points.h"
 #include "math_functions.h"
 
 #include <tensorflow/core/framework/op.h>
@@ -9,16 +10,19 @@
 namespace tensorflow {
 
 REGISTER_OP("TransformPoints")
-    .Input("in_points: string")
-    .Input("rotate: float")
+    .Input("points: string")
+    .Input("angle: float")
     .Input("scale: float")
     .Input("jitter: float")
     .Input("radius: float")
     .Input("center: float")
-    .Attr("axis: string='y'")
+    .Input("ratio: float")
+    .Input("dim: int32")
+    .Input("stddev: float")
+    .Attr("axis: string='y'") // todo: delete this attribute
     .Attr("depth: int=6")
     .Attr("offset: float=0.55")
-    .Output("out_points: string")
+    .Output("points_out: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
       c->set_output(0, c->input(0));
       return Status::OK();
@@ -30,8 +34,8 @@ REGISTER_OP("BoundingSphere")
     .Output("radius: float")
     .Output("center: float")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
-      c->set_output(0, c->MakeShape({1}));
-      c->set_output(1, c->MakeShape({3}));
+      c->set_output(0, c->MakeShape({ 1 }));
+      c->set_output(1, c->MakeShape({ 3 }));
       return Status::OK();
     })
     .Doc(R"doc(Compute the bounding sphere of a point cloud.)doc");
@@ -48,18 +52,31 @@ class TransformPointsOP : public OpKernel {
 
   void Compute(OpKernelContext* context) override {
     // input
+    auto extract_param = [](float * vec, const Tensor & ts) {
+      for (int i = 0; i < 3 && i < ts.NumElements(); ++i) {
+        vec[i] = ts.flat<float>()(i);
+      }
+    };
     const Tensor& data_in = context->input(0);
-    CHECK_EQ(data_in.NumElements(), 1);
-    float rotate = context->input(1).flat<float>()(0);
-    float scale  = context->input(2).flat<float>()(0);
-    CHECK_GE(scale, 0.1f) << "The scale should be larger than 0.1";
-    float jitter = context->input(3).flat<float>()(0);
+    // float rotate = context->input(1).flat<float>()(0);
+    float angle[3] = { 0 };
+    extract_param(angle, context->input(1));
+    float scales[3] = { 1.0f, 1.0f, 1.0f };
+    extract_param(scales, context->input(2));
+    float jitter[3] = { 0 };
+    extract_param(jitter, context->input(3));
     float radius = context->input(4).flat<float>()(0);
-    float center[3] = {0};
-    const Tensor& center_in = context->input(5);
-    CHECK_EQ(center_in.NumElements(), 3);
+    float center[3] = { 0 };
+    extract_param(center, context->input(5));
+    float ratio = context->input(6).flat<float>()(0);
+    int dim = context->input(7).flat<int>()(0);
+    float stddev[3] = { 0 }; // std_points, std_normals, std_features
+    extract_param(stddev, context->input(8));
+
+    // check
+    CHECK_EQ(data_in.NumElements(), 1);
     for (int i = 0; i < 3; ++i) {
-      center[i] = center_in.flat<float>()(i);
+      CHECK_GE(scales[i], 0.1f) << "The scale should be larger than 0.1";
     }
 
     // copy the data out of the input tensor
@@ -77,38 +94,66 @@ class TransformPointsOP : public OpKernel {
 
     // centralize & displacement
     const float kEPS = 1.0e-10f;
+    const float kMul = 2.0f * radius / float(1 << depth_);
     float dis[3] = { -center[0], -center[1], -center[2] };
     pts.translate(dis);
     if (offset_ > kEPS) {
-      float offset = offset_ * 2.0f * radius / float(1 << depth_);
+      float offset = offset_ * kMul;
       pts.displace(offset);
       radius += offset;
     }
 
     // data augmentation: rotate the point cloud
-    if (rotate > kEPS) {
-      float axes[] = { 0.0f, 0.0f, 0.0f };
-      if (axis_ == "x") axes[0] = 1.0f;
-      else if (axis_ == "y") axes[1] = 1.0f;
-      else axes[2] = 1.0f;
-      pts.rotate(rotate, axes);
+    if (fabs(angle[0]) > kEPS || fabs(angle[1]) > kEPS || fabs(angle[2]) > kEPS) {
+      // float axes[] = { 0.0f, 0.0f, 0.0f };
+      // if (axis_ == "x") axes[0] = 1.0f;
+      // else if (axis_ == "y") axes[1] = 1.0f;
+      // else axes[2] = 1.0f;
+      // pts.rotate(rotate, axes);
+
+      if (axis_ == "x") { angle[1] = angle[2] = 0; }
+      else if (axis_ == "y") { angle[0] = angle[2] = 0; }
+      else if (axis_ == "z") { angle[0] = angle[1] = 0; }
+      else {}
+      pts.rotate(angle);
     }
 
-    // jitter. todo: input a float[3] for jittering
-    if (fabs(jitter) > kEPS) {
-      float jitter = jitter * 2.0f * radius / float(1 << depth_);
-      dis[0] = dis[1] = dis[2] = jitter;
-      pts.translate(dis);
-      radius += fabs(jitter);
+    // jitter
+    float max_jitter = -1.0;
+    for (int i = 0; i < 3; i++) {
+      jitter[i] *= kMul;
+      if (max_jitter < fabs(jitter[i])) { max_jitter = fabs(jitter[i]); }
+    }
+    if (fabs(max_jitter) > kEPS) {
+      pts.translate(jitter);
+      //radius += max_jitter;
     }
 
-    // scale and clip the points to the box [-1, 1]^3,
+    // scale to [-1, 1]^3
     if (radius == 0) radius = kEPS;
-    pts.uniform_scale(scale / radius);
-    if (scale > 1.0f) {
-      const float bbmin[] = { -1.0f, -1.0f, -1.0f };
-      const float bbmax[] = { 1.0f, 1.0f, 1.0f };
+    float max_scale = -1.0f;
+    for (int i = 0; i < 3; ++i) {
+      scales[i] /= radius;
+      if (max_scale < scales[i]) { max_scale = scales[i]; }
+    }
+    pts.scale(scales);
+
+    // add noise
+    if (stddev[0] > 0 || stddev[1] > 0 || stddev[2] > 0) {
+      pts.add_noise(stddev[0], stddev[1]);
+    }
+
+    // clip the points to the box[-1, 1] ^ 3,
+    const float bbmin[] = { -1.0f, -1.0f, -1.0f };
+    const float bbmax[] = { 1.0f, 1.0f, 1.0f };
+    if (max_scale > 1.0f || max_jitter > kEPS) {
       pts.clip(bbmin, bbmax);
+    }
+
+    // dropout points
+    if (dim > 0 && ratio > 0) {
+      DropPoints drop_points(dim, ratio, bbmin, bbmax);
+      drop_points.dropout(pts);
     }
 
     // output
@@ -117,6 +162,7 @@ class TransformPointsOP : public OpKernel {
     string& out_str = out_data->flat<string>()(0);
     out_str.assign(points_buf.begin(), points_buf.end());
   }
+
 
  private:
   string axis_;

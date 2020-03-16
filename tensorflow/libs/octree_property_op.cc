@@ -1,7 +1,7 @@
+#include "octree_nn.h"
 #include "octree_parser.h"
 
 #include <cuda_runtime.h>
-#include <tensorflow/core/framework/common_shape_fns.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <tensorflow/core/framework/shape_inference.h>
@@ -36,34 +36,62 @@ class OctreePropertyOP : public OpKernel {
 
   void Compute(OpKernelContext* context) override {
     auto octree_ptr = context->input(0).flat<int8>().data();
-    OctreeParser octree;
-    octree.set_gpu(octree_ptr);
+    OctreeParser octree_;
+    octree_.set_gpu(octree_ptr);
 
+    Tensor buf0, buf1;
     const void* property_ptr = nullptr;
-    int length = octree.info().node_num(depth_), channel = 1;
+    int length = octree_.info().node_num(depth_), channel = 1;
     if (property_name_ == "key") {
-      property_ptr = octree.key_gpu(depth_);
-      channel = octree.info().channel(OctreeInfo::kKey);
+      property_ptr = octree_.key_gpu(depth_);
+      channel = octree_.info().channel(OctreeInfo::kKey);
       CHECK_EQ(dtype_, DataType::DT_UINT32);
+    } else if (property_name_ == "xyz") {
+      // key2xzy
+      const uint32* xyz = octree_.key_gpu(depth_);
+      if (!octree_.info().is_key2xyz()) {
+        OP_REQUIRES_OK(context,
+            context->allocate_temp(DT_UINT32, TensorShape({ length }), &buf0));
+        uint32* ptr = buf0.flat<uint32>().data();
+        key2xyz_gpu(ptr, xyz, length, depth_);
+        xyz = ptr;
+      }
+      // xyz to float
+      channel = channel_;
+      OP_REQUIRES_OK(context,
+          context->allocate_temp(DT_FLOAT, TensorShape({ length * channel }), &buf1));
+      CHECK_EQ(dtype_, DataType::DT_FLOAT);
+      float* ptr = buf1.flat<float>().data();
+      xyz2coord_gpu(ptr, xyz, length, channel);
+      property_ptr = ptr;
+    } else if (property_name_ == "index") {
+      const unsigned int* key_ptr = octree_.key_gpu(depth_);
+      channel = octree_.info().channel(OctreeInfo::kKey);
+      OP_REQUIRES_OK(context,
+          context->allocate_temp(DT_INT32, TensorShape({ length }), &buf0));
+      int* idx_ptr = buf0.flat<int>().data();
+      key2idx_gpu(idx_ptr, key_ptr, length);
+      property_ptr = idx_ptr;
+      CHECK_EQ(dtype_, DataType::DT_INT32);
     } else if (property_name_ == "child") {
-      property_ptr = octree.children_gpu(depth_);
-      channel = octree.info().channel(OctreeInfo::kChild);
+      property_ptr = octree_.children_gpu(depth_);
+      channel = octree_.info().channel(OctreeInfo::kChild);
       CHECK_EQ(dtype_, DataType::DT_INT32);
     } else if (property_name_ == "neigh") {
-      property_ptr = octree.neighbor_gpu(depth_);
-      channel = octree.info().channel(OctreeInfo::kNeigh);
+      property_ptr = octree_.neighbor_gpu(depth_);
+      channel = octree_.info().channel(OctreeInfo::kNeigh);
       CHECK_EQ(dtype_, DataType::DT_INT32);
     } else if (property_name_ == "feature") {
-      property_ptr = octree.feature_gpu(depth_);
-      channel = octree.info().channel(OctreeInfo::kFeature);
+      property_ptr = octree_.feature_gpu(depth_);
+      channel = octree_.info().channel(OctreeInfo::kFeature);
       CHECK_EQ(dtype_, DataType::DT_FLOAT);
     } else if (property_name_ == "label") {
-      property_ptr = octree.label_gpu(depth_);
-      channel = octree.info().channel(OctreeInfo::kLabel);
+      property_ptr = octree_.label_gpu(depth_);
+      channel = octree_.info().channel(OctreeInfo::kLabel);
       CHECK_EQ(dtype_, DataType::DT_FLOAT);
     } else if (property_name_ == "split") {
-      property_ptr = octree.split_gpu(depth_);
-      channel = octree.info().channel(OctreeInfo::kSplit);
+      property_ptr = octree_.split_gpu(depth_);
+      channel = octree_.info().channel(OctreeInfo::kSplit);
       CHECK_EQ(dtype_, DataType::DT_FLOAT);
     } else {
       LOG(FATAL) << "Unsupported Octree Property";
@@ -100,7 +128,7 @@ class OctreePropertyOP : public OpKernel {
   string property_name_;
   DataType dtype_;
   int depth_;
-  int channel_;  
+  int channel_;
 };
 
 REGISTER_KERNEL_BUILDER(Name("OctreeProperty").Device(DEVICE_GPU), OctreePropertyOP);

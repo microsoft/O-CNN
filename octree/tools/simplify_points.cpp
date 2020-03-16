@@ -12,6 +12,7 @@ DEFINE_string(filenames, kRequired, "", "The input filenames");
 DEFINE_string(output_path, kOptional, ".", "The output path");
 DEFINE_int(dim, kOptional, 256, "The maximum resolution");
 DEFINE_float(offset, kOptional, 0.55f, "The offset value for handing thin shapes");
+DEFINE_bool(avg_points, kOptional, true, "Average points as output");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
 
@@ -35,7 +36,7 @@ int main(int argc, char* argv[]) {
   get_all_filenames(all_files, file_path);
 
   //#pragma omp parallel for
-  SimplifyPoints simplify_pts(FLAGS_dim, FLAGS_offset);
+  SimplifyPoints simplify_pts(FLAGS_dim, FLAGS_avg_points, FLAGS_offset);
   for (int i = 0; i < all_files.size(); i++) {
     string error_msg = simplify_pts.set_point_cloud(all_files[i]);
     if (!error_msg.empty()) {

@@ -34,10 +34,6 @@ class Octree : public OctreeParser {
   void octree2pts(Points& point_cloud, int depth_start, int depth_end, bool rescale = true) const;
   void octree2mesh(vector<float>& V, vector<int>& F, int depth_start, int depth_end) const;
 
-  // todo: remove the following two functions to seperate files
-  //void extrapolate_signal();
-  void dropout(Octree& octree_out, const int depth_drop, const float threshold) const;
-
  protected:
   void clear(int depth = 0);
   void normalize_pts(vector<float>& pts_scaled, const Points& pts);

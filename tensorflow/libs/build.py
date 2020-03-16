@@ -16,7 +16,7 @@ TF_LFLAGS = " ".join(tf.sysconfig.get_link_flags())
 lines.append("TF_CFLAGS := %s" % TF_CFLAGS)
 lines.append("TF_LFLAGS := %s" % TF_LFLAGS)
 lines.append("OCT_CFLAGS := -I%s/octree" % OCTREE_DIR)
-lines.append("OCT_LFLAGS := -L%s/build -loctree_lib -lrply" % OCTREE_DIR)
+lines.append("OCT_LFLAGS := -L%s/build -loctree_lib" % OCTREE_DIR)
 lines.append("")
 
 lines.append("NVCC_FLAGS1 := -std=c++11 -O2 -c")

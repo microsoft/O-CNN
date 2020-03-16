@@ -14,15 +14,15 @@ using cflags::Require;
 
 DEFINE_string(filenames, kRequired, "", "The input filenames");
 DEFINE_string(output_path, kOptional, ".", "The output path");
-DEFINE_int(depth_dropout, kOptional, 2, "The starting depth");
-DEFINE_float(dropout_ratio, kOptional, 0.5, "The ending depth");
+DEFINE_int(depth_dropout, kOptional, 2, "The dropout depth");
+DEFINE_float(dropout_ratio, kOptional, 0.5, "The dropout ratio");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
 
 int main(int argc, char* argv[]) {
   bool succ = cflags::ParseCmd(argc, argv);
   if (!succ) {
-    cflags::PrintHelpInfo("\nUsage: octree2mesh.exe");
+    cflags::PrintHelpInfo("\nUsage: octree_dropout");
     return 0;
   }
 
@@ -43,27 +43,27 @@ int main(int argc, char* argv[]) {
     string filename = extract_filename(all_files[i]);
     if (FLAGS_verbose) cout << "Processing: " << filename << std::endl;
 
-    // load octree
-    Octree octree;
-    bool succ = octree.read_octree(all_files[i]);
-    if (!succ) {
-      cout << "Can not load " << filename << std::endl;
-      continue;
-    }
-    string msg;
-    succ = octree.info().check_format(msg);
-    if (!succ) {
-      cout << filename << ": format error!\n" << msg << std::endl;
-      continue;
-    }
+    //// load octree
+    //Octree octree;
+    //bool succ = octree.read_octree(all_files[i]);
+    //if (!succ) {
+    //  cout << "Can not load " << filename << std::endl;
+    //  continue;
+    //}
+    //string msg;
+    //succ = octree.info().check_format(msg);
+    //if (!succ) {
+    //  cout << filename << ": format error!\n" << msg << std::endl;
+    //  continue;
+    //}
 
-    // dropout
-    Octree octree_output;
-    octree.dropout(octree_output, FLAGS_depth_dropout, FLAGS_dropout_ratio);
+    //// dropout
+    //Octree octree_output;
+    //octree.dropout(octree_output, FLAGS_depth_dropout, FLAGS_dropout_ratio);
 
-    // save points
-    string filename_output = output_path + filename + suffix;
-    octree_output.write_octree(filename_output);
+    //// save points
+    //string filename_output = output_path + filename + suffix;
+    //octree_output.write_octree(filename_output);
   }
 
   return 0;

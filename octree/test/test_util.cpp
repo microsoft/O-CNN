@@ -57,6 +57,38 @@ TEST(MeshTest, TestFaceNormal) {
   }
 }
 
+TEST(MathTest, TestRotMatrix1) {
+  float angles[3] = { 0.1f, 0.2f, 0.3f }, rot[9];
+  rotation_matrix(rot, angles);
+
+  float rotx[9], roty[9], rotz[9], rot_gt[9], tmp[9];
+  float x[3] = { 1.0f, 0, 0 }, y[3] = { 0, 1.0f, 0 }, z[3] = { 0, 0, 1.0f };
+  rotation_matrix(rotx, angles[0], x);
+  rotation_matrix(roty, angles[1], y);
+  rotation_matrix(rotz, angles[2], z);
+  matrix_prod(tmp, rotx, roty, 3, 3, 3);
+  matrix_prod(rot_gt, tmp, rotz, 3, 3, 3);
+
+  for (int i = 0; i < 9; ++i) {
+    EXPECT_EQ(rot[i], rot_gt[i]);
+  }
+}
+
+TEST(MathTest, TestRotMatrix2) {
+  const float kPI = 3.1415925f;
+  float angle1[3] = { -10.0, -20.0f, -210.0f }, rot1[9];
+  float angle2[3] = { 350.0f, 340.0f, 150.0f }, rot2[9];
+  for (int i = 0; i < 3; ++i) {
+    angle1[i] = angle1[i] * kPI / 180.0f;
+    angle2[i] = angle2[i] * kPI / 180.0f;
+  }
+  rotation_matrix(rot1, angle1);
+  rotation_matrix(rot2, angle2);
+
+   for (int i = 0; i < 9; ++i) {
+     ASSERT_NEAR(rot1[i], rot2[i], 1.0e-5);
+  }
+}
 
 
 //int main(int argc, char **argv) {

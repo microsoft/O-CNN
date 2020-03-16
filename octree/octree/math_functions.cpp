@@ -145,6 +145,19 @@ void rotation_matrix(float* rot, const float angle, const float* axis) {
   rot[8] = cosa + axis[2] * axis[2] * cosa1;
 }
 
+void rotation_matrix(float* rot, const float* angle) {
+  float cosx = cos(angle[0]), sinx = sin(angle[0]);
+  float cosy = cos(angle[1]), siny = sin(angle[1]);
+  float cosz = cos(angle[2]), sinz = sin(angle[2]);
+  const float rotx[9] = { 1.0f, 0, 0, 0, cosx, sinx, 0, -sinx, cosx };
+  const float roty[9] = { cosy, 0, -siny, 0, 1.0f, 0, siny, 0, cosy };
+  const float rotz[9] = { cosz, sinz, 0, -sinz, cosz, 0, 0, 0, 1.0f };
+  float tmp[9];
+  matrix_prod(tmp, rotx, roty, 3, 3, 3);
+  matrix_prod(rot, tmp,  rotz, 3, 3, 3);
+}
+
+
 void rotation_matrix(float* rot, const float* axis0, const float* axis1) {
   float angle = dot_prod(axis0, axis1);
   if (angle < -1) angle = -1;
@@ -230,9 +243,6 @@ void normalize_nx3(float* const pts, int npt) {
   const int dim = 3;
   for (int i = 0; i < npt; ++i) {
     int ix3 = i * dim;
-    //float inv_mag = 1.0f / sqrtf(pts[ix3] * pts[ix3] + 
-    //                             pts[ix3 + 1] * pts[ix3 + 1] + 
-    //                             pts[ix3 + 2] * pts[ix3 + 2]);
     float inv_mag = 1.0f / (norm2(pts + ix3, dim) + 1.0e-15f);
     for (int m = 0; m < dim; ++m) {
       pts[ix3 + m] = pts[ix3 + m] * inv_mag;

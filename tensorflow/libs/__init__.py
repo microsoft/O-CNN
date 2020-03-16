@@ -7,8 +7,9 @@ _current_path   = os.path.dirname(os.path.realpath(__file__))
 _tf_ocnn_module = tf.load_op_library(os.path.join(_current_path, 'libocnn.so'))
 
 bounding_sphere = _tf_ocnn_module.bounding_sphere
-# points_database = _tf_ocnn_module.points_database # todo: delete this operator
+points_database = _tf_ocnn_module.points_database # todo: delete this operator
 transform_points= _tf_ocnn_module.transform_points
+octree_dropout  = _tf_ocnn_module.octree_dropout
 octree_batch    = _tf_ocnn_module.octree_batch
 points2octree   = _tf_ocnn_module.points_to_octree
 octree_property = _tf_ocnn_module.octree_property
@@ -21,6 +22,7 @@ octree_new      = _tf_ocnn_module.octree_new
 octree_update   = _tf_ocnn_module.octree_update
 octree_align    = _tf_ocnn_module.octree_align
 octree_mask     = _tf_ocnn_module.octree_mask
+octree_samples  = _tf_ocnn_module.octree_samples
 octree_set_property = _tf_ocnn_module.octree_set_property
 _octree_max_pool    = _tf_ocnn_module.octree_max_pool
 _octree_mask_pool   = _tf_ocnn_module.octree_mask_pool
@@ -30,104 +32,107 @@ _octree_deconv      = _tf_ocnn_module.octree_deconv
 _octree_conv_grad   = _tf_ocnn_module.octree_conv_grad
 _octree_deconv_grad = _tf_ocnn_module.octree_deconv_grad
 _octree_align_grad  = _tf_ocnn_module.octree_align_grad
+_octree_bilinear    = _tf_ocnn_module.octree_bilinear
 
 
-ops.NotDifferentiable("BoundingSphere")
-ops.NotDifferentiable("OctreeSetProperty")
-ops.NotDifferentiable("OctreeBatch")
-ops.NotDifferentiable("PointsDatabase")
-ops.NotDifferentiable("TransformPoints")
-ops.NotDifferentiable("PointsToOctree")
-ops.NotDifferentiable("OctreeProperty")
-ops.NotDifferentiable("OctreeNew")
-ops.NotDifferentiable("OctreeUpdate")
-ops.NotDifferentiable("OctreeGrow")
+ops.NotDifferentiable('BoundingSphere')
+ops.NotDifferentiable('OctreeSetProperty')
+ops.NotDifferentiable('OctreeBatch')
+ops.NotDifferentiable('PointsDatabase')
+ops.NotDifferentiable('TransformPoints')
+ops.NotDifferentiable('PointsToOctree')
+ops.NotDifferentiable('OctreeProperty')
+ops.NotDifferentiable('OctreeNew')
+ops.NotDifferentiable('OctreeUpdate')
+ops.NotDifferentiable('OctreeGrow')
+ops.NotDifferentiable('OctreeSamples')
+ops.NotDifferentiable('OctreeBilinear')
 
 
-@ops.RegisterGradient("OctreePad")
+@ops.RegisterGradient('OctreePad')
 def _OctreePadGrad(op, grad):
-  grad_out = octree_depad(grad, op.inputs[1], op.get_attr("depth"))
+  grad_out = octree_depad(grad, op.inputs[1], op.get_attr('depth'))
   return [grad_out, None]
 
 
-@ops.RegisterGradient("OctreeDepad")
+@ops.RegisterGradient('OctreeDepad')
 def _OctreeDepadGrad(op, grad):
-  grad_out = octree_pad(grad, op.inputs[1], op.get_attr("depth"))
+  grad_out = octree_pad(grad, op.inputs[1], op.get_attr('depth'))
   return [grad_out, None]
 
 
-@ops.RegisterGradient("OctreeToCol")
+@ops.RegisterGradient('OctreeToCol')
 def _OctreeToColGrad(op, grad):
-  grad_out = col2octree(grad, op.inputs[1], op.get_attr("depth"),
-                        op.get_attr("kernel_size"), op.get_attr("stride"))
+  grad_out = col2octree(grad, op.inputs[1], op.get_attr('depth'),
+                        op.get_attr('kernel_size'), op.get_attr('stride'))
   return [grad_out, None]
 
 
-@ops.RegisterGradient("ColToOctree")
+@ops.RegisterGradient('ColToOctree')
 def _ColToOctreeGrad(op, grad):
-  grad_out = octree2col(grad, op.inputs[1], op.get_attr("depth"),
-                        op.get_attr("kernel_size"), op.get_attr("stride"))
+  grad_out = octree2col(grad, op.inputs[1], op.get_attr('depth'),
+                        op.get_attr('kernel_size'), op.get_attr('stride'))
   return [grad_out, None]
 
 
-@ops.RegisterGradient("OctreeMaxPool")
+@ops.RegisterGradient('OctreeMaxPool')
 def _OctreeMaxPoolGrad(op, *grad):
   grad_out = _octree_max_unpool(grad[0], op.outputs[1], op.inputs[1], 
-                                op.get_attr("depth"))
+                                op.get_attr('depth'))
   return [grad_out, None]
 
 
-@ops.RegisterGradient("OctreeMaxUnpool")
+@ops.RegisterGradient('OctreeMaxUnpool')
 def _OctreeMaxUnpoolGrad(op, grad):
   grad_out = _octree_mask_pool(grad, op.inputs[1], op.inputs[2], 
-                               op.get_attr("depth"))
+                               op.get_attr('depth'))
   return [grad_out, None, None]
 
 
-@ops.RegisterGradient("OctreeMaskPool")
+@ops.RegisterGradient('OctreeMaskPool')
 def _OctreeMaskPoolGrad(op, grad):
   grad_out = _octree_max_unpool(grad, op.inputs[1], op.inputs[2], 
-                               op.get_attr("depth"))
+                               op.get_attr('depth'))
   return [grad_out, None, None]
 
 
-@ops.RegisterGradient("OctreeConv")
+@ops.RegisterGradient('OctreeConv')
 def _OctreeConvGrad(op, grad):
   grad_out = _octree_conv_grad(op.inputs[0], op.inputs[1], op.inputs[2], grad,
-                               op.get_attr("depth"), op.get_attr("num_output"),
-                               op.get_attr("kernel_size"), op.get_attr("stride"))
+                               op.get_attr('depth'), op.get_attr('num_output'),
+                               op.get_attr('kernel_size'), op.get_attr('stride'))
   return grad_out + (None, )
 
 
-@ops.RegisterGradient("OctreeDeconv")
+@ops.RegisterGradient('OctreeDeconv')
 def _OctreeDeconvGrad(op, grad):
   grad_out = _octree_deconv_grad(op.inputs[0], op.inputs[1], op.inputs[2], grad,
-                                 op.get_attr("depth"), op.get_attr("num_output"),
-                                 op.get_attr("kernel_size"), op.get_attr("stride"))
+                                 op.get_attr('depth'), op.get_attr('num_output'),
+                                 op.get_attr('kernel_size'), op.get_attr('stride'))
   return grad_out + (None, )
 
 
-@ops.RegisterGradient("OctreeAlign")
+@ops.RegisterGradient('OctreeAlign')
 def _OctreeAlignGrad(op, *grad):
   grad_out = octree_align_grad(grad[0], op.outputs[1])
   return [grad_out, None, None]
 
 
-@ops.RegisterGradient("OctreeMask")
+@ops.RegisterGradient('OctreeMask')
 def _OctreeMaskGrad(op, grad):
-  grad_out = octree_mask(grad, op.inputs[1], op.get_attr("mask"));
+  grad_out = octree_mask(grad, op.inputs[1], op.get_attr('mask'));
   return [grad_out, None]
 
 
 def octree_max_pool(data, octree, depth):
-  with tf.variable_scope("octree_max_pool"):
+  with tf.variable_scope('octree_max_pool'):
     data, mask = _octree_max_pool(data, octree, depth) # the bottom data depth
     data = octree_pad(data, octree, depth-1)           # !!! depth-1
   return data, mask
 
 
 def octree_max_unpool(data, mask, octree, depth):
-  with tf.variable_scope("octree_max_unpool"):  
+  with tf.variable_scope('octree_max_unpool'):  
     data = octree_depad(data, octree, depth)             # !!! depth
     data = _octree_max_unpool(data, mask, octree, depth) # the bottom data depth
   return data
@@ -139,7 +144,7 @@ def octree_conv_fast(data, octree, depth, channel, kernel_size=[3], stride=1):
   for i in range(len(kernel_size), 3): 
     kernel_size.append(kernel_size[-1])
 
-  with tf.variable_scope("octree_conv"): 
+  with tf.variable_scope('octree_conv'): 
     dim = int(data.shape[1]) * kernel_size[0] * kernel_size[1] * kernel_size[2]
     kernel = tf.get_variable('weights', shape=[channel, dim], dtype=tf.float32, 
                              initializer=tf.contrib.layers.xavier_initializer())
@@ -148,7 +153,7 @@ def octree_conv_fast(data, octree, depth, channel, kernel_size=[3], stride=1):
     conv = tf.matmul(kernel, col)
     conv = tf.expand_dims(tf.expand_dims(conv, 0), -1) # [C, H] -> [1, C, H, 1]
     if stride == 2:
-      conv = octree_pad(conv, octree, depth-1)
+      conv = octree_pad(conv, octree, depth-1, 0)
   return conv 
 
 
@@ -157,7 +162,7 @@ def octree_conv_memory(data, octree, depth, channel, kernel_size=[3], stride=1):
   for i in range(len(kernel_size), 3): 
     kernel_size.append(kernel_size[-1])
 
-  with tf.variable_scope("octree_conv"):      
+  with tf.variable_scope('octree_conv'):      
     dim = int(data.shape[1]) * kernel_size[0] * kernel_size[1] * kernel_size[2]
     kernel = tf.get_variable('weights', shape=[channel, dim], dtype=tf.float32, 
                              initializer=tf.contrib.layers.xavier_initializer())
@@ -172,7 +177,7 @@ def octree_deconv_fast(data, octree, depth, channel, kernel_size=[3], stride=1):
   for i in range(len(kernel_size), 3): 
     kernel_size.append(kernel_size[-1])
 
-  with tf.variable_scope("octree_deconv"):
+  with tf.variable_scope('octree_deconv'):
     kernel_sdim = kernel_size[0] * kernel_size[1] * kernel_size[2]
     dim = channel * kernel_sdim
     kernel = tf.get_variable('weights', shape=[int(data.shape[1]), dim], dtype=tf.float32, 
@@ -192,7 +197,7 @@ def octree_deconv_memory(data, octree, depth, channel, kernel_size=[3], stride=1
   for i in range(len(kernel_size), 3): 
     kernel_size.append(kernel_size[-1])
 
-  with tf.variable_scope("octree_deconv"):      
+  with tf.variable_scope('octree_deconv'):      
     kernel_sdim = kernel_size[0] * kernel_size[1] * kernel_size[2]
     dim = channel * kernel_sdim
     kernel = tf.get_variable('weights', shape=[int(data.shape[1]), dim], dtype=tf.float32, 
@@ -206,8 +211,47 @@ def octree_deconv_memory(data, octree, depth, channel, kernel_size=[3], stride=1
 def octree_full_voxel(data, depth):
   height = 2 ** (3 * depth)
   channel = int(data.shape[1])
-  with tf.variable_scope("octree_full_voxel"):
-    data = tf.reshape(data, [channel, -1, height])
+  with tf.variable_scope('octree_full_voxel'):
+    data = tf.reshape(data, [channel, -1, height]) # (1, C, H, 1) -> (C, batch_size, H1)
     data = tf.transpose(data, perm=[1, 0, 2])
   return data
+
+
+def octree_tile(data, octree, depth):
+  with tf.variable_scope('octree_tile'):
+    data = octree_depad(data, octree, depth) # (1, C, H, 1)
+    data = tf.tile(data, [1, 1, 1, 8])       # (1, C, H, 8)
+    channel = int(data.shape[1])
+    output = tf.reshape(data, [1, channel, -1, 1])
+  return output
+
+
+def octree_global_pool(data, octree, depth):
+  with tf.variable_scope('octree_global_pool'):
+    segment_ids = octree_property(octree, property_name='index', dtype=tf.int32,
+                                  depth=depth, channel=1)
+    segment_ids = tf.reshape(segment_ids, [-1])
+    data = tf.squeeze(data, axis=[0, 3])             # (1, C, H, 1) -> (C, H)
+    data = tf.transpose(data)                        # (C, H) -> (H, C)
+    output = tf.math.segment_mean(data, segment_ids) # (H, C) -> (batch_size, C)
+  return output
+
+
+def octree_bilinear(data, octree, depth, target_depth):
+  with tf.variable_scope('octree_bilinear'):
+    mask = tf.constant(
+      [[0, 0, 0], [0, 0, 1], [0, 1, 0], [1, 0, 0], 
+       [0, 1, 1], [1, 0, 1], [1, 1, 0], [1, 1, 1]], dtype=tf.float32)
+    index, fracs = _octree_bilinear(octree, depth, target_depth)
+    feat = tf.transpose(tf.squeeze(data, [0, 3]))        # (1, C, H, 1) -> (H, C)
+    output = tf.zeros([tf.shape(index)[0], tf.shape(feat)[1]], dtype=tf.float32)
+    norm   = tf.zeros([tf.shape(index)[0], 1], dtype=tf.float32)
+    for i in range(8):
+      idxi = index[:, i]
+      weight = tf.abs(tf.reduce_prod(mask[i, :] - fracs, axis=1, keepdims=True))
+      output += weight * tf.gather(feat, idxi) 
+      norm   += weight * tf.expand_dims(tf.cast(idxi > -1, dtype=tf.float32), -1)
+    output = tf.div(output, norm)
+    output = tf.expand_dims(tf.expand_dims(tf.transpose(output), 0), -1)
+  return output
 

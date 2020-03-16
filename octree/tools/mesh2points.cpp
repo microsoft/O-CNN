@@ -6,16 +6,18 @@
 #include "points.h"
 #include "filenames.h"
 #include "cmd_flags.h"
+#include "math_functions.h"
 
 DEFINE_string(filenames, kRequired, "", "The input filenames");
 DEFINE_string(output_path, kOptional, ".", "The output path");
 DEFINE_float(area_unit, kOptional, 1.0, "The area unit used to sample points");
+DEFINE_float(scale, kOptional, 1.0, "The scale the mesh before sampling");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
 using std::cout;
 
 std::default_random_engine generator(static_cast<unsigned int>(time(nullptr)));
-std::uniform_real_distribution<float> distribution(0.01, 0.99);
+std::uniform_real_distribution<float> distribution(0.0, 1.0);
 
 void sample_points(vector<float>& pts, vector<float>& normals,
     const vector<float>& V, const vector<int>& F, float area_unit) {
@@ -23,10 +25,10 @@ void sample_points(vector<float>& pts, vector<float>& normals,
   compute_face_normal(face_normal, face_area, V, F);
   compute_face_center(face_center, V, F);
 
-  float avg_area = 0;
-  for (auto& a : face_area) { avg_area += a;}
-  avg_area /= face_area.size();
-  area_unit *= avg_area;
+  //float avg_area = 0;
+  //for (auto& a : face_area) { avg_area += a;}
+  //avg_area /= face_area.size();
+  //area_unit *= avg_area;
   if (area_unit <= 0) area_unit = 1.0e-5f;
 
   int nf = F.size() / 3;
@@ -34,8 +36,8 @@ void sample_points(vector<float>& pts, vector<float>& normals,
   int total_pt_num = 0;
   for (int i = 0; i < nf; ++i) {
     int n = static_cast<int>(face_area[i] / area_unit + 0.5f);
-    if (n < 1) n = 1;
-    if (n > 100) n = 100;
+    if (n < 1) n = 1; // sample at least one point
+    //if (n > 100) n = 100;
     point_num[i] = n;
     total_pt_num += n;
   }
@@ -51,7 +53,7 @@ void sample_points(vector<float>& pts, vector<float>& normals,
 
     for (int j = 1; j < point_num[i]; ++j) {
       float x = 0, y = 0, z = 0;
-      while (z < 0.01 || z > 0.99) {
+      while (z < 0.0001 || z > 0.9999) {
         x = distribution(generator);
         y = distribution(generator);
         z = 1.0 - x - y;
@@ -93,9 +95,23 @@ int main(int argc, char* argv[]) {
     vector<int> F;
     read_mesh(all_files[i], V, F);
 
+    // scale mesh
+    float radius = 1.0, center[3];
+    if (FLAGS_scale != 1.0f) {
+      bounding_sphere(radius, center, V.data(), V.size() / 3);
+      float scale = FLAGS_scale / (2 * radius);
+      for (auto& v : V) { v *= scale; }
+    }
+
     // sample points
     vector<float> pts, normals;
     sample_points(pts, normals, V, F, FLAGS_area_unit);
+
+    // scale points
+    if (FLAGS_scale != 1.0f) {
+      float scale = 2 * radius / FLAGS_scale;
+      for (auto& p : pts) { p *= scale; }
+    }
 
     // save points
     Points point_cloud;

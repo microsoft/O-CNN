@@ -3,7 +3,6 @@
 #include "tensorflow_gpu_gemm.h"
 
 #include <cuda_runtime.h>
-#include <tensorflow/core/framework/common_shape_fns.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <tensorflow/core/framework/shape_inference.h>
@@ -111,7 +110,8 @@ class OctreeConvTF : public OpKernel, public OctreeBaseConv<float> {
     if (stride_ == 2 && is_deconvolution_layer()) {
       CHECK_EQ(height_btm, this->octree_.info().node_num_nempty(depth_));
     } else {
-      CHECK_EQ(height_btm, this->octree_.info().node_num(depth_)) << " d: " << depth_;
+      CHECK_EQ(height_btm, this->octree_.info().node_num(depth_))
+          << ", d: " << depth_ << ", channel_in: " << channel_in;
     }
   }
 

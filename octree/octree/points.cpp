@@ -151,16 +151,16 @@ bool Points::set_points(const vector<float>& pts, const vector<float>& normals,
   /// set buffer
   int sz = info.sizeof_points();
   buffer_.resize(sz);
-  this->set(buffer_.data(), &info);
-  copy(pts.begin(), pts.end(), mutable_ptr(PointsInfo::kPoint));
+  this->set(buffer_.data(), &info);  // !!! remember to set the point parser !!!
+  std::copy(pts.begin(), pts.end(), mutable_ptr(PointsInfo::kPoint));
   if (!normals.empty()) {
-    copy(normals.begin(), normals.end(), mutable_ptr(PointsInfo::kNormal));
+    std::copy(normals.begin(), normals.end(), mutable_ptr(PointsInfo::kNormal));
   }
   if (!features.empty()) {
-    copy(features.begin(), features.end(), mutable_ptr(PointsInfo::kFeature));
+    std::copy(features.begin(), features.end(), mutable_ptr(PointsInfo::kFeature));
   }
   if (!labels.empty()) {
-    copy(labels.begin(), labels.end(), mutable_ptr(PointsInfo::kLabel));
+    std::copy(labels.begin(), labels.end(), mutable_ptr(PointsInfo::kLabel));
   }
 
   return true;

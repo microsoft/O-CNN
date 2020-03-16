@@ -123,8 +123,7 @@ void OctreeParser::node_normal(float* n, int id, int depth) const {
   int ch = info_->channel(OctreeInfo::kFeature);
   if ((loc == -1 || loc == depth) && ch >= 3) {
     for (int c = 0; c < 3; ++c) { n[c] = feature_d[c * num + id]; }
-  }
-  else {
+  } else {
     for (int c = 0; c < 3; ++c) { n[c] = 0; }
   }
 }
@@ -136,8 +135,7 @@ float OctreeParser::node_dis(int id, int depth) const {
   int ch = info_->channel(OctreeInfo::kFeature);
   if ((loc == -1 || loc == depth) && ch >= 4) {
     return feature_d[3 * num + id];
-  }
-  else {
+  } else {
     return 0;
   }
 }

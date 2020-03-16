@@ -14,7 +14,7 @@ bool read_mesh(const string& filename, vector<float>& V, vector<int>& F) {
   if (suffix == "obj") {
     succ = read_obj(filename, V, F);
   } else if (suffix == "off") {
-    //succ = read_off(filename, V, F); //todo
+    succ = read_off(filename, V, F);
   } else if (suffix == "ply") {
     succ = read_ply(filename, V, F);
   } else {
@@ -30,7 +30,7 @@ bool write_mesh(const string& filename, const vector<float>& V, const vector<int
   if (suffix == "obj") {
     succ = write_obj(filename, V, F);
   } else if (suffix == "off") {
-    //succ = read_off(filename, V, F); //todo
+    //succ = write_off(filename, V, F); //todo
   } else if (suffix == "ply") {
     succ = write_ply(filename, V, F);
   } else {
@@ -149,6 +149,100 @@ bool write_obj(const string& filename, const vector<float>& V, const vector<int>
 }
 
 
+bool read_off(const string& filename, vector<float>& V, vector<int>& F) {
+  std::ifstream infile(filename, std::ios::binary);
+  if (!infile) {
+    //std::cout << "Open " + filename + " error!" << std::endl;
+    return false;
+  }
+
+  // face/vertex number
+  int nv, nf, ne;
+  char head[256];
+  infile >> head; // eat head
+  if (head[0] == 'O' && head[1] == 'F' && head[2] == 'F') {
+    if (head[3] == 0) {
+      infile >> nv >> nf >> ne;
+    } else if (head[3] == ' ') {
+      vector<char*> tokens;
+      char* pch = strtok(head + 3, " ");
+      while (pch != nullptr) {
+        tokens.push_back(pch);
+        pch = strtok(nullptr, " ");
+      }
+      if (tokens.size() != 3) {
+        //std::cout << filename + " is not an OFF file!" << std::endl;
+        return false;
+      }
+      nv = atoi(tokens[0]);
+      nf = atoi(tokens[1]);
+      ne = atoi(tokens[2]);
+    } else {
+      //std::cout << filename + " is not an OFF file!" << std::endl;
+      return false;
+    }
+  } else {
+    //std::cout << filename + " is not an OFF file!" << std::endl;
+    return false;
+  }
+
+  // get length of file
+  int p1 = infile.tellg();
+  infile.seekg(0, infile.end);
+  int p2 = infile.tellg();
+  infile.seekg(p1, infile.beg);
+  int len = p2 - p1;
+
+  // load the file into memory
+  char* buffer = new char[len + 1];
+  infile.read(buffer, len);
+  buffer[len] = 0;
+
+  // close file
+  infile.close();
+
+  // parse buffer data
+  std::vector<char*> pV;
+  pV.reserve(3 * nv);
+  char* pch = strtok(buffer, " \r\n");
+  pV.push_back(pch);
+  for (int i = 1; i < 3 * nv; i++) {
+    pch = strtok(nullptr, " \r\n");
+    pV.push_back(pch);
+  }
+  std::vector<char*> pF;
+  pF.reserve(3 * nf);
+  for (int i = 0; i < nf; i++) {
+    // eat the first data
+    pch = strtok(nullptr, " \r\n");
+    for (int j = 0; j < 3; j++) {
+      pch = strtok(nullptr, " \r\n");
+      pF.push_back(pch);
+    }
+  }
+
+  // load vertex
+  V.resize(3 * nv);
+  float* p = V.data();
+  #pragma omp parallel for
+  for (int i = 0; i < 3 * nv; i++) {
+    *(p + i) = atof(pV[i]);
+  }
+
+  // load face
+  F.resize(3 * nf);
+  int* q = F.data();
+  #pragma omp parallel for
+  for (int i = 0; i < 3 * nf; i++) {
+    *(q + i) = atoi(pF[i]);
+  }
+
+  //release
+  delete[] buffer;
+  return true;
+}
+
+
 #ifdef USE_RPLY
 #include <rply.h>
 
@@ -198,7 +292,7 @@ bool read_ply(const string& filename, vector<float>& V, vector<int>& F) {
     ply_get_argument_user_data(argument, (void **)&pF, nullptr);
     long length, value_index, index;
     ply_get_argument_property(argument, nullptr, &length, &value_index);
-    if (length != 3) throw std::runtime_error("Only triangle faces are supported!");
+    //if (length != 3) throw std::runtime_error("Only triangle faces are supported!");
     ply_get_argument_element(argument, nullptr, &index);
     if (value_index >= 0)
       (*pF)[3 * index + value_index] = (int)ply_get_argument_value(argument);
@@ -265,16 +359,35 @@ bool write_ply(const string& filename, const vector<float>& V, const vector<int>
 }
 
 #else
-
 #include <iostream>
+#include <happly.h>
 
 bool read_ply(const string& filename, vector<float>& V, vector<int>& F) {
-  std::cerr << "No rply, cannot read ply files!";
-  return false;
+  std::ifstream infile(filename, std::ios::binary);
+  if (!infile) {
+    std::cerr << "Error, cannot read ply files!" << std::endl;
+    return false;
+  }
+
+  happly::PLYData plyIn(infile);
+  V = plyIn.getVertices();
+  F = plyIn.getTriFaces();
+
+  return true;
 }
 
 bool write_ply(const string& filename, const vector<float>& V, const vector<int>& F) {
-  std::cerr << "No rply, cannot write ply files!";
+  std::ofstream outfile(filename, std::ios::binary);
+  if (!outfile) {
+    std::cerr << "Error, cannot read ply files!" << std::endl;
+    return false;
+  }
+
+  happly::PLYData plyOut;
+  plyOut.addVertices(V);
+  plyOut.addTriFaces(F);
+
+  plyOut.write(outfile);
   return false;
 }
 

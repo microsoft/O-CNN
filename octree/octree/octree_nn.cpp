@@ -79,7 +79,34 @@ void NeighHelper::init_neigh_index() {
       parent_ptr[i * 64 + j] = ni3[i * 27 + tmp[j]];
     }
   }
+
+  // init the bilinear table
+  bilinear_.assign(512, -1);
+  const int mask[8][3] = {                       // bilinear weights:
+    {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {1, 0, 0},  // 27, 9, 9, 9
+    {0, 1, 1}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},  //  3, 3, 3, 1
+  };
+  for (int i = 0; i < 8; ++i) {
+    // i -> xyz
+    int z0 = i % 2, t = i / 2;
+    int y0 = t % 2, x0 = t / 2;
+
+    for (int j = 0; j < 8; ++j) {
+      // j -> xyz
+      int z1 = j % 2, s = j / 2;
+      int y1 = s % 2, x1 = s / 2;
+
+      for (int k = 0; k < 8; ++k) {
+        int x2 = x0 + 1 + mask[k][0] * (2 * x1 - 1);
+        int y2 = y0 + 1 + mask[k][1] * (2 * y1 - 1);
+        int z2 = z0 + 1 + mask[k][2] * (2 * z1 - 1);
+
+        bilinear_[(i << 6) | (j << 3) | k] = (x2 << 4) | (y2 << 2) | z2;
+      }
+    }
+  }
 }
+
 
 vector<int>& NeighHelper::get_ni(const vector<int>& kernel_size) {
   string key;
@@ -135,11 +162,11 @@ void memcpy_cpu(const int N, const Dtype* X, Dtype* Y) {
 
 template<typename Dtype>
 void pad_forward_cpu(Dtype* Y, const int Hy,
-    const int Cy, const Dtype* X, const int Hx, const int* label) {
+    const int Cy, const Dtype* X, const int Hx, const int* label, const Dtype dval) {
   // Note: Cx == Cy
   for (int c = 0; c < Cy; ++c) {
     for (int h = 0; h < Hy; ++h) {
-      Y[c * Hy + h] = label[h] == -1 ? Dtype(0) : X[c * Hx + label[h]];
+      Y[c * Hy + h] = label[h] == -1 ? dval : X[c * Hx + label[h]];
     }
   }
 }
@@ -383,6 +410,63 @@ void generate_label_cpu(int* label_data, int& top_h, const Dtype* bottom_data,
 }
 
 
+void bilinear_neigh_cpu(int* bidx, const int* neigh, const int* child,
+    const int node_num, const int* table) {
+  for (int i = 0; i < node_num; ++i) {
+    int cld = child[i];
+    if (cld < 0) continue;    // skip empty node
+
+    const int* nghi = neigh + (i >> 3 << 6);
+    for (int j = 0; j < 8; ++j) {
+      int k = (cld * 8 + j);  // child id
+      int* des = bidx + k * 8;
+      const int* tb = table + ((i % 8) * 8 + j) * 8;
+      for (int k = 0; k < 8; ++k) {
+        des[k] = nghi[tb[k]];
+      }
+    }
+  }
+}
+
+void bilinear_xyz_cpu(uint32* xyz0, float* fracs, const int d0, const uint32* xyz1,
+    const int d1, const int num) {
+  const float scale = static_cast<float>(1 << (d1 - d0));
+  const int mask[8][3] = {                       // bilinear mask:
+    {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {1, 0, 0},  // 27, 9, 9, 9
+    {0, 1, 1}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},  //  3, 3, 3, 1
+  };
+
+  for (int i = 0; i < num; ++i) {
+    float pt[3] = { 0.0f };
+    float* frac = fracs + 3 * i;
+    int bnd[2][3] = { 0 };
+    const unsigned char* ptr1 = (const unsigned char*)(xyz1 + i);
+    for (int c = 0; c < 3; ++c) {
+      pt[c] = (static_cast<float>(ptr1[c]) + 0.5f) / scale - 0.5f;
+
+      int b = static_cast<int>(pt[c]);
+      frac[c] = pt[c] - static_cast<float>(b);
+      if (frac[c] > 0.5f) {
+        bnd[0][c] = b + 1;
+        bnd[1][c] = b;
+      } else {
+        frac[c] = 1 - frac[c];
+        bnd[0][c] = b;
+        bnd[1][c] = b + 1;
+      }
+    }
+
+    for (int j = 0; j < 8; ++j) {
+      unsigned char* ptr0 = (unsigned char*)(xyz0 + i * 8 + j);
+      for (int c = 0; c < 3; ++c) {
+        ptr0[c] = static_cast<unsigned char>(bnd[mask[j][c]][c]);
+      }
+      ptr0[3] = ptr1[3];
+    }
+  }
+}
+
+
 void search_key_cpu(int* idx, const uint32* key, const int n_key,
     const uint32* query, const int n_query) {
   for (int i = 0; i < n_query; ++i) {
@@ -431,6 +515,7 @@ void xyz2key_cpu(uint32* key, const uint32* xyz, const int num, const int depth)
   }
 }
 
+
 void key2xyz_cpu(uint32* xyz, const uint32* key, const int num, const int depth) {
   for (int i = 0; i < num; ++i) {
     uint32 pt[3] = { 0 };
@@ -444,6 +529,23 @@ void key2xyz_cpu(uint32* xyz, const uint32* key, const int num, const int depth)
   }
 }
 
+
+void key2idx_cpu(int* idx, const uint32* key, const int num) {
+  for (int i = 0; i < num; ++i) {
+    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(key + i);
+    idx[i] = static_cast<int>(ptr[3]);
+  }
+}
+
+
+void xyz2coord_cpu(float* pt, const uint32* xyz, const int num, const int channel) {
+  for (int i = 0; i < num; ++i) {
+    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(xyz + i);
+    for (int c = 0; c < channel; ++c) {
+      pt[c * num + i] = static_cast<float>(ptr[c]);
+    }
+  }
+}
 
 template<typename Dtype>
 void key2xyz(Dtype* xyz, const uint32 key, const int depth) {
@@ -466,9 +568,9 @@ template void memcpy_cpu<unsigned>(const int N, const unsigned* X, unsigned* Y);
 template void memcpy_cpu<float>(const int N, const float* X, float* Y);
 template void memcpy_cpu<double>(const int N, const double* X, double* Y);
 template void pad_forward_cpu<float>(float* Y, const int Hy, const int Cy,
-    const float* X, const int Hx, const int* label);
+    const float* X, const int Hx, const int* label, const float dval);
 template void pad_forward_cpu<double>(double* Y, const int Hy, const int Cy,
-    const double* X, const int Hx, const int* label);
+    const double* X, const int Hx, const int* label, const double dval);
 template void pad_backward_cpu<float>(float* X, const int Hx, const int Cx,
     const float* Y, const int Hy, const int* label);
 template void pad_backward_cpu<double>(double* X, const int Hx, const int Cx,

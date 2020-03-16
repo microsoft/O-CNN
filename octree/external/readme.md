@@ -5,5 +5,4 @@ These libraries can be downloaded via the following commaneds:
 
 ```
 git clone --recursive https://github.com/wang-ps/octree-ext.git
-mv octree-ext/* .
 ```

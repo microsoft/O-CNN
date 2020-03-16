@@ -5,7 +5,7 @@
 
 namespace octree {
 
-const unsigned char* get_one_octree(const char *name, size_t *size);
+const unsigned char* get_one_octree(const char *name, size_t *size = nullptr);
 
 } // namespace octree
 

@@ -7,8 +7,8 @@ const char OctreeInfo::kMagicStr[16] = "_OCTREE_1.0_";
 
 void OctreeInfo::initialize(int depth, int full_depth, bool node_displacement,
     bool node_feature, bool split_label, bool adaptive, int adaptive_depth,
-    float threshold_distance, float threshold_normal, bool key2xyz, bool extrapolate,
-    const Points& points) {
+    float threshold_distance, float threshold_normal, bool key2xyz,
+    bool extrapolate, bool save_pts, const Points& points) {
   set_batch_size(1);
   set_depth(depth);
   set_full_layer(full_depth);
@@ -17,6 +17,7 @@ void OctreeInfo::initialize(int depth, int full_depth, bool node_displacement,
   set_node_dis(node_displacement);
   set_key2xyz(key2xyz);
   set_extraplate(extrapolate);
+  set_save_points(save_pts);
   set_threshold_normal(threshold_normal);
   set_threshold_dist(threshold_distance);
 
@@ -38,9 +39,12 @@ void OctreeInfo::initialize(int depth, int full_depth, bool node_displacement,
   channel = pt_info.channel(PointsInfo::kNormal) + pt_info.channel(PointsInfo::kFeature);
   if (node_displacement) {
     channel += 1;
-    // In this case, the difference of the average point with the center of 
+    // In this case, the difference of the average point with the center of
     // octree node (3 channels) are saved replacing normal
     if (pt_info.channel(PointsInfo::kNormal) == 0) channel += 3;
+  }
+  if (save_pts) {
+    channel += 3; // save the average points as features
   }
   set_channel(OctreeInfo::kFeature, channel);
   // location = -1 means the features exist on every node
@@ -108,13 +112,13 @@ bool OctreeInfo::is_consistent(const OctreeInfo& info) const {
   // ignore threshold_dist_, threshold_norm_, nnum_, nnum_cum_,
   // nnum_nempty_, bbmin_, bbmax_, ptr_dis_
   return strcmp(magic_str_, info.magic_str_) == 0 &&
-    memcmp(channels_, info.channels_, 16 * sizeof(int)) == 0 &&
-    memcmp(locations_, info.locations_, 16 * sizeof(int)) == 0 &&
-    batch_size_ == info.batch_size_ && depth_ == info.depth_ &&
-    full_layer_ == info.full_layer_ && adp_layer_ == info.adp_layer_ &&
-    is_adaptive_ == info.is_adaptive_ && key2xyz_ == info.key2xyz_ &&
-    has_node_dis_ == info.has_node_dis_ &&
-    content_flags_ == info.content_flags_;
+      memcmp(channels_, info.channels_, 16 * sizeof(int)) == 0 &&
+      memcmp(locations_, info.locations_, 16 * sizeof(int)) == 0 &&
+      batch_size_ == info.batch_size_ && depth_ == info.depth_ &&
+      full_layer_ == info.full_layer_ && adp_layer_ == info.adp_layer_ &&
+      is_adaptive_ == info.is_adaptive_ && key2xyz_ == info.key2xyz_ &&
+      has_node_dis_ == info.has_node_dis_ &&
+      content_flags_ == info.content_flags_;
 }
 
 int OctreeInfo::channel(PropType ptype) const {

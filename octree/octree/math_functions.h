@@ -10,16 +10,22 @@ const float ESP = 1.0e-30f;
 void bounding_sphere(float& radius, float* center, const float* pt, const int npt);
 void bouding_box(float* bbmin, float* bbmax, const float* pt, const int npt);
 
+// !!! The matrix in this header is in column-major storage order !!!
+
+// Calculate the matrix *rot* given the rotation *axis* and rotation *angle*
 void rotation_matrix(float* rot, const float angle, const float* axis);
-// the rotation matrix that rotates axis0 to axis1 with minimal angle
+// Calculate the matrix *rot* given three rotation angles
+void rotation_matrix(float* rot, const float* angle);
+// The rotation matrix that rotates axis0 to axis1 with minimal angle
 void rotation_matrix(float* rot, const float* axis0, const float* axis1);
 
 void cross_prod(float* c, const float* a, const float* b);
 float dot_prod(const float* a, const float* b);
+// Inplace product is not allowed: the pointer C must not be equal to A or B
 void matrix_prod(float* C, const float* A, const float* B, const int M,
     const int N, const int K);
 
-// give the z axis, output the x and y axis
+// Give the z axis, output the x and y axis
 void axes(float* x, float* y, const float* z);
 
 void inverse_transpose_3x3(float* const out, const float* const mat);

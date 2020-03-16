@@ -19,7 +19,8 @@ class OctreeInfo {
 
   void initialize(int depth, int full_depth, bool node_displacement, bool node_feature,
       bool split_label, bool adaptive, int adaptive_depth, float threshold_distance,
-      float threshold_normal, bool key2xyz, bool extrapolate, const Points& points);
+      float threshold_normal, bool key2xyz, bool extrapolate, bool save_pts,
+      const Points& points);
 
   void reset();
   bool check_format(string& msg) const;
@@ -48,6 +49,7 @@ class OctreeInfo {
   float bbox_max_width() const;
   bool is_key2xyz() const { return key2xyz_; }
   bool extrapolate() const { return extrapolate_; }
+  bool save_pts() const { return save_pts_; }
   const float* bbmin() const { return bbmin_; }
   const float* bbmax() const { return bbmax_; }
   // todo: modify sizeof_octinfo() according to magic_str_ for back-compatibility
@@ -71,6 +73,7 @@ class OctreeInfo {
   void set_bbox(const float* bbmin, const float* bbmax);
   void set_key2xyz(bool b) { key2xyz_ = b; }
   void set_extraplate(bool b) { extrapolate_ = b; }
+  void set_save_points(bool b) { save_pts_ = b; }
   void set_node_dis(bool dis) { has_node_dis_ = dis; }
   void set_adaptive(bool adp) { is_adaptive_ = adp; }
   void set_adaptive_layer(int d) { adp_layer_ = d; }
@@ -100,7 +103,8 @@ class OctreeInfo {
   float bbmin_[3];
   float bbmax_[3];
   bool extrapolate_;    // added on 2018/12/12, extraplate node feature
-  char reserved_[255];  // reserved for future usage: 2018/12/12
+  bool save_pts_;       // added on 2019/01/09, save average points in octree
+  char reserved_[254];  // reserved for future usage: 2018/12/12
 
  private:
   int ptr_dis_[16];

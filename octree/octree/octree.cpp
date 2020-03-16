@@ -337,11 +337,14 @@ void Octree::calc_signal(const Points& point_cloud, const vector<float>& pts_sca
         }
       }
 
-      float factor = ESP;
-      for (int c = 0; c < channel; ++c) {
-        factor += avg_normal[c] * avg_normal[c];
+      float factor = norm2(avg_normal);
+      if (factor < 1.0e-6f) {
+        int h = sorted_idx[unique_idx[t]];
+        for (int c = 0; c < channel; ++c) {
+          avg_normal[c] = normals[channel * h + c];
+        }
+        factor = norm2(avg_normal) + ESP;
       }
-      factor = sqrtf(factor);
       for (int c = 0; c < channel; ++c) {
         avg_normals_[depth][c * nnum + i] = avg_normal[c] / factor;
       }
@@ -394,7 +397,7 @@ void Octree::calc_signal(const Points& point_cloud, const vector<float>& pts_sca
     }
   }
 
-  if (oct_info_.has_displace()) {
+  if (oct_info_.has_displace() || oct_info_.save_pts()) {
     const int channel = 3;
     const float mul = 1.1547f; // = 2.0f / sqrt(3.0f)
     avg_pts_[depth].assign(nnum * channel, 0.0f);
@@ -507,11 +510,17 @@ void Octree::calc_signal(const bool calc_normal_err, const bool calc_dist_err) {
           }
         }
 
-        float len = ESP;
-        for (int c = 0; c < channel_normal; ++c) {
-          len += n_avg[c] * n_avg[c];
+        float len = norm2(n_avg);
+        if (len < 1.0e-6f) {
+          for (int j = didx_d[i]; j < didx_d[i] + dnum_d[i]; ++j) {
+            if (node_type(children_depth[j]) == kLeaf) continue;
+            for (int c = 0; c < channel_normal; ++c) {
+              n_avg[c] = normal_depth[c * nnum_depth + j];
+            }
+          }
+          len = norm2(n_avg) + ESP;
         }
-        len = sqrtf(len);
+
         for (int c = 0; c < channel_normal; ++c) {
           n_avg[c] /= len;
           normal_d[c * nnum_d + i] = n_avg[c];  // output
@@ -892,8 +901,14 @@ void Octree::serialize() {
   const int depth = oct_info_.depth();
   vector<vector<float> > features = avg_normals_;
   for (int d = 0; d <= depth; ++d) {
-    features[d].insert(features[d].end(), displacement_[d].begin(), displacement_[d].end());
+    if (oct_info_.has_displace()) {
+      features[d].insert(features[d].end(), displacement_[d].begin(), displacement_[d].end());
+    }
+    // if there is no features in points, the avg_features_ will also be empty
     features[d].insert(features[d].end(), avg_features_[d].begin(), avg_features_[d].end());
+    if (oct_info_.save_pts()) {
+      features[d].insert(features[d].end(), avg_pts_[d].begin(), avg_pts_[d].end());
+    }
   }
 
 #define SERIALIZE_PROPERTY(Dtype, Ptype, Var)                                 \
@@ -1155,7 +1170,6 @@ void Octree::calc_split_label() {
 }
 
 
-
 void Octree::valid_depth_range(int& depth_start, int& depth_end) const {
   const int depth = info_->depth();
   const int depth_full = info_->full_layer();
@@ -1167,8 +1181,6 @@ void Octree::valid_depth_range(int& depth_start, int& depth_end) const {
 
   depth_end = clamp(depth_end, depth_start, depth);
 }
-
-
 
 
 void Octree::octree2pts(Points& point_cloud, int depth_start, int depth_end,
@@ -1186,12 +1198,13 @@ void Octree::octree2pts(Points& point_cloud, int depth_start, int depth_end,
     const int num = info_->node_num(d);
 
     for (int i = 0; i < num; ++i) {
-      if (node_type(child_d[i]) == kInternelNode && d != depth) continue;
+      if ((node_type(child_d[i]) == kInternelNode && d != depth) ||
+          (node_type(child_d[i]) == kLeaf && d == depth)) continue;
 
       float n[3], pt[3];
       node_normal(n, i, d);
       float len = abs(n[0]) + abs(n[1]) + abs(n[2]);
-      if (len == 0) continue;
+      if (len == 0 && d != depth) continue;  // for adaptive octree
       node_pos(pt, i, d);
 
       for (int c = 0; c < 3; ++c) {
@@ -1255,130 +1268,6 @@ void Octree::octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
       }
     }
   }
-}
-
-void Octree::dropout(Octree& octree_out, const int depth_dropout,
-    const float threshold) const {
-  // generate the drop flag
-  int depth = info().depth();
-  vector<vector<char> > drop(depth + 1);
-  drop[depth_dropout].resize(info().node_num(depth_dropout), 0);
-  std::default_random_engine generator(static_cast<uint32>(time(nullptr)));
-  std::bernoulli_distribution distribution(threshold);
-  for (int i = 0; i < info().node_num(depth_dropout); ++i) {
-    // generate random flag for the level depth_dropout
-    drop[depth_dropout][i] = static_cast<char>(distribution(generator));
-  }
-  for (int d = depth_dropout + 1; d <= depth; ++d) {
-    int nnum_d = info().node_num(d);
-    int nnum_dp = info().node_num(d - 1);
-    const int* children_dp = children_cpu(d - 1);
-    drop[d].resize(nnum_d);
-    for (int i = 0; i < nnum_dp; ++i) {
-      int t = children_dp[i];
-      if (t < 0) continue; // continue if it has no children
-      // assign the drop flag of one parent node to its children
-      for (int j = 0; j < 8; ++j) {
-        drop[d][t * 8 + j] = drop[d - 1][i];
-      }
-    }
-  }
-
-  // init output
-  OctreeInfo info_output = info();
-  vector<int> node_num(depth + 1, 0);
-  for (int d = 0; d <= depth; ++d) {
-    if (d <= depth_dropout) {
-      node_num[d] = info().node_num(d);
-    } else {
-      int num = 0;
-      for (auto v : drop[d]) {
-        if (v == 0) num++;
-      }
-      node_num[d] = num;
-    }
-  }
-  info_output.set_nnum(node_num.data());
-  info_output.set_nnum_cum();
-  info_output.set_ptr_dis();
-  octree_out.resize_octree(info_output.sizeof_octree());
-  octree_out.mutable_info() = info_output;
-
-  // !!!todo: splitlabel
-  // start dropout
-  // from level 0 to depth_output
-  int num = info().node_num_cum(depth_dropout + 1);
-  int channel_key = info().channel(OctreeInfo::kKey); // current channel_key = 1
-  std::copy_n(key_cpu(0), num * channel_key, octree_out.mutable_key_cpu(0));
-  std::copy_n(children_cpu(0), num, octree_out.mutable_children_cpu(0));
-  int channel_feature = info().channel(OctreeInfo::kFeature);
-  int location_feature = info().locations(OctreeInfo::kFeature);
-  if (location_feature == -1) {
-    std::copy_n(feature_cpu(0), num * channel_feature, octree_out.mutable_feature_cpu(0));
-  }
-  int channel_label = info().channel(OctreeInfo::kLabel);
-  int location_label = info().locations(OctreeInfo::kLabel);
-  if (location_label == -1) {
-    std::copy_n(label_cpu(0), num * channel_label, octree_out.mutable_label_cpu(0));
-  }
-
-  // from level depth_output+1 to depth
-  vector<int> node_num_nempty(depth + 1, 0);
-  for (int d = depth_dropout + 1; d <= depth; ++d) {
-    int nnum_d = info().node_num(d), id = 0;
-    const int* child_src = children_cpu(d);
-    const uint32* key_src = key_cpu(d);
-    int* child_des = octree_out.mutable_children_cpu(d);
-    uint32* key_des = octree_out.mutable_key_cpu(d);
-    for (int i = 0, j = 0; i < nnum_d; ++i) {
-      if (drop[d][i] == 0) {
-        key_des[j] = key_src[i];
-        int ch = child_src[i] < 0 ? child_src[i] : id++;
-        child_des[j] = ch;
-        ++j;
-      }
-    }
-    node_num_nempty[d] = id;
-
-    if (location_feature == -1 || d == depth) {
-      int nnum_src = octree_out.info().node_num(d);
-      const float * feature_src = feature_cpu(d);
-      float* feature_des = octree_out.mutable_feature_cpu(d);
-      for (int i = 0, j = 0; i < nnum_d; ++i) {
-        if (drop[d][i] == 0) {
-          for (int c = 0; c < channel_feature; ++c) {
-            feature_des[c * nnum_src + j] = feature_src[c * nnum_d + i];
-          }
-          ++j;
-        }
-      }
-    }
-
-    if ((location_label == -1 || d == depth) && channel_label != 0) {
-      const float * label_src = label_cpu(d);
-      float* label_des = octree_out.mutable_label_cpu(d);
-      for (int i = 0, j = 0; i < nnum_d; ++i) {
-        if (drop[d][i] == 0) {
-          label_des[j] = label_src[i];
-          ++j;
-        }
-      }
-    }
-  }
-
-  // modify the children and node_num_nempty
-  int id = 0;
-  const int* child_src = children_cpu(depth_dropout);
-  int* child_des = octree_out.mutable_children_cpu(depth_dropout);
-  for (int i = 0; i < node_num[depth_dropout]; ++i) {
-    child_des[i] = (drop[depth_dropout][i] == 1 || child_src[i] < 0) ?
-        child_src[i] : id++;
-  }
-  for (int d = 0; d < depth_dropout; ++d) {
-    node_num_nempty[d] = info().node_num_nempty(d);
-  }
-  node_num_nempty[depth_dropout] = id; // !!! important
-  octree_out.mutable_info().set_nempty(node_num_nempty.data());
 }
 
 

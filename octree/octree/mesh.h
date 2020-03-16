@@ -13,6 +13,7 @@ bool write_mesh(const string& filename, const vector<float>& V, const vector<int
 
 bool read_obj(const string& filename, vector<float>& V, vector<int>& F);
 bool write_obj(const string& filename, const vector<float>& V, const vector<int>& F);
+bool read_off(const string& filename, vector<float>& V, vector<int>& F);
 bool read_ply(const string& filename, vector<float>& V, vector<int>& F);
 bool write_ply(const string& filename, const vector<float>& V, const vector<int>& F);
 

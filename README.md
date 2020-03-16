@@ -1,6 +1,6 @@
 # O-CNN
 
-## Introduction <a name="introduction"></a>
+<!-- ## Introduction <a name="introduction"></a> -->
 
 This repository contains the implementation of *O-CNN*  and  *Aadptive O-CNN* 
 introduced in our SIGGRAPH 2017 paper and SIGGRAPH Asia 2018 paper.  
@@ -40,99 +40,10 @@ If you use our code or models, please cite our paper.
 }
 ```
 
-## 1 &nbsp; Installation <a name="installation"></a>
-
-### 1.1 &nbsp; caffe
-The caffe-based implementation has been tested on Windows 10 x64 and Ubuntu 16.04.
-To build the code, the Cuda 8.0 and Cudnn 6.0 have to be installed.
-
-1. Build the code under `octree`.
-Our O-CNN takes the octree representation of 3D objects as input. 
-And the octree can be built from a `point cloud` representation of a 3D shape.
-The code for converting a point cloud into octree representation is contained 
-in the folder `octree`, which can be built via [cmake](https://cmake.org/):
-```bash
-cd octree && mkdir build && cd build
-cmake ..  && cmake --build . --config Release
-```
-
-
-2. Clone [Caffe](https://github.com/BVLC/caffe) into the caffe directory with revision `6bfc5ca`: 
-```bash
-git clone https://github.com/BVLC/caffe.git && cd caffe && git checkout 6bfc5ca
-```
-3. Copy the code contained in the directory `caffe` into the caffe directory to 
-override the original [Caffe](https://github.com/BVLC/caffe) code. 
-
-4. Follow the installation [instructions](http://caffe.berkeleyvision.org/installation.html) 
-of Caffe to build the code to get the executive files: `caffe`, `convert_octree_data` 
-and `feature_pooling` etc.
-The code should be compiled with c++11 support, which is not enabled by
-default for some compilers. So please check your compiler settings and enable the
-compiler to support c++11.
-
-5. **NOTE**: Compared with the original code used in the experiments of the O-CNN paper, 
-the code in this repository is refactored for the readability and maintainability, 
-with the sacrifice of speed (it is about 10% slower, but it is more memory-efficient). 
-If you want to try the original code or do some speed comparisons with our `O-CNN`,
-feel free to drop me an email, we can share the original code with you. <br/>
-
-
-
-### 1.2 &nbsp; tensorflow
-
-The code has been tested with Ubuntu 16.04/18.04 and TensorFlow 1.14.0/1.12.0.
-
-1. Install Anaconda. 
-Visit [this page](https://www.anaconda.com/distribution/) and download the 
-Python 3.x version Anaconda for Linux Installer. 
-
-2. Install CUDA 10.1. 
-Download and install **CUDA 10.1**  according to the official instructions 
-[here](https://developer.nvidia.com/cuda-downloads).
-
-
-3. Set up TensorFlow environment. 
-After installing Anaconda, create a new conda environment with tensorflow-gpu 1.14.0.
-```shell
-conda create -n tf-1.14.0 tensorflow-gpu==1.14.0
-conda activate tf-1.14.0
-```
-
-4. Build the code under `octree` and `tensorflow`.
-```shell
-cd octree && mkdir build && cd build
-cmake .. -DUSE_WINDOWS_IO=OFF -DUSE_GLOG=OFF -DUSE_CUDA=ON -DUSE_PYTHON=ON
-make
-cd ../../tensorflow/libs
-python build.py
-```
-
-
-## 2 &nbsp; Data preparation <a name="data"></a>
-
-The General procedure is as follows:
-
-1. Download and unzip the corresponding 3D model dataset 
- (like the [ModelNet40](http://modelnet.cs.princeton.edu) dataset) into a folder.
-
-2. Convert all the models (in OBJ/OFF format) to dense point clouds with normals 
-(in `POINTS` format).
-For the models in ModelNet40 or ShapeNet, we provide a tool 
-[`virtualscanner`](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner),
-which can be used to convert them to `POINTS` format.  
-If your mesh is of good quality, there are many more efficient methods to sample points.
-
-3. Run the tool `octree` to convert point clouds into the octree files.
-
-4. Store all the octree files in a  `leveldb`/`lmdb` database by the tool 
-`convert_octree_data`, which serves as the input of Caffe.
-For the ones who are new to the [Caffe](http://caffe.berkeleyvision.org/) framework 
-and do not know how to use the generated database to train and test the neural network,
-the tutorial on [this page](http://caffe.berkeleyvision.org/gathered/examples/mnist.html)
-
-5. For the `tensorflow` code, you can store the `POINTS`/`octree` files in to `tfrecords`
-with the script `tensorflow/util/convert_tfrecords.py`
+## Contents
+### 1 &nbsp; [Installation](docs/Installation.md)
+### 2 &nbsp; [Data preparation](docs/Data_Preparation.md)
+### 3 &nbsp; [Shape Classification](docs/Classification.md)
 
 
 

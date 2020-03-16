@@ -3,6 +3,9 @@
 
 #include <cstring>
 #include <fstream>
+#include <chrono>
+#include <random>
+
 
 void PointsParser::set(const void* ptr) {
   const_ptr_ = true;
@@ -69,9 +72,48 @@ void PointsParser::uniform_scale(const float s) {
   }
 }
 
+void PointsParser::scale(const float* s) {
+  if (s[0] == 1.0f && s[1] == 1.0f && s[2] == 1.0f) { return; }
+
+  int npt = info_->pt_num();
+  float* pt = this->mutable_points();
+  for (int i = 0; i < npt; ++i) {
+    int ix3 = i * 3;
+    for (int j = 0; j < 3; ++j) {
+      pt[ix3 + j] *= s[j];
+    }
+  }
+
+  if (this->info().has_property(PointsInfo::kNormal)) {
+    float* nm = this->mutable_normal();
+    for (int i = 0; i < npt; ++i) {
+      int ix3 = i * 3;
+      for (int j = 0; j < 3; ++j) {
+        nm[ix3 + j] *= s[j];
+      }
+    }
+    normalize_nx3(nm, npt);
+  }
+}
+
 void PointsParser::rotate(const float angle, const float* axis) {
   float rot[9];
   rotation_matrix(rot, angle, axis);
+
+  int npt = info_->pt_num();
+  vector<float> tmp(3 * npt);
+  matrix_prod(tmp.data(), rot, mutable_points(), 3, npt, 3);
+  std::copy(tmp.begin(), tmp.end(), mutable_points());
+
+  if (this->info().has_property(PointsInfo::kNormal)) {
+    matrix_prod(tmp.data(), rot, this->mutable_normal(), 3, npt, 3);
+    std::copy(tmp.begin(), tmp.end(), mutable_normal());
+  }
+}
+
+void PointsParser::rotate(const float* angles) {
+  float rot[9];
+  rotation_matrix(rot, angles);
 
   int npt = info_->pt_num();
   vector<float> tmp(3 * npt);
@@ -105,7 +147,7 @@ void PointsParser::transform(const float* mat) {
 }
 
 void PointsParser::clip(const float* bbmin, const float* bbmax) {
-  int npt = info_->pt_num(), npt_bbox = 0;
+  int npt = info_->pt_num(), npt_in_bbox = 0;
   float* pts = mutable_points();
   vector<int> in_bbox(npt, 0);
   for (int i = 0; i < npt; ++i) {
@@ -113,9 +155,17 @@ void PointsParser::clip(const float* bbmin, const float* bbmax) {
     in_bbox[i] = bbmin[0] < pts[ix3] && pts[ix3] < bbmax[0] &&
         bbmin[1] < pts[ix3 + 1] && pts[ix3 + 1] < bbmax[1] &&
         bbmin[2] < pts[ix3 + 2] && pts[ix3 + 2] < bbmax[2];
-    npt_bbox += in_bbox[i];
+    npt_in_bbox += in_bbox[i];
   }
-  if (npt_bbox == npt) return; // early stop
+
+  if (npt_in_bbox == npt) return; // early stop
+  if (npt_in_bbox == 0) {         // no points
+    // just keep one point to avoid the degenerated case
+    npt_in_bbox = 1;
+    in_bbox[0] = 1;
+    float* p = mutable_points();
+    for (int i = 0; i < 3; ++i) { p[i] = bbmin[i]; }
+  }
 
   // Just discard the points which are out of the bbox
   for (int t = 0; t < PointsInfo::kPTypeNum; ++t) {
@@ -133,5 +183,36 @@ void PointsParser::clip(const float* bbmin, const float* bbmax) {
     }
   }
 
-  info_->set_pt_num(npt_bbox);
+  info_->set_pt_num(npt_in_bbox);
+}
+
+void PointsParser::add_noise(const float std_pt, const float std_nm) {
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::default_random_engine generator(seed);
+  std::normal_distribution<float> dis_pt(0.0f, std_pt), dis_nm(0.0f, std_nm);
+
+  int npt = info_->pt_num();
+  if (std_pt > 1.0e-5f) {
+    float* pt = mutable_ptr(PointsInfo::kPoint);
+    for (int i = 0; i < 3 * npt; ++i) {
+      pt[i] += dis_pt(generator);
+    }
+  }
+
+  if (std_nm > 1.0e-5f && this->info().has_property(PointsInfo::kNormal)) {
+    float* nm = mutable_normal();
+    for (int i = 0; i < 3 * npt; ++i) {
+      nm[i] += dis_nm(generator);
+    }
+    normalize_nx3(nm, npt);
+  }
+}
+
+void PointsParser::normalize() {
+  float radius, center[3], trans[3];
+  bounding_sphere(radius, center, this->points(), this->info().pt_num());
+  for (int i = 0; i < 3; ++i) { trans[i] = -center[i]; }
+
+  this->translate(trans);
+  this->uniform_scale(1 / (radius + 1.0e-10f));
 }

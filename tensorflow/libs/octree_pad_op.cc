@@ -18,6 +18,7 @@ REGISTER_OP("OctreePad")
     .Input("btm_data: float")
     .Input("octree: int8")
     .Attr("depth: int")
+    .Attr("dval: float = 0.0")
     .Output("top_data: float")
     .SetShapeFn(pad_shape_fun)
     .Doc(R"doc(Octree padding operator.)doc");
@@ -52,7 +53,9 @@ class OctreePadBase : public OpKernel {
 class OctreePadOp : public OctreePadBase {
  public:
   explicit OctreePadOp(OpKernelConstruction* context)
-    : OctreePadBase(context) {}
+    : OctreePadBase(context) {
+    OP_REQUIRES_OK(context, context->GetAttr("dval", &dval_));
+  }
 
   void Compute(OpKernelContext* context) override {
     // in octree
@@ -68,7 +71,8 @@ class OctreePadOp : public OctreePadBase {
 
     // check
     int depth = this->depth_;
-    CHECK_EQ(octree_.info().node_num_nempty(depth), btm_h);
+    CHECK_EQ(octree_.info().node_num_nempty(depth), btm_h)
+        << ", pad, d = " << depth << ", channel = " << channel;
 
     // top data
     TensorShape top_shape = btm_shape;
@@ -80,15 +84,18 @@ class OctreePadOp : public OctreePadBase {
 
     // padding data
     pad_forward_gpu(top_ptr, top_h, channel,
-      btm_ptr, btm_h, octree_.children_gpu(depth));
+        btm_ptr, btm_h, octree_.children_gpu(depth), dval_);
   }
+  
+ protected:
+  float dval_;
 };
 
 
 class OctreeDepadOp : public OctreePadBase {
  public:
-   explicit OctreeDepadOp(OpKernelConstruction* context)
-     : OctreePadBase(context) {}
+  explicit OctreeDepadOp(OpKernelConstruction* context)
+    : OctreePadBase(context) {}
 
   void Compute(OpKernelContext* context) override {
     // in octree
@@ -104,8 +111,9 @@ class OctreeDepadOp : public OctreePadBase {
 
     // check
     int depth = this->depth_;
-    CHECK_EQ(octree_.info().node_num(depth), top_h) << "depth :" << depth;
-    
+    CHECK_EQ(octree_.info().node_num(depth), top_h)
+        << ", depad, d = " << depth << ", channel = " << channel;
+
     // btm grad
     TensorShape btm_shape = top_shape;
     int btm_h = octree_.info().node_num_nempty(depth);
@@ -113,10 +121,10 @@ class OctreeDepadOp : public OctreePadBase {
     Tensor* btm_data = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(0, btm_shape, &btm_data));
     auto btm_ptr = btm_data->flat<float>().data();
-       
+
     // padding data
     pad_backward_gpu(btm_ptr, btm_h, channel,
-      top_ptr, top_h, octree_.children_gpu(depth));
+        top_ptr, top_h, octree_.children_gpu(depth));
   }
 };
 
