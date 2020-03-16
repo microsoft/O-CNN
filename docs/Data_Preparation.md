@@ -2,7 +2,7 @@
 
 ## General procedure
 
-O-CNN takes octrees as input, which are built from point clouds.
+O-CNN takes `octrees` as input, which are built from `point clouds`.
 We provide several tools for converting triangle meshes (in obj/off/ply format) 
 into point clouds (in our customized `points` format), and converting
 point clouds into octrees (in our customized `octree` format). 
@@ -41,7 +41,7 @@ used to revert a `TFRecord` database to `points`/`octree` files.
 
 
 ## Custom data
-It is also very convenient to save your own data into our `points` format.
+It is also very convenient to write code to save your data into our `points` format.
 Just include the header [points.h](https://github.com/microsoft/O-CNN/octree/octree/points.h) 
 and refer to  the following several lines of code: 
 
@@ -51,7 +51,7 @@ and refer to  the following several lines of code:
 Points point_cloud;
 vector<float> points, normals, features, labels;
 // ......
-// set your data in points, normals, features, and labels.
+// Set your data in points, normals, features, and labels.
 // The points must not be empty, the labels may be empty,
 // the normals & features must not be empty at the same time.
 //   points: 3 channels, x_1, y_1, z_1, ..., x_n, y_n, z_n

@@ -3,7 +3,8 @@ octree/external
 tensorflow/libs/object
 tensorflow/libs/Makefile
 tensorflow/libs/libocnn.so
-*dataset
 caffe-official
 *.pyc
 *.vscode
+*.zip
+caffe/experiments/dataset

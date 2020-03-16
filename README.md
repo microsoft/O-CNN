@@ -40,10 +40,10 @@ If you use our code or models, please cite our paper.
 }
 ```
 
-## Contents
-### 1 &nbsp; [Installation](docs/Installation.md)
-### 2 &nbsp; [Data preparation](docs/Data_Preparation.md)
-### 3 &nbsp; [Shape Classification](docs/Classification.md)
+### Contents
+- &nbsp; [Installation](docs/Installation.md)
+- &nbsp; [Data preparation](docs/Data_Preparation.md)
+- &nbsp; [Shape Classification](docs/Classification.md)
 
 
 
