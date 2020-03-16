@@ -80,3 +80,15 @@ TEST(BiliearNeigh, TestBiliearNeigh) {
     ASSERT_EQ(sidx[i], bidx[i]);
   }
 }
+
+
+TEST(Coord2xyzTest, TestCoord2xyz) {
+  float coord[] = {1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8 };
+  unsigned char xyz[] = { 1, 3, 5, 7, 2, 4, 6, 8 };
+  unsigned int rst[2] = { 0 };
+  coord2xyz_cpu(rst, coord, 2, 4);
+  unsigned char* ptr = (unsigned char*)rst;
+  for (int i = 0; i < 8; ++i) {
+    ASSERT_EQ(ptr[i], xyz[i]);
+  }
+}

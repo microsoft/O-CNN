@@ -190,6 +190,8 @@ void key2idx_gpu(int* idx, const uint32* key, const int num);
 
 void xyz2coord_cpu(float* pt, const uint32* xyz, const int num, const int channel);
 void xyz2coord_gpu(float* pt, const uint32* xyz, const int num, const int channel);
+void coord2xyz_cpu(uint32* xyz, const float* pt, const int num, const int channel);
+void coord2xyz_gpu(uint32* xyz, const float* pt, const int num, const int channel);
 
 //int content_flag(string str);
 template<typename Dtype>

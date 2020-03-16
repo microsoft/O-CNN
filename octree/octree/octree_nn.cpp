@@ -547,6 +547,17 @@ void xyz2coord_cpu(float* pt, const uint32* xyz, const int num, const int channe
   }
 }
 
+
+void coord2xyz_cpu(uint32* xyz, const float* pt, const int num, const int channel) {
+  for (int i = 0; i < num; ++i) {
+    unsigned char* ptr = reinterpret_cast<unsigned char*>(xyz + i);
+    for (int c = 0; c < channel; ++c) {
+      ptr[c] = static_cast<unsigned char>(pt[c * num + i]);
+    }
+  }
+}
+
+
 template<typename Dtype>
 void key2xyz(Dtype* xyz, const uint32 key, const int depth) {
   uint32 pt[3];

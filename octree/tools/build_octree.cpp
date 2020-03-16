@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  cout << "Done: " << FLAGS_filenames << endl;
+  if (FLAGS_verbose) cout << "Done: " << FLAGS_filenames << endl;
   return 0;
 }
 

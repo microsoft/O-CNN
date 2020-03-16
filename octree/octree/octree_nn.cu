@@ -562,11 +562,11 @@ void key2idx_gpu(int* idx, const uint32* key, const int num) {
 }
 
 
-__global__ void xyz2coord_kernel(float* pt, const uint32* key, const int num,
+__global__ void xyz2coord_kernel(float* pt, const uint32* xyz, const int num,
     const int nthreads) {
   CUDA_KERNEL_LOOP(i, nthreads) {
     int h = i % num, c = i / num;
-    const unsigned char* ptr = (const unsigned char*)(key + h);
+    const unsigned char* ptr = (const unsigned char*)(xyz + h);
     pt[i] = static_cast<float>(ptr[c]);
     // ref: pt[c * num + h] = static_cast<float>(ptr[c]);
   }
@@ -576,6 +576,23 @@ void xyz2coord_gpu(float* pt, const uint32* xyz, const int num, const int channe
   int nthreads = num * channel;
   xyz2coord_kernel <<< CudaGetBlocks(nthreads), kCudaThreadsNum >>> (
       pt, xyz, num, nthreads);
+  CUDA_POST_KERNEL_CHECK;
+}
+
+
+__global__ void coord2xyz_kernel(uint32* xyz, const float* pt, const int num,
+    const int nthreads) {
+  CUDA_KERNEL_LOOP(i, nthreads) {
+    int h = i % num, c = i / num;
+    unsigned char* ptr = (unsigned char*)(xyz + h);
+    ptr[c] = static_cast<unsigned char>(pt[i]);
+  }
+}
+
+void coord2xyz_gpu(uint32* xyz, const float* pt, const int num, const int channel) {
+  int nthreads = num * channel;
+  coord2xyz_kernel <<< CudaGetBlocks(nthreads), kCudaThreadsNum >>> (
+      xyz, pt, num, nthreads);
   CUDA_POST_KERNEL_CHECK;
 }
 

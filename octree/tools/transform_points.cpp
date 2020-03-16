@@ -14,8 +14,8 @@ DEFINE_float(trans, kOptional, 0.0, "The translation factor");
 DEFINE_float(offset, kOptional, 0.0, "Offset the points along its normal");
 DEFINE_float(ratio, kOptional, 0.5, "The dropout ratio");
 DEFINE_float(dim, kOptional, 0, "The resolution for dropout");
-DEFINE_float(std_nm, kOptional, 0.01, "The std of normal noise ");
-DEFINE_float(std_pt, kOptional, 0.01, "The std of posistion noise");
+DEFINE_float(std_nm, kOptional, 0.0, "The std of normal noise ");
+DEFINE_float(std_pt, kOptional, 0.0, "The std of posistion noise");
 DEFINE_string(mat, kOptional, "", "A txt file which contains a matrix");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
