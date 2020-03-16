@@ -32,9 +32,9 @@ REGISTER_OP("PointsDatabase")
     .Doc(R"doc(Points Database operator.)doc");
 
 
-class PointsDatabaseOP : public OpKernel {
+class PointsDatabaseOp : public OpKernel {
  public:
-  explicit PointsDatabaseOP(OpKernelConstruction* context) :
+  explicit PointsDatabaseOp(OpKernelConstruction* context) :
     OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("axis", &axis_));
     OP_REQUIRES_OK(context, context->GetAttr("depth", &depth_));
@@ -136,6 +136,6 @@ class PointsDatabaseOP : public OpKernel {
 };
 
 
-REGISTER_KERNEL_BUILDER(Name("PointsDatabase").Device(DEVICE_CPU), PointsDatabaseOP);
+REGISTER_KERNEL_BUILDER(Name("PointsDatabase").Device(DEVICE_CPU), PointsDatabaseOp);
 
 }  // namespace tensorflow

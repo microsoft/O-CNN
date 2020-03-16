@@ -5,3 +5,5 @@ tensorflow/libs/Makefile
 tensorflow/libs/libocnn.so
 tensorflow/test
 *dataset
+caffe-official
+*.pyc

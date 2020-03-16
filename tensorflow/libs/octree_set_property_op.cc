@@ -21,9 +21,9 @@ REGISTER_OP("OctreeSetProperty")
     })
     .Doc(R"doc(Octree set property operator.)doc");
 
-class OctreeSetPropertyOP : public OpKernel {
+class OctreeSetPropertyOp : public OpKernel {
  public:
-  explicit OctreeSetPropertyOP(OpKernelConstruction* context) :
+  explicit OctreeSetPropertyOp(OpKernelConstruction* context) :
     OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("property_name", &property_name_));
     OP_REQUIRES_OK(context, context->GetAttr("depth", &depth_));
@@ -103,6 +103,6 @@ class OctreeSetPropertyOP : public OpKernel {
   
 };
 
-REGISTER_KERNEL_BUILDER(Name("OctreeSetProperty").Device(DEVICE_GPU), OctreeSetPropertyOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeSetProperty").Device(DEVICE_GPU), OctreeSetPropertyOp);
 
 }  // namespace tensorflow

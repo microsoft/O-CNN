@@ -21,9 +21,9 @@ REGISTER_OP("OctreeUpdate")
     .Doc(R"doc(Octree update operator.)doc");
 
 
-class OctreeUpdateOP : public OpKernel {
+class OctreeUpdateOp : public OpKernel {
  public:
-  explicit OctreeUpdateOP(OpKernelConstruction* context) : OpKernel(context) {
+  explicit OctreeUpdateOp(OpKernelConstruction* context) : OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("depth", &curr_depth_));
     OP_REQUIRES_OK(context, context->GetAttr("mask", &mask_));
   }
@@ -72,6 +72,6 @@ class OctreeUpdateOP : public OpKernel {
   int mask_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("OctreeUpdate").Device(DEVICE_GPU), OctreeUpdateOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeUpdate").Device(DEVICE_GPU), OctreeUpdateOp);
 
 }  // namespace tensorflow

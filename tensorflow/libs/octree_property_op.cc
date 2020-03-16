@@ -24,9 +24,9 @@ REGISTER_OP("OctreeProperty")
     .Doc(R"doc(Octree property operator.)doc");
 
 
-class OctreePropertyOP : public OpKernel {
+class OctreePropertyOp : public OpKernel {
  public:
-  explicit OctreePropertyOP(OpKernelConstruction* context) :
+  explicit OctreePropertyOp(OpKernelConstruction* context) :
     OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("property_name", &property_name_));
     OP_REQUIRES_OK(context, context->GetAttr("depth", &depth_));
@@ -48,22 +48,24 @@ class OctreePropertyOP : public OpKernel {
       CHECK_EQ(dtype_, DataType::DT_UINT32);
     } else if (property_name_ == "xyz") {
       // key2xzy
-      const uint32* xyz = octree_.key_gpu(depth_);
+      property_ptr = octree_.key_gpu(depth_);
+      channel = octree_.info().channel(OctreeInfo::kKey);
       if (!octree_.info().is_key2xyz()) {
         OP_REQUIRES_OK(context,
             context->allocate_temp(DT_UINT32, TensorShape({ length }), &buf0));
         uint32* ptr = buf0.flat<uint32>().data();
-        key2xyz_gpu(ptr, xyz, length, depth_);
-        xyz = ptr;
+        key2xyz_gpu(ptr, (const uint32*)property_ptr, length, depth_);
+        property_ptr = ptr;
       }
-      // xyz to float
-      channel = channel_;
-      OP_REQUIRES_OK(context,
-          context->allocate_temp(DT_FLOAT, TensorShape({ length * channel }), &buf1));
-      CHECK_EQ(dtype_, DataType::DT_FLOAT);
-      float* ptr = buf1.flat<float>().data();
-      xyz2coord_gpu(ptr, xyz, length, channel);
-      property_ptr = ptr;
+      CHECK_EQ(dtype_, DataType::DT_UINT32);
+      //// xyz to float
+      //channel = channel_;
+      //OP_REQUIRES_OK(context,
+      //    context->allocate_temp(DT_FLOAT, TensorShape({ length * channel }), &buf1));
+      //CHECK_EQ(dtype_, DataType::DT_FLOAT);
+      //float* ptr = buf1.flat<float>().data();
+      //xyz2coord_gpu(ptr, xyz, length, channel);
+      //property_ptr = ptr;
     } else if (property_name_ == "index") {
       const unsigned int* key_ptr = octree_.key_gpu(depth_);
       channel = octree_.info().channel(OctreeInfo::kKey);
@@ -96,7 +98,7 @@ class OctreePropertyOP : public OpKernel {
     } else {
       LOG(FATAL) << "Unsupported Octree Property";
     }
-    CHECK_EQ(channel_, channel) << "The specified channel is wrong.";
+    CHECK_EQ(channel_, channel) << "The specified channel_ is wrong.";
 
     Tensor* out_tensor;
     TensorShape out_shape({ channel, length });
@@ -131,6 +133,6 @@ class OctreePropertyOP : public OpKernel {
   int channel_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("OctreeProperty").Device(DEVICE_GPU), OctreePropertyOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeProperty").Device(DEVICE_GPU), OctreePropertyOp);
 
 }  // namespace tensorflow

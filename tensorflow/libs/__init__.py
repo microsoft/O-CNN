@@ -23,6 +23,12 @@ octree_update   = _tf_ocnn_module.octree_update
 octree_align    = _tf_ocnn_module.octree_align
 octree_mask     = _tf_ocnn_module.octree_mask
 octree_samples  = _tf_ocnn_module.octree_samples
+octree_search   = _tf_ocnn_module.octree_search
+octree_key2xyz  = _tf_ocnn_module.octree_key_to_xyz
+octree_xyz2key  = _tf_ocnn_module.octree_xyz_to_key
+octree_decode_key = _tf_ocnn_module.octree_decode_key
+octree_encode_key = _tf_ocnn_module.octree_encode_key
+octree_search_key = _tf_ocnn_module.octree_search_key
 octree_set_property = _tf_ocnn_module.octree_set_property
 _octree_max_pool    = _tf_ocnn_module.octree_max_pool
 _octree_mask_pool   = _tf_ocnn_module.octree_mask_pool
@@ -47,6 +53,12 @@ ops.NotDifferentiable('OctreeUpdate')
 ops.NotDifferentiable('OctreeGrow')
 ops.NotDifferentiable('OctreeSamples')
 ops.NotDifferentiable('OctreeBilinear')
+ops.NotDifferentiable('OctreeKeyToXyz')
+ops.NotDifferentiable('OctreeXyzToKey')
+ops.NotDifferentiable('OctreeDecodeKey')
+ops.NotDifferentiable('OctreeEncodeKey')
+ops.NotDifferentiable('OctreeSearchKey')
+ops.NotDifferentiable('OctreeSearch')
 
 
 @ops.RegisterGradient('OctreePad')
@@ -237,7 +249,7 @@ def octree_global_pool(data, octree, depth):
   return output
 
 
-def octree_bilinear(data, octree, depth, target_depth):
+def octree_bilinear_legacy(data, octree, depth, target_depth):
   with tf.variable_scope('octree_bilinear'):
     mask = tf.constant(
       [[0, 0, 0], [0, 0, 1], [0, 1, 0], [1, 0, 0], 
@@ -254,4 +266,40 @@ def octree_bilinear(data, octree, depth, target_depth):
     output = tf.div(output, norm)
     output = tf.expand_dims(tf.expand_dims(tf.transpose(output), 0), -1)
   return output
+
+
+
+# pts: (N, 4), i.e. N x (x, y, z, id)
+# data: (1, C, H, 1)
+def octree_bilinear_v1(pts, data, octree, depth):
+  with tf.variable_scope('octree_bilinear'):
+    mask = tf.constant(
+      [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], 
+       [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]], dtype=tf.float32)
+    
+    xyzf, ids = tf.split(pts, [3, 1], 1)    
+    xyzf = xyzf - 0.5     # since the value is defined on the center of each voxel
+    xyzi = tf.floor(xyzf) # the integer part 
+    frac = xyzf - xyzi    # the fraction part
+
+    feat = tf.transpose(tf.squeeze(data, [0, 3]))        # (1, C, H, 1) -> (H, C)
+    output = tf.zeros([tf.shape(xyzi)[0], tf.shape(feat)[1]], dtype=tf.float32)
+    norm   = tf.zeros([tf.shape(xyzi)[0], 1], dtype=tf.float32)
+
+    for i in range(8):
+      maski = mask[i, :]
+      maskc = 1.0 - maski
+      xyzm = xyzi + maski
+      xyzm = tf.cast(tf.concat([xyzm, ids], axis=1), dtype=tf.uint8)
+      idxi = octree_search_key(octree_encode_key(xyzm), octree, depth, is_xyz=True)
+    
+      weight = tf.abs(tf.reduce_prod(maskc - frac, axis=1, keepdims=True))
+      output += weight * tf.gather(feat, idxi) 
+      norm   += weight * tf.expand_dims(tf.cast(idxi > -1, dtype=tf.float32), -1)
+    output = tf.div(output, norm)
+    
+    output = tf.expand_dims(tf.expand_dims(tf.transpose(output), 0), -1)
+    frac = tf.expand_dims(tf.expand_dims(tf.transpose(frac), 0), -1)
+
+  return output, frac
 

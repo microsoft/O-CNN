@@ -41,9 +41,9 @@ REGISTER_OP("BoundingSphere")
     .Doc(R"doc(Compute the bounding sphere of a point cloud.)doc");
 
 
-class TransformPointsOP : public OpKernel {
+class TransformPointsOp : public OpKernel {
  public:
-  explicit TransformPointsOP(OpKernelConstruction* context)
+  explicit TransformPointsOp(OpKernelConstruction* context)
     : OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("axis", &axis_));
     OP_REQUIRES_OK(context, context->GetAttr("depth", &depth_));
@@ -170,9 +170,9 @@ class TransformPointsOP : public OpKernel {
   float offset_;
 };
 
-class BoundingSphereOP : public OpKernel {
+class BoundingSphereOp : public OpKernel {
  public:
-  explicit BoundingSphereOP(OpKernelConstruction* context)
+  explicit BoundingSphereOp(OpKernelConstruction* context)
     : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override {
@@ -206,7 +206,7 @@ class BoundingSphereOP : public OpKernel {
 };
 
 
-REGISTER_KERNEL_BUILDER(Name("TransformPoints").Device(DEVICE_CPU), TransformPointsOP);
-REGISTER_KERNEL_BUILDER(Name("BoundingSphere").Device(DEVICE_CPU), BoundingSphereOP);
+REGISTER_KERNEL_BUILDER(Name("TransformPoints").Device(DEVICE_CPU), TransformPointsOp);
+REGISTER_KERNEL_BUILDER(Name("BoundingSphere").Device(DEVICE_CPU), BoundingSphereOp);
 
 }  // namespace tensorflow

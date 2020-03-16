@@ -21,9 +21,9 @@ REGISTER_OP("OctreeDropout")
     .Doc(R"doc(Drop out octree nodes.)doc");
 
 
-class OctreeDropoutOP : public OpKernel {
+class OctreeDropoutOp : public OpKernel {
  public:
-  explicit OctreeDropoutOP(OpKernelConstruction* context)
+  explicit OctreeDropoutOp(OpKernelConstruction* context)
     : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override {
@@ -74,6 +74,6 @@ class OctreeDropoutOP : public OpKernel {
   }
 };
 
-REGISTER_KERNEL_BUILDER(Name("OctreeDropout").Device(DEVICE_CPU), OctreeDropoutOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeDropout").Device(DEVICE_CPU), OctreeDropoutOp);
 
 }  // namespace tensorflow

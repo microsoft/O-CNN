@@ -21,9 +21,9 @@ REGISTER_OP("OctreeNew")
     .Doc(R"doc(Octree new operator.)doc");
 
 
-class OctreeNewOP : public OpKernel {
+class OctreeNewOp : public OpKernel {
  public:
-  explicit OctreeNewOP(OpKernelConstruction* context) : OpKernel(context) {
+  explicit OctreeNewOp(OpKernelConstruction* context) : OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("batch_size", &batch_size_));
     OP_REQUIRES_OK(context, context->GetAttr("adaptive_layer", &adaptive_));
     OP_REQUIRES_OK(context, context->GetAttr("has_displace", &has_displace_));
@@ -81,6 +81,6 @@ class OctreeNewOP : public OpKernel {
   bool has_displace_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("OctreeNew").Device(DEVICE_GPU), OctreeNewOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeNew").Device(DEVICE_GPU), OctreeNewOp);
 
 }  // namespace tensorflow

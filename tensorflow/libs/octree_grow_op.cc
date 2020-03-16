@@ -20,9 +20,9 @@ REGISTER_OP("OctreeGrow")
     .Doc(R"doc(Octree grow operator.)doc");
 
 
-class OctreeGrowOP : public OpKernel {
+class OctreeGrowOp : public OpKernel {
  public:
-  explicit OctreeGrowOP(OpKernelConstruction* context) : OpKernel(context) {
+  explicit OctreeGrowOp(OpKernelConstruction* context) : OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("target_depth", &target_depth_));
     OP_REQUIRES_OK(context, context->GetAttr("full_octree",  &full_octree_));
   }
@@ -135,6 +135,6 @@ class OctreeGrowOP : public OpKernel {
 };
 
 
-REGISTER_KERNEL_BUILDER(Name("OctreeGrow").Device(DEVICE_GPU), OctreeGrowOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeGrow").Device(DEVICE_GPU), OctreeGrowOp);
 
 }  // namespace tensorflow

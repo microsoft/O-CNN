@@ -37,9 +37,9 @@ REGISTER_OP("OctreeAlignGrad")
     .Doc(R"doc(Octree align grad operator.)doc");
 
 
-class OctreeAlignOP : public OpKernel {
+class OctreeAlignOp : public OpKernel {
  public:
-  explicit OctreeAlignOP(OpKernelConstruction* context) : OpKernel(context) {
+  explicit OctreeAlignOp(OpKernelConstruction* context) : OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("depth", &curr_depth_));
   }
 
@@ -103,9 +103,9 @@ class OctreeAlignOP : public OpKernel {
 };
 
 
-class OctreeAlignGradOP : public OpKernel {
+class OctreeAlignGradOp : public OpKernel {
  public:
-  explicit OctreeAlignGradOP(OpKernelConstruction* context) :
+  explicit OctreeAlignGradOp(OpKernelConstruction* context) :
     OpKernel(context) {
   }
 
@@ -133,7 +133,7 @@ class OctreeAlignGradOP : public OpKernel {
   }
 };
 
-REGISTER_KERNEL_BUILDER(Name("OctreeAlign").Device(DEVICE_GPU), OctreeAlignOP);
-REGISTER_KERNEL_BUILDER(Name("OctreeAlignGrad").Device(DEVICE_GPU), OctreeAlignGradOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeAlign").Device(DEVICE_GPU), OctreeAlignOp);
+REGISTER_KERNEL_BUILDER(Name("OctreeAlignGrad").Device(DEVICE_GPU), OctreeAlignGradOp);
 
 }  // namespace tensorflow

@@ -22,18 +22,16 @@ Cudnn 6.0 have to be installed.
 
 - Clone [Caffe](https://github.com/BVLC/caffe) with revision `6bfc5ca`: 
 ```shell
-mkdir caffe-official && cd caffe-official
-git clone https://github.com/BVLC/caffe.git && cd caffe && git checkout 6bfc5ca
+git clone https://github.com/BVLC/caffe.git caffe-official
+cd caffe-official && git checkout 6bfc5ca
 ```
+
 - Copy the code contained in the directory `caffe` into the `caffe-official` directory to 
 override the official [Caffe](https://github.com/BVLC/caffe) code. 
 
 - Follow the installation [instructions](http://caffe.berkeleyvision.org/installation.html) 
 of Caffe to build the code to get the executive files: `caffe`, `convert_octree_data` 
 and `feature_pooling` etc.
-The code should be compiled with c++11 support, which is not enabled by
-default for some compilers. So please check your compiler settings and enable the
-compiler to support c++11.
 
 - **NOTE**: Compared with the original code used in the experiments of the O-CNN paper, 
 the code in this repository is refactored for the readability and maintainability, 
@@ -45,7 +43,8 @@ feel free to drop me an email, we can share the original code with you.
 ## Tensorflow
 
 The code has been tested with Ubuntu 16.04/18.04 and TensorFlow 1.14.0/1.12.0.
-To build the code, [Cuda 10.1](https://developer.nvidia.com/cuda-downloads) and 
+
+- To build the code, [Cuda 10.1](https://developer.nvidia.com/cuda-downloads) and 
 [Anaconda](https://www.anaconda.com/distribution/) with python 3.x have to be installed.
 
 - Create a new conda environment and install tensorflow-gpu 1.14.0.
@@ -56,7 +55,7 @@ conda activate tf-1.14.0
 
 - Build the code under `octree` with CUDA enabled.
 ```shell
-cd octree
+cd octree/build
 cmake .. -DUSE_CUDA=ON  && make
 ```
 

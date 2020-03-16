@@ -19,9 +19,9 @@ REGISTER_OP("OctreeMask")
     .Doc(R"doc(Octree mask operator.)doc");
 
 
-class OctreeMaskOP : public OpKernel {
+class OctreeMaskOp : public OpKernel {
  public:
-  explicit OctreeMaskOP(OpKernelConstruction* context)
+  explicit OctreeMaskOp(OpKernelConstruction* context)
     : OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("mask", &mask_));
   }
@@ -54,6 +54,6 @@ class OctreeMaskOP : public OpKernel {
 };
 
 
-REGISTER_KERNEL_BUILDER(Name("OctreeMask").Device(DEVICE_GPU), OctreeMaskOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeMask").Device(DEVICE_GPU), OctreeMaskOp);
 
 }  // namespace tensorflow

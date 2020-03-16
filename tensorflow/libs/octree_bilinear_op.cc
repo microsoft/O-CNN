@@ -21,9 +21,9 @@ REGISTER_OP("OctreeBilinear")
     .Doc(R"doc(Octree bilinear operator.)doc");
 
 
-class OctreeBilinearOP : public OpKernel {
+class OctreeBilinearOp : public OpKernel {
  public:
-  explicit OctreeBilinearOP(OpKernelConstruction* context) : OpKernel(context) {
+  explicit OctreeBilinearOp(OpKernelConstruction* context) : OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("curr_depth", &curr_depth_));
     OP_REQUIRES_OK(context, context->GetAttr("target_depth", &target_depth_));
     CHECK_GT(curr_depth_, 0) 
@@ -106,6 +106,6 @@ class OctreeBilinearOP : public OpKernel {
 };
 
 
-REGISTER_KERNEL_BUILDER(Name("OctreeBilinear").Device(DEVICE_GPU), OctreeBilinearOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeBilinear").Device(DEVICE_GPU), OctreeBilinearOp);
 
 }  // namespace tensorflow

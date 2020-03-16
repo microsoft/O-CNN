@@ -17,9 +17,9 @@ REGISTER_OP("OctreeSamples")
     .Doc(R"doc(Get one sample octree for testing.)doc");
 
 
-class OctreeSamplesOP : public OpKernel {
+class OctreeSamplesOp : public OpKernel {
  public:
-  explicit OctreeSamplesOP(OpKernelConstruction* context) :
+  explicit OctreeSamplesOp(OpKernelConstruction* context) :
     OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override {
@@ -42,6 +42,6 @@ class OctreeSamplesOP : public OpKernel {
 };
 
 
-REGISTER_KERNEL_BUILDER(Name("OctreeSamples").Device(DEVICE_CPU), OctreeSamplesOP);
+REGISTER_KERNEL_BUILDER(Name("OctreeSamples").Device(DEVICE_CPU), OctreeSamplesOp);
 
 }  // namespace tensorflow

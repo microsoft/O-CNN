@@ -29,9 +29,9 @@ REGISTER_OP("PointsToOctree")
     .Doc(R"doc(Points To Octree operator.)doc");
 
 
-class PointsToOctreeOP : public OpKernel {
+class PointsToOctreeOp : public OpKernel {
  public:
-  explicit PointsToOctreeOP(OpKernelConstruction* context) :
+  explicit PointsToOctreeOp(OpKernelConstruction* context) :
     OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("depth", &depth_));
     OP_REQUIRES_OK(context, context->GetAttr("full_depth", &full_depth_));
@@ -95,5 +95,5 @@ class PointsToOctreeOP : public OpKernel {
 };
 
 
-REGISTER_KERNEL_BUILDER(Name("PointsToOctree").Device(DEVICE_CPU), PointsToOctreeOP);
+REGISTER_KERNEL_BUILDER(Name("PointsToOctree").Device(DEVICE_CPU), PointsToOctreeOp);
 }  // namespace tensorflow
