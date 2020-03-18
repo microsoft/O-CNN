@@ -9,7 +9,7 @@ layer {
     phase: TRAIN
   }
   data_param {
-    source: "dataset/m40_5_2_12_train"
+    source: "dataset/m40_5_2_12_train_lmdb"
     batch_size: 32
     backend: LMDB
   }
@@ -28,7 +28,7 @@ layer {
     phase: TEST
   }
   data_param {
-    source: "dataset/m40_5_2_12_train"
+    source: "dataset/m40_5_2_12_test_lmdb"
     batch_size: 32
     backend: LMDB
   }

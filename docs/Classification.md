@@ -12,7 +12,8 @@ and unzip it to the folder `dataset/ModelNet40`.
 
 2. Convert triangle meshes (in `off` format) to point clouds (in `points` format)
 with the [virtual_scanner](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
-This process can be automatically executed by the following command.
+This process can be automatically executed by the following command. 
+Remember to provide actual `<The path of the virtual_scanner>` to run the command.
 We also provide the converted `point clouds` for convenience. Download the zip file
 [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0) and
 unzip it to the folder `dataset/ModelNet40.points`.
@@ -25,6 +26,8 @@ unzip it to the folder `dataset/ModelNet40.points`.
 `caffe` with the executive files [`octree`](Installation.md#Octree) and
 [`convert_octree_data`](Installation.md#Caffe).
 This process can be automatically executed by the following command.
+Remember to provide actual `<The path of the octree>` and 
+`<The path of the convert_octree_data>`to run the command.
 We also provide the converted `lmdb` for convenience. Download the zip file
 [here](https://www.dropbox.com/s/yadlc2ws05iz2hv/ModelNet40.octree.lmdb.zip?dl=0)
 and unzip it to the folder `dataset`.

@@ -1,5 +1,5 @@
 # The train/test net protocol buffer definition
-net: "./M40_6.prototxt"
+net: "ocnn_m40_6.prototxt"
 
 # run the forward pass for all test data to get the test loss
 test_iter: 925
@@ -24,7 +24,7 @@ max_iter: 160000  # about 40 epochs
 
 # snapshot intermediate results
 snapshot: 2000
-snapshot_prefix: "./CAFFE/M40_6_"
+snapshot_prefix: "models/ocnn_m40_6"
 
 # solver mode: CPU or GPU
 solver_mode: GPU

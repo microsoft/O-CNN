@@ -168,4 +168,4 @@ if __name__ == '__main__':
   elif cmd == 'm40_generate_aocnn_lmdb':
     m40_generate_aocnn_lmdb(depth=5)
   else:
-    pass
+    print('Unsupported command:' + cmd)
