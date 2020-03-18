@@ -18,8 +18,8 @@ We also provide the converted `point clouds` for convenience. Download the zip f
 [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0) and
 unzip it to the folder `dataset/ModelNet40.points`.
     ```shell
-    python dataset.py --run=m40_convert_mesh_to_points ^
-                      --scanner=<The path of the virtual_scanner>
+    python prepare_dataset.py --run=m40_convert_mesh_to_points ^
+                              --scanner=<The path of the virtual_scanner>
     ```
 
 3. Convert the point clouds to octrees, then build the `lmdb` database used by
@@ -29,12 +29,12 @@ This process can be automatically executed by the following command.
 Remember to provide actual `<The path of the octree>` and 
 `<The path of the convert_octree_data>`to run the command.
 We also provide the converted `lmdb` for convenience. Download the zip file
-[here](https://www.dropbox.com/s/yadlc2ws05iz2hv/ModelNet40.octree.lmdb.zip?dl=0)
+[here](https://www.dropbox.com/s/t6d7z12ye3rpfit/ModelNet40.octree.lmdb.zip?dl=0)
 and unzip it to the folder `dataset`.
     ```shell
-    python dataset.py --run=m40_generate_ocnn_lmdb ^
-                      --octree=<The path of the octree> ^
-                      --convert_octree_data=<The path of the convert_octree_data>
+    python prepare_dataset.py --run=m40_generate_ocnn_lmdb ^
+                              --octree=<The path of the octree> ^
+                              --converter=<The path of the convert_octree_data>
     ```
 
 1. Run [`caffe`](Installation.md#Caffe) to train the model.
@@ -52,9 +52,9 @@ We also provide our pre-trained Caffe model in `models/ocnn_M40_5.caffemodel`.
 The AO-CNN takes adaptive octrees for input, run the following command to prepare
 the data automatically.
     ```shell
-    python dataset.py --run=m40_generate_aocnn_lmdb ^
-                      --octree=<The path of the octree> ^
-                      --convert_octree_data=<The path of the convert_octree_data>
+    python prepare_dataset.py --run=m40_generate_aocnn_lmdb ^
+                              --octree=<The path of the octree> ^
+                              --converter=<The path of the convert_octree_data>
     ```
 
 2. Run [`caffe`](Installation.md#Caffe) to train the model.
@@ -64,12 +64,30 @@ the data automatically.
 
 
 ## O-CNN on TensorFlow
-1. Store the `points` into one `TFRecord` database.
+
+1. Download [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset
+and unzip it to the folder `dataset/ModelNet40`.
+
+2. Convert triangle meshes (in `off` format) to point clouds (in `points` format)
+with the [virtual_scanner](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
+This process can be automatically executed by the following command. 
+Remember to provide actual `<The path of the virtual_scanner>` to run the command.
+We also provide the converted `point clouds` for convenience. Download the zip file
+[here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0) and
+unzip it to the folder `dataset/ModelNet40.points`.
     ```shell
-    convert_tfrecords.py <root_folder> <list_file> <database>
+    python prepare_dataset.py --run=m40_convert_mesh_to_points ^
+                              --scanner=<The path of the virtual_scanner>
     ```
 
-2. Run the following command to train the network:
+3. With the `Tensorflow`, we provide operators to directly consume the points as 
+input. Run the following command to store the `points` into one `TFRecords` database.
+    ```shell
+    python prepare_dataset.py --run=m40_generate_ocnn_tfrecords ^
+                              --converter="../util/convert_tfrecords.py"
+    ```
+
+4. Run the following command to train the network:
     ```shell
     python cls.py
     ```

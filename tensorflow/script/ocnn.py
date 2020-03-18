@@ -45,6 +45,37 @@ def conv2d(inputs, nout, kernel_size, stride, padding='SAME', data_format='chann
             kernel_initializer=tf.contrib.layers.xavier_initializer())
 
 
+def octree_conv1x1(inputs, nout, use_bias=False):
+  outputs = tf.layers.conv2d(inputs, nout, kernel_size=1, strides=1,
+      data_format='channels_first', use_bias=use_bias,
+      kernel_initializer=tf.contrib.layers.xavier_initializer())
+  return outputs
+
+
+def octree_conv1x1(inputs, nout, use_bias=False):
+  with tf.variable_scope('conv2d_1x1'):
+    inputs = tf.squeeze(inputs, axis=[0, 3])   # (1, C, H, 1) -> (C, H)
+    weights = tf.get_variable('weights', shape=[nout, int(inputs.shape[0])], 
+        dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
+    outputs = tf.matmul(weights, inputs)       # (C, H) -> (nout, H)
+    if use_bias:
+      bias = tf.get_variable('bias', shape=[nout, 1], dtype=tf.float32, 
+         initializer=tf.contrib.layers.xavier_initializer())
+      outputs = bias + outputs
+    outputs = tf.expand_dims(tf.expand_dims(outputs, axis=0), axis=-1)
+  return outputs
+
+
+def octree_conv1x1_bn(inputs, nout, training):
+  conv = octree_conv1x1(inputs, nout, use_bias=False)
+  return batch_norm(conv, training)
+
+
+def octree_conv1x1_bn_relu(inputs, nout, training):
+  conv = octree_conv1x1_bn(inputs, nout, training)
+  return tf.nn.relu(conv)
+
+
 def conv2d_bn(inputs, nout, kernel_size, stride, training):
   conv = conv2d(inputs, nout, kernel_size, stride)
   return batch_norm(conv, training)
@@ -81,10 +112,16 @@ def global_pool(inputs, data_format='channels_first'):
   return tf.reduce_mean(inputs, axis=axis)
   
 
+# !!! Deprecated
 def octree_upsample(data, octree, depth, channel, training):
   with tf.variable_scope('octree_upsample'):
     depad = octree_depad(data, octree, depth)
     up = upsample(depad, channel, training)
+  return up
+
+def octree_upsample(data, octree, depth, channel, training):
+  up = octree_deconv_bn_relu(data, octree, depth, channel, training, 
+                             kernel_size=[2], stride=2, fast_mode=False)
   return up
 
 
@@ -144,25 +181,23 @@ def octree_resblock(data, octree, depth, num_out, stride, training):
     depth = depth - 1
 
   with tf.variable_scope("1x1x1_a"):
-    block1 = conv2d_bn(data, bottleneck, stride=1, kernel_size=1, training=training)
-    block1 = tf.nn.relu(block1)
+    block1 = octree_conv1x1_bn_relu(data, bottleneck, training=training)
   
   with tf.variable_scope("3x3x3"):
     block2 = octree_conv_bn_relu(block1, octree, depth, bottleneck, training)
   
   with tf.variable_scope("1x1x1_b"):
-    block3 = conv2d_bn(block2, num_out, stride=1, kernel_size=1, training=training)
+    block3 = octree_conv1x1_bn(block2, num_out, training=training)
 
   block4 = data
   if num_in != num_out:
     with tf.variable_scope("1x1x1_c"):
-      block4 = conv2d_bn(data, num_out, stride=1, kernel_size=1, training=training)
+      block4 = octree_conv1x1_bn(data, num_out, training=training)
 
   return tf.nn.relu(block3 + block4)
 
 
 def octree_resblock2(data, octree, depth, num_out, training):
-  # 2 conv layers and stride 1
   with tf.variable_scope("conv_1"):
     conv = octree_conv_bn_relu(data, octree, depth,  num_out/4, training)
   with tf.variable_scope("conv_2"):
@@ -170,13 +205,12 @@ def octree_resblock2(data, octree, depth, num_out, training):
   out  = tf.nn.relu(conv + data)
   return out
 
-
 def predict_module(data, num_output, num_hidden, training):
-  # MLP with one hidden layer 
-  conv = conv2d_bn_relu(data, num_hidden, 1, 1, training)  
-  logit = tf.layers.conv2d(conv, num_output, kernel_size=1, strides=1,
-      data_format='channels_first', use_bias=True,
-      kernel_initializer=tf.contrib.layers.xavier_initializer())
+  # MLP with one hidden layer
+  with tf.variable_scope('conv1'):
+    conv = octree_conv1x1_bn_relu(data, num_hidden, training)
+  with tf.variable_scope('conv2'):
+    logit= octree_conv1x1(conv, num_output, use_bias=True)
   return logit
 
 
@@ -246,7 +280,7 @@ def build_solver(total_loss, learning_rate_handle):
       lr = learning_rate_handle(global_step)
       solver = tf.train.MomentumOptimizer(lr, 0.9) \
                        .minimize(total_loss, global_step=global_step)
-  return solver
+  return solver, lr
 
 
 def summary_train(names, tensors):
@@ -273,6 +307,18 @@ def loss_functions(logit, label_gt, num_class, weight_decay, var_name):
   with tf.name_scope('loss'):
     loss = softmax_loss(logit, label_gt, num_class)
     accu = softmax_accuracy(logit, label_gt)
+    regularizer = l2_regularizer(var_name, weight_decay)
+  return loss, accu, regularizer
+
+
+def loss_functions_seg(logit, label_gt, num_class, weight_decay, var_name):
+  with tf.name_scope('loss_seg'): 
+    label_mask = label_gt > -1  # filter label -1
+    masked_logit = tf.boolean_mask(logit, label_mask)
+    masked_label = tf.boolean_mask(label_gt, label_mask)
+    loss = softmax_loss(masked_logit, masked_label, num_class)
+
+    accu = softmax_accuracy(masked_logit, masked_label)
     regularizer = l2_regularizer(var_name, weight_decay)
   return loss, accu, regularizer
 

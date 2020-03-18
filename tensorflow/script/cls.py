@@ -70,15 +70,29 @@ def network(octree, depth, num_class, training=True, reuse=None):
 
 def train_network(reuse=False):
   # octree, label = dataset(FLAGS.train_data, FLAGS.train_batch_size)
-  octree, label = points_dataset(FLAGS.train_data, FLAGS.train_batch_size, 
-                                 depth=FLAGS.depth, distort=True)
+  with tf.name_scope('dataset'):
+    point_dataset = PointDataset(
+        ParseExample(x_alias='data', y_alias='label'), 
+        TransformPoints(distort=True, depth=FLAGS.depth, axis=FLAGS.axis, scale=0.25, 
+                        jitter=8, angle=[180, 180, 180], dropout=[0]*2, stddev=[0]*2, 
+                        uniform_scale=False, offset=FLAGS.offset), 
+        Points2Octree(FLAGS.depth, node_dis=True, save_pts=False))
+    octree, label = point_dataset(FLAGS.train_data, FLAGS.train_batch_size)
   logit = network(octree, FLAGS.depth, FLAGS.num_class, training=True, reuse=reuse)
   losses = loss_functions(logit, label, FLAGS.num_class, FLAGS.weight_decay, 'ocnn')
   return losses # loss, accu, regularizer
 
 
 def test_network(reuse=True):
-  octree, label = octree_dataset(FLAGS.test_data, FLAGS.test_batch_size)
+  # octree, label = octree_dataset(FLAGS.test_data, FLAGS.test_batch_size)
+  with tf.name_scope('dataset'):
+    point_dataset = PointDataset(
+        ParseExample(x_alias='data', y_alias='label'), 
+        TransformPoints(distort=False, depth=FLAGS.depth, axis=FLAGS.axis, scale=0.25, 
+                        jitter=8, angle=[180, 180, 180], dropout=[0]*2, stddev=[0]*2, 
+                        uniform_scale=False, offset=FLAGS.offset), 
+        Points2Octree(FLAGS.depth, node_dis=True, save_pts=False))
+    octree, label = point_dataset(FLAGS.test_data, FLAGS.test_batch_size, shuffle_size=1)
   logit = network(octree, FLAGS.depth, FLAGS.num_class, training=False, reuse=reuse)
   losses = loss_functions(logit, label, FLAGS.num_class, FLAGS.weight_decay, 'ocnn')
   return losses # loss, accu, regularizer
