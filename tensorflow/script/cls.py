@@ -11,7 +11,7 @@ from dataset import *
 
 # tf.random.set_random_seed(3)
 
-# octree-based resnet55
+# octree-based resnet55, the performance can be greatly improved.
 def network(octree, depth, num_class, training=True, reuse=None):
   channels = [3, 3, num_class, 256, 128, 64, 32, 16, 8]
   with tf.variable_scope("ocnn_resnet", reuse=reuse):
@@ -76,7 +76,7 @@ def train_network(reuse=False):
         TransformPoints(distort=True, depth=FLAGS.depth, axis=FLAGS.axis, scale=0.25, 
                         jitter=8, angle=[180, 180, 180], dropout=[0]*2, stddev=[0]*2, 
                         uniform_scale=False, offset=FLAGS.offset), 
-        Points2Octree(FLAGS.depth, node_dis=True, save_pts=False))
+        Points2Octree(FLAGS.depth, node_dis=False, save_pts=False))
     octree, label = point_dataset(FLAGS.train_data, FLAGS.train_batch_size)
   logit = network(octree, FLAGS.depth, FLAGS.num_class, training=True, reuse=reuse)
   losses = loss_functions(logit, label, FLAGS.num_class, FLAGS.weight_decay, 'ocnn')
@@ -91,7 +91,7 @@ def test_network(reuse=True):
         TransformPoints(distort=False, depth=FLAGS.depth, axis=FLAGS.axis, scale=0.25, 
                         jitter=8, angle=[180, 180, 180], dropout=[0]*2, stddev=[0]*2, 
                         uniform_scale=False, offset=FLAGS.offset), 
-        Points2Octree(FLAGS.depth, node_dis=True, save_pts=False))
+        Points2Octree(FLAGS.depth, node_dis=False, save_pts=False))
     octree, label = point_dataset(FLAGS.test_data, FLAGS.test_batch_size, shuffle_size=1)
   logit = network(octree, FLAGS.depth, FLAGS.num_class, training=False, reuse=reuse)
   losses = loss_functions(logit, label, FLAGS.num_class, FLAGS.weight_decay, 'ocnn')

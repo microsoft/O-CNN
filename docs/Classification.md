@@ -13,7 +13,8 @@ and unzip it to the folder `dataset/ModelNet40`.
 2. Convert triangle meshes (in `off` format) to point clouds (in `points` format)
 with the [virtual_scanner](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
 This process can be automatically executed by the following command. 
-Remember to provide actual `<The path of the virtual_scanner>` to run the command.
+Remember to provide actual `<The path of the virtual_scanner>` to run the command,
+and replace the symbol `^` with `\` for multiple-line commands in shell.
 We also provide the converted `point clouds` for convenience. Download the zip file
 [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0) and
 unzip it to the folder `dataset/ModelNet40.points`.
@@ -76,18 +77,20 @@ We also provide the converted `point clouds` for convenience. Download the zip f
 [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0) and
 unzip it to the folder `dataset/ModelNet40.points`.
     ```shell
-    python prepare_dataset.py --run=m40_convert_mesh_to_points ^
+    python prepare_dataset.py --run=m40_convert_mesh_to_points \
                               --scanner=<The path of the virtual_scanner>
     ```
 
 3. With the `Tensorflow`, we provide operators to directly consume the points as 
 input. Run the following command to store the `points` into one `TFRecords` database.
+It is also possible to take octrees as input like `Caffe`.
     ```shell
-    python prepare_dataset.py --run=m40_generate_ocnn_tfrecords ^
+    python prepare_dataset.py --run=m40_generate_ocnn_tfrecords \
                               --converter="../util/convert_tfrecords.py"
     ```
 
 4. Run the following command to train the network:
     ```shell
-    python cls.py
+    python cls.py --train_data=dataset/m40_train_points.tfrecords \
+                  --test_data=dataset/m40_test_points.tfrecords        
     ```

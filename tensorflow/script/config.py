@@ -3,7 +3,7 @@ import tensorflow as tf
 
 tf_flags = tf.app.flags
 
-tf_flags.DEFINE_string('logdir', '', 'Directory where to write event logs.')
+tf_flags.DEFINE_string('logdir', './logs', 'Directory where to write event logs.')
 tf_flags.DEFINE_string('run', 'train', 'Choose from train or test}.')
 tf_flags.DEFINE_multi_string('train_data','', 'Training data location.')
 tf_flags.DEFINE_multi_string('test_data','', 'Testing data location.')
@@ -16,7 +16,7 @@ tf_flags.DEFINE_float('learning_rate', 0.1, 'Initial learning rate.')
 tf_flags.DEFINE_float('weight_decay', 0.0005, 'The weight decay on model weights.')
 tf_flags.DEFINE_float('gamma', 0.1, 'SGD lr step gamma.')
 tf_flags.DEFINE_float('offset', 0.55, 'Offset used to displace the points.')
-tf_flags.DEFINE_string('axis', 'y', 'Rotation axis for data augmentation.')
+tf_flags.DEFINE_string('axis', 'z', 'Rotation axis for data augmentation.')
 tf_flags.DEFINE_float('sigma', 0.1, 'Use for knn training.')
 tf_flags.DEFINE_string('ckpt', '', 'Restore weights from checkpoint file.')
 tf_flags.DEFINE_string('pred_path','', 'pred logits location.')
@@ -34,7 +34,7 @@ tf_flags.DEFINE_string('use_normal', 'true', 'Use normal as input signal')
 tf_flags.DEFINE_string('use_xyz', 'false', 'Use xyz as input signal')
 tf_flags.DEFINE_string('use_avg_pts', 'false', 'Use average points as input signal')
 tf_flags.DEFINE_string('signal_abs', 'false', 'Use average points as input signal')
-tf_flags.DEFINE_multi_integer('step_size', None, 'SGD lr step size.')
+tf_flags.DEFINE_multi_integer('step_size', [40000], 'SGD lr step size.')
 
 
 

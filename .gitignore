@@ -8,3 +8,5 @@ caffe-official
 *.vscode
 *.zip
 caffe/experiments/dataset
+tensorflow/script/dataset
+tensorflow/script/logs

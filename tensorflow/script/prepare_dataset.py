@@ -2,7 +2,6 @@ import os
 import sys
 import argparse
 
-# The content of this file is identical to `tensorflow/script/prepare_dateset.py`
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--run', type=str, required=True, 
@@ -38,12 +37,12 @@ def clean_off_file(filename):
 
 def m40_get_filelist(root_folder, train=True, suffix='off'):
   filelist, category = [], []
-  folders = os.listdir(root_folder)
+  folders = sorted(os.listdir(root_folder))
   assert(len(folders) == 40)
   for idx, folder in enumerate(folders):
     subfolder = 'train' if train else 'test'
     current_folder = os.path.join(root_folder, folder, subfolder)
-    filenames = os.listdir(current_folder)
+    filenames = sorted(os.listdir(current_folder))
     for filename in filenames:
       if filename.endswith(suffix):
         filelist.append(os.path.join(folder, subfolder, filename))
