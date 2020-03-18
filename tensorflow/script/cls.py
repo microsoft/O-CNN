@@ -73,9 +73,9 @@ def train_network(reuse=False):
   with tf.name_scope('dataset'):
     point_dataset = PointDataset(
         ParseExample(x_alias='data', y_alias='label'), 
-        TransformPoints(distort=True, depth=FLAGS.depth, axis=FLAGS.axis, scale=0.25, 
-                        jitter=8, angle=[180, 180, 180], dropout=[0]*2, stddev=[0]*2, 
-                        uniform_scale=False, offset=FLAGS.offset), 
+        TransformPoints(distort=True, depth=FLAGS.depth, axis=FLAGS.axis, scale=0, 
+                        jitter=0, angle=[180, 180, 180], dropout=[0]*2, stddev=[0]*2, 
+                        uniform_scale=False, offset=FLAGS.offset, interval=[30]*3),  
         Points2Octree(FLAGS.depth, node_dis=False, save_pts=False))
     octree, label = point_dataset(FLAGS.train_data, FLAGS.train_batch_size)
   logit = network(octree, FLAGS.depth, FLAGS.num_class, training=True, reuse=reuse)
@@ -88,9 +88,9 @@ def test_network(reuse=True):
   with tf.name_scope('dataset'):
     point_dataset = PointDataset(
         ParseExample(x_alias='data', y_alias='label'), 
-        TransformPoints(distort=False, depth=FLAGS.depth, axis=FLAGS.axis, scale=0.25, 
-                        jitter=8, angle=[180, 180, 180], dropout=[0]*2, stddev=[0]*2, 
-                        uniform_scale=False, offset=FLAGS.offset), 
+        TransformPoints(distort=False, depth=FLAGS.depth, axis=FLAGS.axis, scale=0, 
+                        jitter=0, angle=[180, 180, 180], dropout=[0]*2, stddev=[0]*2, 
+                        uniform_scale=False, offset=FLAGS.offset, interval=[30]*3), 
         Points2Octree(FLAGS.depth, node_dis=False, save_pts=False))
     octree, label = point_dataset(FLAGS.test_data, FLAGS.test_batch_size, shuffle_size=1)
   logit = network(octree, FLAGS.depth, FLAGS.num_class, training=False, reuse=reuse)

@@ -10,8 +10,9 @@ in the folder `octree`, which can be built via [cmake](https://cmake.org/):
 ```shell
 cd octree/external && git clone --recursive https://github.com/wang-ps/octree-ext.git
 cd .. && mkdir build && cd build
-cmake -DCMAKE_GENERATOR_PLATFORM=x64 ..  && cmake --build . --config Release
+cmake ..  && cmake --build . --config Release
 ```
+<!-- cmake -DCMAKE_GENERATOR_PLATFORM=x64 ..  && cmake --build . --config Release -->
 
 
 ## Caffe
@@ -56,7 +57,7 @@ The code has been tested with Ubuntu 16.04/18.04 and TensorFlow 1.14.0/1.12.0.
 3. Build the code under `octree` with CUDA enabled.
     ```shell
     cd octree/build
-    cmake .. -DUSE_CUDA=ON -DCMAKE_GENERATOR_PLATFORM=x64  && make
+    cmake .. -DUSE_CUDA=ON && make
     ```
 
 4. Build the code under `tensorflow`.
