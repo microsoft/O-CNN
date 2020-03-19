@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <happly.h>
+#include <cmath>
 
 #include "filenames.h"
 #include "points.h"
@@ -65,7 +66,7 @@ int main(int argc, char* argv[]) {
     bool succ = false;
     if (normal.empty()) {
       if (FLAGS_const_normal) {
-        normal.assign(vtx.size(), sqrtf(3.0f) / 3.0f);
+        normal.assign(vtx.size(), 0.57735f);
         succ = pts.set_points(vtx, normal);
       } else {
         vector<float> feature(vtx.size() / 3, 1.0f);
