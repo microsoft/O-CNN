@@ -308,7 +308,7 @@ def loss_functions(logit, label_gt, num_class, weight_decay, var_name):
     loss = softmax_loss(logit, label_gt, num_class)
     accu = softmax_accuracy(logit, label_gt)
     regularizer = l2_regularizer(var_name, weight_decay)
-  return loss, accu, regularizer
+  return [loss, accu, regularizer]
 
 
 def loss_functions_seg(logit, label_gt, num_class, weight_decay, var_name):

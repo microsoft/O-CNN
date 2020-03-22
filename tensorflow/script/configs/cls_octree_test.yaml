@@ -1,0 +1,25 @@
+SOLVER:
+  gpu: 1,
+  logdir: logs/m40/0322_ocnn_octree_test
+  ckpt: logs/m40/0322_ocnn_octree/model/iter_160000.ckpt
+  run: test
+  test_iter: 925
+
+DATA:
+  test: 
+    dtype: octree
+    depth: 5
+    location: dataset/M40_test.tfrecord
+    shuffle: 0
+    batch_size: 32
+    x_alias: data
+
+MODEL:
+  name: ocnn
+  channel: 3
+  nout: 40
+  depth: 5
+
+LOSS:
+  num_class: 40
+  weight_decay: 0.0005

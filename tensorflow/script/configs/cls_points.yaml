@@ -1,0 +1,41 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/m40/0322_ocnn_points
+  run: train
+  max_iter: 160000
+  test_iter: 925
+  test_every_iter: 2000
+  step_size: (40000,)
+
+DATA:
+  train:
+    dtype: points
+    distort: True
+    depth: 5
+    axis: z 
+    angle: (180, 180, 180)
+    interval: (30, 30, 30)
+    location: dataset/m40_train_points.tfrecords 
+    batch_size: 32
+    x_alias: data
+  test: 
+    dtype: points
+    distort: True
+    depth: 5
+    axis: z 
+    angle: (180, 180, 180)
+    interval: (30, 30, 30)
+    location: dataset/m40_test_points.tfrecords
+    shuffle: 0
+    batch_size: 32
+    x_alias: data
+
+MODEL:
+  name: ocnn
+  channel: 3
+  nout: 40
+  depth: 5
+
+LOSS:
+  num_class: 40
+  weight_decay: 0.0005

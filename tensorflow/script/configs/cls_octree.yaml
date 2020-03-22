@@ -1,0 +1,35 @@
+SOLVER:
+  gpu: 1,
+  logdir: logs/m40/0322_ocnn_octree
+  run: train
+  max_iter: 160000
+  test_iter: 925
+  test_every_iter: 2000
+  step_size: (40000,)
+
+DATA:
+  train:
+    dtype: octree
+    distort: True
+    depth: 5
+    location: dataset/m40_5_2_12_train_octree.tfrecords 
+    batch_size: 32
+    x_alias: data
+  test: 
+    dtype: octree
+    distort: False
+    depth: 5
+    location: dataset/m40_5_2_12_test_octree.tfrecords
+    shuffle: 0
+    batch_size: 32
+    x_alias: data
+
+MODEL:
+  name: ocnn
+  channel: 3
+  nout: 40
+  depth: 5
+
+LOSS:
+  num_class: 40
+  weight_decay: 0.0005

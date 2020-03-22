@@ -5,7 +5,7 @@ from libs import *
 
 
 class ParseExample:
-  def __init__(self, x_alias='data', y_alias='label'):
+  def __init__(self, x_alias='data', y_alias='label', **kwargs):
     self.x_alias = x_alias
     self.y_alias = y_alias
     self.features = { x_alias : tf.FixedLenFeature([], tf.string),
@@ -19,7 +19,7 @@ class ParseExample:
 class Points2Octree:
   def __init__(self, depth, full_depth=2, node_dis=False, node_feature=False,
                split_label=False, adaptive=False, adp_depth=4, th_normal=0.1,
-               save_pts=False):
+               save_pts=False, **kwargs):
     self.depth = depth
     self.full_depth = full_depth
     self.node_dis = node_dis
@@ -41,19 +41,20 @@ class Points2Octree:
 
 class TransformPoints:
   def __init__(self, distort, depth, offset=0.55, axis='xyz', scale=0.25, 
-               jitter=8, dim=[8, 32], angle=[20, 180, 20], dropout=[0, 0],
-               stddev=[0, 0, 0], uniform_scale=False, interval=[1, 1, 1]):
+               jitter=8, drop_dim=[8, 32], angle=[20, 180, 20], dropout=[0, 0],
+               stddev=[0, 0, 0], uniform=False, interval=[1, 1, 1], 
+               **kwargs):
     self.distort = distort
     self.axis = axis
     self.scale = scale
     self.jitter = jitter
     self.depth = depth
     self.offset = offset
-    self.dim = dim
     self.angle = angle
+    self.drop_dim = drop_dim
     self.dropout = dropout
     self.stddev = stddev
-    self.uniform_scale = uniform_scale
+    self.uniform_scale = uniform
     self.interval = interval
 
   def __call__(self, points):
@@ -78,7 +79,7 @@ class TransformPoints:
       
       minval, maxval = self.dropout[0], self.dropout[1]
       ratio = tf.random.uniform(shape=[], minval=minval, maxval=maxval, dtype=tf.float32)
-      minval, maxval = self.dim[0], self.dim[1]
+      minval, maxval = self.drop_dim[0], self.drop_dim[1]
       dim = tf.random.uniform(shape=[], minval=minval, maxval=maxval, dtype=tf.int32)
       # dim = tf.cond(tf.random_uniform([], 0, 1) > 0.5, lambda: 0,
       #     lambda: tf.random.uniform(shape=[], minval=minval, maxval=maxval, dtype=tf.int32))
@@ -116,22 +117,38 @@ class PointDataset:
       itr = dataset.map(preprocess, num_parallel_calls=8) \
                    .batch(batch_size).map(merge_octrees, num_parallel_calls=8) \
                    .prefetch(8).make_one_shot_iterator() 
-
     return itr if return_iter else itr.get_next()
 
 
-def octree_dataset(record_names, batch_size, x_alias='data', y_alias='label', 
-                   shuffle_size=1000):
-  def record_parser(record):
-    features = {x_alias: tf.FixedLenFeature([], tf.string),
-                y_alias: tf.FixedLenFeature([], tf.int64)}
-    parsed = tf.parse_example(record, features)
-    octree = octree_batch(parsed[x_alias]) # merge_octrees
-    label = parsed[y_alias]
-    return octree, label
+class OctreeDataset:
+  def __init__(self, parse_example):
+    self.parse_example = parse_example
 
-  with tf.name_scope('octree_dataset'):
-    dataset = tf.data.TFRecordDataset(record_names).repeat()
-    if shuffle_size > 1: dataset = dataset.shuffle(shuffle_size)
-    return dataset.batch(batch_size).map(record_parser, num_parallel_calls=8) \
-                  .prefetch(8).make_one_shot_iterator().get_next()
+  def __call__(self, record_names, batch_size, shuffle_size=1000, return_iter=False):
+    with tf.name_scope('octree_dataset'):
+      def merge_octrees(octrees, labels):
+        return octree_batch(octrees), labels
+
+      dataset = tf.data.TFRecordDataset(record_names).repeat()
+      if shuffle_size > 1: dataset = dataset.shuffle(shuffle_size)
+      itr = dataset.map(self.parse_example, num_parallel_calls=8) \
+                   .batch(batch_size).map(merge_octrees, num_parallel_calls=8) \
+                   .prefetch(8).make_one_shot_iterator() 
+    return itr if return_iter else itr.get_next()
+
+
+class DatasetFactory:
+  def __init__(self, flags):
+    self.flags = flags
+    if flags.dtype == 'points':
+      self.dataset = PointDataset(ParseExample(**flags), 
+                                  TransformPoints(**flags), 
+                                  Points2Octree(**flags))
+    elif flags.dtype == 'octree':
+      self.dataset = OctreeDataset(ParseExample(**flags))
+    else:
+      print('Error: unsupported datatype ' + flags.dtype)
+
+  def __call__(self):
+    return self.dataset(self.flags.location, self.flags.batch_size, 
+                        self.flags.shuffle, self.flags.iter)

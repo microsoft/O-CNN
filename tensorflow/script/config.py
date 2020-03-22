@@ -1,61 +1,88 @@
-import os
-import tensorflow as tf
+from yacs.config import CfgNode as CN
 
-tf_flags = tf.app.flags
-
-tf_flags.DEFINE_string('logdir', './logs', 'Directory where to write event logs.')
-tf_flags.DEFINE_string('run', 'train', 'Choose from train or test}.')
-tf_flags.DEFINE_multi_string('train_data','', 'Training data location.')
-tf_flags.DEFINE_multi_string('test_data','', 'Testing data location.')
-tf_flags.DEFINE_integer('train_batch_size', 32, 'Batch size for the training.')
-tf_flags.DEFINE_integer('test_batch_size', 32, 'Batch size for the training.')
-tf_flags.DEFINE_integer('test_iter', 100, 'Test steps in testing phase.')
-tf_flags.DEFINE_integer('max_iter', 160000, 'Maximum training iterations.')
-tf_flags.DEFINE_integer('test_every_iter', 1000, 'Test model every n training steps.')
-tf_flags.DEFINE_float('learning_rate', 0.1, 'Initial learning rate.')
-tf_flags.DEFINE_float('weight_decay', 0.0005, 'The weight decay on model weights.')
-tf_flags.DEFINE_float('gamma', 0.1, 'SGD lr step gamma.')
-tf_flags.DEFINE_float('offset', 0.55, 'Offset used to displace the points.')
-tf_flags.DEFINE_string('axis', 'z', 'Rotation axis for data augmentation.')
-tf_flags.DEFINE_float('sigma', 0.1, 'Use for knn training.')
-tf_flags.DEFINE_string('ckpt', '', 'Restore weights from checkpoint file.')
-tf_flags.DEFINE_string('pred_path','', 'pred logits location.')
-tf_flags.DEFINE_string('gpu', '0', 'The gpu number.')
-tf_flags.DEFINE_string('distort', 'false', 'Distort training data.')
-tf_flags.DEFINE_integer('num_class', 40, 'The class number.')
-tf_flags.DEFINE_integer('depth', 5, 'The octree depth.')
-tf_flags.DEFINE_integer('channel', 3, 'The input feature channel.')
-tf_flags.DEFINE_integer('nout', 40, 'The output feature channel.')
-tf_flags.DEFINE_integer('padding_size', 2, 'The input feature padding size.')
-tf_flags.DEFINE_integer('res_block_num', 3, 'The resblock number.')
-tf_flags.DEFINE_integer('knn_num', 57449, 'The object number in run_hrnet_knn.')
-tf_flags.DEFINE_integer('factor', 1, 'The factor to widen the network.')
-tf_flags.DEFINE_string('use_normal', 'true', 'Use normal as input signal')
-tf_flags.DEFINE_string('use_xyz', 'false', 'Use xyz as input signal')
-tf_flags.DEFINE_string('use_avg_pts', 'false', 'Use average points as input signal')
-tf_flags.DEFINE_string('signal_abs', 'false', 'Use average points as input signal')
-tf_flags.DEFINE_multi_integer('step_size', [40000], 'SGD lr step size.')
+_C = CN()
 
 
+# SOLVER related parameters
+_C.SOLVER                 = CN()
+_C.SOLVER.gpu             = (0,)      # The gpu ids
+_C.SOLVER.logdir          = ''        # Directory where to write event logs
+_C.SOLVER.ckpt            = ''        # Restore weights from checkpoint file
+_C.SOLVER.run             = 'train'   # Choose from train or test
+_C.SOLVER.type            = 'sgd'     # Choose from sgd or adam
+_C.SOLVER.max_iter        = 160000    # Maximum training iterations
+_C.SOLVER.test_iter       = 100       # Test steps in testing phase
+_C.SOLVER.test_every_iter = 1000      # Test model every n training steps
+_C.SOLVER.lr_type         = 'step'    # Learning rate type: step or cos
+_C.SOLVER.learning_rate   = 0.1       # Initial learning rate
+_C.SOLVER.gamma           = 0.1       # Learning rate step-wise decay
+_C.SOLVER.step_size       = (40000,)  # Learning rate step size.
 
-FLAGS = tf_flags.FLAGS
 
-os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpu
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# DATA related parameters
+_C.DATA = CN()
+_C.DATA.train = CN()
+_C.DATA.train.dtype      = 'points'   # The data type: points or octree
+_C.DATA.train.x_alias    = 'data'     # The alias of the data
+_C.DATA.train.y_alias    = 'label'    # The alias of the target
+
+_C.DATA.train.depth      = 5          # The octree depth
+_C.DATA.train.full_depth = 2          # The full depth
+_C.DATA.train.node_dis   = False      # Save the node displacement
+_C.DATA.train.split_label= False      # Save the split label
+_C.DATA.train.adaptive   = False      # Build the adaptive octree
+
+_C.DATA.train.distort    = False      # Whether to apply data augmentation
+_C.DATA.train.offset     = 0.55       # Offset used to displace the points
+_C.DATA.train.axis       = 'y'        # Rotation axis for data augmentation
+_C.DATA.train.scale      = 0.0        # Scale the points
+_C.DATA.train.uniform    = False      # Generate uniform scales
+_C.DATA.train.jitter     = 0.0        # Jitter the points
+_C.DATA.train.drop_dim   = (8, 32)    # The value used to dropout points
+_C.DATA.train.dropout    = (0, 0)     # The dropout ratio
+_C.DATA.train.stddev     = (0, 0, 0)  # The standard deviation of the random noise
+_C.DATA.train.interval   = (1, 1, 1)  # Use interval&angle to generate random angle
+_C.DATA.train.angle      = (180, 180, 180)
+
+_C.DATA.train.location   = ''         # The data location
+_C.DATA.train.shuffle    = 1000       # The shuffle size
+_C.DATA.train.batch_size = 32         # Training data batch size
+_C.DATA.train.iter       = False      # Return data iterator
+
+_C.DATA.test = _C.DATA.train.clone()
 
 
-def learning_rate(global_step):
-  # lr = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
-  #     FLAGS.step_size, FLAGS.gamma, staircase=True)
+# MODEL related parameters
+_C.MODEL = CN()
+_C.MODEL.name         = ''            # The name of the model
+_C.MODEL.depth        = 5             # The octree depth
+_C.MODEL.channel      = 3             # The input feature channel
+_C.MODEL.factor       = 1             # The factor used to widen the network
+_C.MODEL.nout         = 40            # The output feature channel
+_C.MODEL.resblock_num = 3             # The resblock number
+_C.MODEL.signal_abs   = False         # Use the absolute value of signal
 
-  step_size = FLAGS.step_size
-  for i in range(len(step_size), 5): 
-    step_size.append(step_size[-1])
 
-  steps = step_size
-  for i in range(1, 5):
-    steps[i] = steps[i-1] + steps[i]
-  lr_values = [FLAGS.gamma**i * FLAGS.learning_rate for i in range(0, 6)]
+# loss related parameters
+_C.LOSS = CN()
+_C.LOSS.num_class      = 40           # The class number for the cross-entropy loss
+_C.LOSS.weight_decay   = 0.0005       # The weight decay on model weights
+_C.LOSS.sigma          = 0.1          # Use for MID training
+_C.LOSS.inst_num       = 57449        # The object number in MID training
+_C.LOSS.seg_num        = 100          # The clustering number in MID training
 
-  lr = tf.train.piecewise_constant(global_step, steps, lr_values)
-  return lr
+
+FLAGS = _C
+
+
+# os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpu
+# def update_config(FLAGS, args):
+#   FLAGS.defrost()
+#   FLAGS.merge_from_file(args.config)
+#   FLAGS.merge_from_list(args.opts)
+#   FLAGS.freeze()
+
+
+if __name__ == '__main__':
+  print(FLAGS)
+
