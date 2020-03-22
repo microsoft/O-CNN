@@ -12,12 +12,12 @@ shoot parallel rays towards the object, then calculate the intersections of the 
 and the surface, and orient the normals of the surface points towards the rays.
 We used this tool in the experiments of our paper O-CNN and Adaptive O-CNN.
 
-- [`mesh2points`](Installation.md#Octree): uniformly sample points from the input 
+- [`mesh2points`](installation.md#Octree): uniformly sample points from the input 
 object, and calculate the point normals via cross product.
 `mesh2points` runs much faster than `virtualscanner`, but the point normals are 
 not oriented. Use this tool if the mesh contains no flipped triangles.
 
-- [`octree`](Installation.md#Octree): convert point clouds into the octrees.
+- [`octree`](installation.md#Octree): convert point clouds into the octrees.
 
 
 For better I/O performance, it is a good practice to store the `points`/`octree`
@@ -27,23 +27,24 @@ We also provide tools for converting `points`/`octree` file into a database, or
 or reverting the database.
 
 
-- [`convert_octree_data`](Installation.md#Caffe): used by `Caffe` to store `octree`
+- [`convert_octree_data`](installation.md#Caffe): used by `Caffe` to store `octree`
 files to a `leveldb`/`lmdb` database.
 
-- [`revert_octree_data`](Installation.md#Caffe): used to revert a `leveldb`/`lmdb`
+- [`revert_octree_data`](installation.md#Caffe): used to revert a `leveldb`/`lmdb`
 database to `octree` files.
 
-- [`convert_tfrecords.py`](https://github.com/microsoft/O-CNN/tensorflow/util/convert_tfrecords.py):
+- [`convert_tfrecords.py`](../tensorflow/util/convert_tfrecords.py):
 used to `TensorFlow` to store `points`/`octree` files into a `TFRecord` database.
 
-- [`revert_tfrecords.py`](https://github.com/microsoft/O-CNN/tensorflow/util/revert_tfrecords.py):
+- [`revert_tfrecords.py`](../tensorflow/util/revert_tfrecords.py):
 used to revert a `TFRecord` database to `points`/`octree` files.
 
 
 ## Custom data
 It is also very convenient to write code to save your data into our `points` format.
-Just include the header [points.h](https://github.com/microsoft/O-CNN/octree/octree/points.h) 
-and refer to  the following several lines of code: 
+Just include the header [points.h](../octree/octree/points.h) 
+and refer to  the following several lines of code. 
+An example can be found at [custom_data.cpp](../octree/tools/custom_data.cpp) 
 
 ```cpp
 #include <points.h>
@@ -62,3 +63,6 @@ vector<float> points, normals, features, labels;
 point_cloud.set_points(points, normals, features, labels);
 point_cloud.write_points("my_points.points");
 ```
+
+Moreover, you can also save your point cloud into a `PLY` points, and use the tool
+[ply2points](installation.md#Octree) to convert the file to `points`.
