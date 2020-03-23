@@ -2,6 +2,7 @@ import os
 import sys
 import shutil
 import tensorflow as tf
+from tqdm import tqdm
 from config import FLAGS
 from tfsolver import TFSolver
 from dataset import DatasetFactory
@@ -57,7 +58,7 @@ class AeTFSolver(TFSolver):
                    tensor_names)
 
   def build_test_graph(self):
-    self.test_tensors,  tensor_names = compute_graph(training=False, reuse=False)
+    self.test_tensors, self.test_names = compute_graph(training=False, reuse=False)
 
   def decode_shape(self):
     # build graph
@@ -65,8 +66,8 @@ class AeTFSolver(TFSolver):
     with tf.name_scope('dataset'):
         dataset = DatasetFactory(FLAGS.DATA.test)
         octree, label = dataset()
-    code = octree_encoder(octree, FLAGSM.depth, FLAGSM.nout, training=False, reuse=False)
-    octree_pred = octree_decode_shape(code, FLAGS.depth, training=False, reuse=False)
+    code = octree_encoder(octree, FLAGSM, training=False, reuse=False)
+    octree_pred = octree_decode_shape(code, FLAGSM, training=False, reuse=False)
 
     # checkpoint
     assert(self.flags.ckpt)   # the self.flags.ckpt should be provided
@@ -79,19 +80,24 @@ class AeTFSolver(TFSolver):
       # restore and initialize
       self.initialize(sess)
       tf_saver.restore(sess, self.flags.ckpt)
-      tf.summary.FileWriter(self.flags.logdir, sess.graph)
+      logdir = self.flags.logdir
+      tf.summary.FileWriter(logdir, sess.graph)
 
       print('Start testing ...')
-      for i in range(0, self.flags.test_iter):
+      for i in tqdm(range(0, self.flags.test_iter)):
         origin, reconstructed = sess.run([octree, octree_pred])
-        with open(FLAGS.logdir + ('/%04d_input.octree' % i), "wb") as f:
+        with open(logdir + ('/%04d_input.octree' % i), "wb") as f:
           f.write(origin.tobytes())
-        with open(FLAGS.logdir + ('/%04d_output.octree' % i), "wb") as f:
+        with open(logdir + ('/%04d_output.octree' % i), "wb") as f:
           f.write(reconstructed.tobytes())
 
 # run the experiments
 solver = AeTFSolver(FLAGS.SOLVER)
 if FLAGS.SOLVER.run == "train":
   solver.train()
-else:
+elif FLAGS.SOLVER.run == "test":
   solver.test()
+elif FLAGS.SOLVER.run == "decode_shape":
+  solver.decode_shape()
+else:
+  print("Error! Unsupported FLAGS.SOLVER.run: " + FLAGS.SOLVER.run)
