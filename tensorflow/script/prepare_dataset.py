@@ -158,14 +158,15 @@ def m40_generate_ocnn_lmdb(depth=5):
   octree_folder = os.path.join(root_folder, 'ModelNet40.octree.%d' % depth)
   for folder in ['train', 'test']:
     train = folder == 'train'
+    shuffle = '--shuffle' if shuffle else '--noshuffle'
     filelist, idx = m40_get_filelist(octree_folder, train=train, suffix='octree')
     filename = os.path.join(root_folder, 'm40_%s_octree_list.txt' % folder)
     with open(filename, 'w') as fid:
       for i in range(len(filelist)):
         fid.write('%s %d\n' % (filelist[i], idx[i]))
     lmdb_name = os.path.join(root_folder, 'm40_%d_2_12_%s_lmdb' % (depth, folder))
-    cmd = '%s --shuffle %s/ %s %s ' % \
-          (converter, octree_folder, filename, lmdb_name)
+    cmd = '%s %s %s/ %s %s ' % \
+          (converter, shuffle, octree_folder, filename, lmdb_name)
     print(cmd)
     os.system(cmd)
 
@@ -180,14 +181,15 @@ def m40_generate_aocnn_lmdb(depth=5):
   octree_folder = os.path.join(root_folder, 'ModelNet40.octree.%d.adaptive' % depth)
   for folder in ['train', 'test']:
     train = folder == 'train'
+    shuffle = '--shuffle' if shuffle else '--noshuffle'
     filelist, idx = m40_get_filelist(octree_folder, train=train, suffix='octree')
     filename = os.path.join(root_folder, 'm40_%s_adaptive_octree_list.txt' % folder)
     with open(filename, 'w') as fid:
       for i in range(len(filelist)):
         fid.write('%s %d\n' % (filelist[i], idx[i]))
     lmdb_name = os.path.join(root_folder, 'm40_%d_adaptive_2_12_%s_lmdb' % (depth, folder))
-    cmd = '%s --shuffle %s/ %s %s ' % \
-          (converter, octree_folder, filename, lmdb_name)
+    cmd = '%s %s %s/ %s %s ' % \
+          (converter, shuffle, octree_folder, filename, lmdb_name)
     print(cmd)
     os.system(cmd)
 
@@ -197,14 +199,15 @@ def m40_generate_ocnn_points_tfrecords():
   points_folder = os.path.join(root_folder, 'ModelNet40.points')
   for folder in ['train', 'test']:
     train = folder == 'train'
+    shuffle = '--shuffle true' if folder == 'train' else ''
     filelist, idx = m40_get_filelist(points_folder, train=train, suffix='points')
     filename = os.path.join(root_folder, 'm40_%s_points_list.txt' % folder)
     with open(filename, 'w') as fid:
       for i in range(len(filelist)):      
         fid.write('%s %d\n' % (filelist[i], idx[i]))
     tfrecords_name = os.path.join(root_folder, 'm40_%s_points.tfrecords' % folder)
-    cmd = 'python %s --shuffle true --file_dir %s --list_file %s --records_name %s' % \
-          (converter, points_folder, filename, tfrecords_name)
+    cmd = 'python %s %s --file_dir %s --list_file %s --records_name %s' % \
+          (converter, shuffle, points_folder, filename, tfrecords_name)
     print(cmd)
     os.system(cmd)
 
@@ -219,14 +222,15 @@ def m40_generate_ocnn_octree_tfrecords(depth=5):
   octree_folder = os.path.join(root_folder, 'ModelNet40.octree.%d' % depth)
   for folder in ['train', 'test']:
     train = folder == 'train'
+    shuffle = '--shuffle true' if folder == 'train' else ''
     filelist, idx = m40_get_filelist(octree_folder, train=train, suffix='octree')
     filename = os.path.join(root_folder, 'm40_%s_octree_list.txt' % folder)
     with open(filename, 'w') as fid:
       for i in range(len(filelist)):
         fid.write('%s %d\n' % (filelist[i], idx[i]))    
     tfname = os.path.join(root_folder, 'm40_%d_2_12_%s_octree.tfrecords' % (depth, folder))
-    cmd = 'python %s --shuffle true --file_dir %s --list_file %s --records_name %s' % \
-          (converter, octree_folder, filename, tfname)
+    cmd = 'python %s %s --file_dir %s --list_file %s --records_name %s' % \
+          (converter, shuffle, octree_folder, filename, tfname)
     print(cmd)
     os.system(cmd)
 
