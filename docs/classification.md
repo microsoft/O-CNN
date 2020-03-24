@@ -12,7 +12,7 @@ and unzip it to the folder `dataset/ModelNet40`.
 with the [virtual_scanner](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
 This process can be automatically executed by the following command.
 Remember to provide actual `<The path of the virtual_scanner>` to run the command,
-and replace the symbol `^` with `\` for multiple-line commands in shell.
+and replace the symbol `^` with `\` for multiple-line commands in the shell.
 We also provide the converted `point clouds` for convenience. Download the zip file
 [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0) and
 unzip it to the folder `dataset/ModelNet40.points`.
@@ -44,6 +44,8 @@ and unzip it to the folder `dataset`.
 For detailed usage of [`caffe`](Installation.md#Caffe), please refer to the
 official tutorial [Here](http://caffe.berkeleyvision.org/tutorial/interfaces.html).
 We also provide our pre-trained Caffe model in `models/ocnn_M40_5.caffemodel`.
+The classification accuracy on the testing dataset is 89.6% as reported in our paper.
+If the voting or view pooling operations are performed, the accuracy will be 90.4%
     ```shell
     caffe train  --solver=ocnn_m40_5_solver.prototxt  --gpu=0
     ```
@@ -78,7 +80,9 @@ with the executive files [`octree`](Installation.md#Octree) and
                               --converter="../util/convert_tfrecords.py"
     ```
 
-2. Run the following command to train the network:
+2. Run the following command to train the network. 
+The performance is consistent with the `Caffe`-based implementation,  i.e. 
+the classification accuracy is 89.6% without voting.
     ```shell
     python run_cls.py configs/cls_octree.yaml
     ```
@@ -90,7 +94,10 @@ Run the following command to store the `points` into one `TFRecords` database.
     python prepare_dataset.py --run=m40_generate_ocnn_points_tfrecords \
                               --converter="../util/convert_tfrecords.py"
     ```
-4. Run the following command to train the network which directly takes points.
+4. Run the following command to train a **deeper** network with ResBlocks, 
+which directly takes points.
+Notable, simply using the training hyperparameters as before, the testing 
+accuracy increases from 89.6% to **92.4%**.
     ```shell
     python run_cls.py configs/cls_points.yaml
     ```

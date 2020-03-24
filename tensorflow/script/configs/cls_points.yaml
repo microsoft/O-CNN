@@ -1,6 +1,6 @@
 SOLVER:
   gpu: 0,
-  logdir: logs/m40/0322_ocnn_points
+  logdir: logs/m40/0324_ocnn_points
   run: train
   max_iter: 160000
   test_iter: 925
@@ -13,28 +13,33 @@ DATA:
     distort: True
     depth: 5
     axis: z 
-    angle: (180, 180, 180)
-    interval: (30, 30, 30)
+    angle: (5, 5, 5)
+    interval: (1, 1, 1)
+    scale: 0.25
+    jitter: 4.0
     location: dataset/m40_train_points.tfrecords 
     batch_size: 32
     x_alias: data
   test: 
     dtype: points
-    distort: True
+    distort: False
     depth: 5
     axis: z 
-    angle: (180, 180, 180)
-    interval: (30, 30, 30)
+    angle: (5, 5, 5)
+    interval: (1, 1, 1)
+    scale: 0.25
+    jitter: 4.0
     location: dataset/m40_test_points.tfrecords
     shuffle: 0
     batch_size: 32
     x_alias: data
 
 MODEL:
-  name: ocnn
+  name: resnet
   channel: 3
   nout: 40
   depth: 5
+  resblock_num: 3
 
 LOSS:
   num_class: 40
