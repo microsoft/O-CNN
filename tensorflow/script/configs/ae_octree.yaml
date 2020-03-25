@@ -1,5 +1,5 @@
 SOLVER:
-  gpu: 1,
+  gpu: 0,
   logdir: logs/ae/0322_ocnn
   run: train
   max_iter: 320000

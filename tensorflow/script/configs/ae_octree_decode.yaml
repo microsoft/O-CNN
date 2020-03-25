@@ -1,5 +1,5 @@
 SOLVER:
-  gpu: 1,
+  gpu: 0,
   logdir: logs/ae/0322_ocnn_test
   ckpt: logs/ae/0322_ocnn/model/iter_320000.ckpt
   run: decode_shape
