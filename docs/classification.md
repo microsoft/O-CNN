@@ -84,7 +84,7 @@ with the executive files [`octree`](Installation.md#Octree) and
 The performance is consistent with the `Caffe`-based implementation,  i.e. 
 the classification accuracy is 89.6% without voting.
     ```shell
-    python run_cls.py configs/cls_octree.yaml
+    python run_cls.py --config configs/cls_octree.yaml
     ```
 
 3. With `Tensorflow`, the network can also directly consume the points
@@ -99,5 +99,5 @@ which directly takes points.
 Notable, simply using the training hyperparameters as before, the testing 
 accuracy increases from 89.6% to **92.4%**.
     ```shell
-    python run_cls.py configs/cls_points.yaml
+    python run_cls.py --config configs/cls_points.yaml
     ```

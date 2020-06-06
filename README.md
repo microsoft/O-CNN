@@ -44,6 +44,7 @@ If you use our code or models, please cite our paper.
 - [Shape Retrieval](docs/retrieval.md)
 - [Shape Segmentation](docs/segmentation.md)
 - [Shape Autoencoder](docs/autoencoder.md)
+- [Shape Completion](docs/completion.md)
 - [Image2Shape](docs/image2shape.md)
 
 
