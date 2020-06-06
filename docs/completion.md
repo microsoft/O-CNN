@@ -57,5 +57,5 @@ Following the instructions below to conduct the shape completion experiment.
    `script/dataset/ocnn_completion/output.ply`.
    ```shell
    python data/completion.py --run rename_output_octree
-   python data/completion.py  --run convert_octree_to_points 
+   python data/completion.py --run convert_octree_to_points 
    ```

@@ -1,5 +1,6 @@
 # Installation
 
+
 ## Octree
 
 Our O-CNN takes the octree representation of 3D objects as input. 
@@ -13,6 +14,15 @@ cd .. && mkdir build && cd build
 cmake ..  && cmake --build . --config Release
 ```
 <!-- cmake -DCMAKE_GENERATOR_PLATFORM=x64 ..  && cmake --build . --config Release -->
+After building, add the executive files to the system path using the following
+command on the Win10.
+```cmd
+set PATH=the\absolute\path\octree\build\Release;%PATH%
+```
+Or run the following command on the Ubuntu.
+```shell
+export PATH="/the/absolute/path/octree/build:$PATH"
+```
 
 
 ## Caffe

@@ -8,6 +8,7 @@ Change the working directory to `caffe/experiments/cls` for `Caffe` and
 
 1. Download [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset
 and unzip it to the folder `dataset/ModelNet40`.
+
 2. Convert triangle meshes (in `off` format) to point clouds (in `points` format)
 with the [virtual_scanner](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
 This process can be automatically executed by the following command.
@@ -20,12 +21,14 @@ unzip it to the folder `dataset/ModelNet40.points`.
     python prepare_dataset.py --run=m40_convert_mesh_to_points ^
                               --scanner=<The path of the virtual_scanner>
     ```
+
 3. The generated point clouds are very dense, and if you would like to save disk
 spaces, you can optionally run the following command to simplify the point cloud.
     ```shell
     python prepare_dataset.py --run=m40_simplify_points ^
                               --simplify_points=<The path of simplify_points>
     ```
+
 4. Convert the point clouds to octrees, then build the `lmdb` database used by
 `caffe` with the executive files [`octree`](Installation.md#Octree) and
 [`convert_octree_data`](Installation.md#Caffe).
@@ -40,6 +43,7 @@ and unzip it to the folder `dataset`.
                               --octree=<The path of the octree> ^
                               --converter=<The path of the convert_octree_data>
     ```
+
 5. Run [`caffe`](Installation.md#Caffe) to train the model.
 For detailed usage of [`caffe`](Installation.md#Caffe), please refer to the
 official tutorial [Here](http://caffe.berkeleyvision.org/tutorial/interfaces.html).
