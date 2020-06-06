@@ -1,42 +1,30 @@
 import os
-import sys
-import shutil
 import tensorflow as tf
 from tqdm import tqdm
-from config import FLAGS
+
+from config import parse_args
 from tfsolver import TFSolver
 from dataset import DatasetFactory
-from learning_rate import LRFactory
-from network_ae import *
-from ocnn import *
+from network_ae import make_autoencoder
+from ocnn import l2_regularizer
 
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-if len(sys.argv) < 2:
-  print('Usage: python run_cls.py config.ymal')
+FLAGS = parse_args()
 
-# update FLAGS
-config_file = sys.argv[1]
-FLAGS.merge_from_file(config_file)
-FLAGS.freeze()
-
-# backup the config file
-if not os.path.exists(FLAGS.SOLVER.logdir):
-  os.makedirs(FLAGS.SOLVER.logdir)
-shutil.copy2(config_file, FLAGS.SOLVER.logdir)
+# get the autoencoder
+autoencoder = make_autoencoder(FLAGS.MODEL)
 
 # define the graph
-def compute_graph(training=True, reuse=False):
-  FLAGSD = FLAGS.DATA.train if training else FLAGS.DATA.test
-  with tf.name_scope('dataset'):
-    dataset = DatasetFactory(FLAGSD)
-    octree, label = dataset()
-  code = octree_encoder(octree, FLAGS.MODEL, training, reuse)
-  loss, accu = octree_decoder(code, octree, FLAGS.MODEL, training, reuse)
-  with tf.name_scope('compute_loss'):
-    var_all = tf.trainable_variables()
-    reg = tf.add_n([tf.nn.l2_loss(v) for v in var_all]) * FLAGS.LOSS.weight_decay
+def compute_graph(dataset='train', training=True, reuse=False):
+  flags_data = FLAGS.DATA.train if dataset=='train' else FLAGS.DATA.test
+  octree, label = DatasetFactory(flags_data)()
+  code = autoencoder.octree_encoder(octree, training, reuse)
+  loss, accu = autoencoder.octree_decoder(code, octree, training, reuse)
+
+  with tf.name_scope('total_loss'):
+    reg = l2_regularizer('ocnn', FLAGS.LOSS.weight_decay)
     total_loss  = tf.add_n(loss + [reg])
   tensors = loss + [reg] + accu + [total_loss]
   depth = FLAGS.MODEL.depth
@@ -46,28 +34,14 @@ def compute_graph(training=True, reuse=False):
 
 # define the solver
 class AeTFSolver(TFSolver):
-  def __init__(self, flags):
-    super(AeTFSolver, self).__init__(flags)
-
-  def build_train_graph(self):
-    self.train_tensors, tensor_names = compute_graph(training=True, reuse=False)
-    self.test_tensors,  tensor_names = compute_graph(training=False, reuse=True)
-    total_loss = self.train_tensors[-1]
-    self.op_train, lr = build_solver(total_loss, LRFactory(self.flags))
-    self.summaries(tensor_names + ['lr'], self.train_tensors + [lr,],
-                   tensor_names)
-
-  def build_test_graph(self):
-    self.test_tensors, self.test_names = compute_graph(training=False, reuse=False)
+  def __init__(self, flags, compute_graph):
+    super(AeTFSolver, self).__init__(flags, compute_graph)
 
   def decode_shape(self):
     # build graph
-    FLAGSM = FLAGS.MODEL
-    with tf.name_scope('dataset'):
-        dataset = DatasetFactory(FLAGS.DATA.test)
-        octree, label = dataset()
-    code = octree_encoder(octree, FLAGSM, training=False, reuse=False)
-    octree_pred = octree_decode_shape(code, FLAGSM, training=False, reuse=False)
+    octree, label =  DatasetFactory(FLAGS.DATA.test)()
+    code = autoencoder.octree_encoder(octree, training=False, reuse=False)
+    octree_pred = autoencoder.octree_decode_shape(code, training=False, reuse=False)
 
     # checkpoint
     assert(self.flags.ckpt)   # the self.flags.ckpt should be provided
@@ -92,12 +66,5 @@ class AeTFSolver(TFSolver):
           f.write(reconstructed.tobytes())
 
 # run the experiments
-solver = AeTFSolver(FLAGS.SOLVER)
-if FLAGS.SOLVER.run == "train":
-  solver.train()
-elif FLAGS.SOLVER.run == "test":
-  solver.test()
-elif FLAGS.SOLVER.run == "decode_shape":
-  solver.decode_shape()
-else:
-  print("Error! Unsupported FLAGS.SOLVER.run: " + FLAGS.SOLVER.run)
+solver = AeTFSolver(FLAGS.SOLVER, compute_graph)
+solver.run()

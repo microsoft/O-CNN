@@ -104,7 +104,7 @@ def downsample(data, channel, training):
 
 def avg_pool2d(inputs, data_format='NCHW'):
   return tf.nn.avg_pool2d(inputs, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
-            padding='SAME', data_format=data_format)
+      padding='SAME', data_format=data_format)
 
 
 def global_pool(inputs, data_format='channels_first'):
@@ -173,18 +173,18 @@ def octree_deconv_bn_relu(data, octree, depth, channel, training, kernel_size=[3
   return rl
 
 
-def octree_resblock(data, octree, depth, num_out, stride, training):
-  bottleneck = num_out / 4
+def octree_resblock(data, octree, depth, num_out, stride, training, bottleneck=4):
   num_in = int(data.shape[1])
+  channelb = int(num_out / bottleneck)
   if stride == 2:
     data, mask = octree_max_pool(data, octree, depth=depth)
     depth = depth - 1
 
   with tf.variable_scope("1x1x1_a"):
-    block1 = octree_conv1x1_bn_relu(data, bottleneck, training=training)
+    block1 = octree_conv1x1_bn_relu(data, channelb, training=training)
   
   with tf.variable_scope("3x3x3"):
-    block2 = octree_conv_bn_relu(block1, octree, depth, bottleneck, training)
+    block2 = octree_conv_bn_relu(block1, octree, depth, channelb, training)
   
   with tf.variable_scope("1x1x1_b"):
     block3 = octree_conv1x1_bn(block2, num_out, training=training)
@@ -226,11 +226,11 @@ def predict_signal(data, num_output, num_hidden, training):
   return tf.nn.tanh(predict_module(data, num_output, num_hidden, training))
 
 
-def softmax_loss(logit, label_gt, num_class): 
+def softmax_loss(logit, label_gt, num_class, label_smoothing=0.0): 
   with tf.name_scope('softmax_loss'):
     label_gt = tf.cast(label_gt, tf.int32)
     onehot = tf.one_hot(label_gt, depth=num_class)
-    loss = tf.losses.softmax_cross_entropy(onehot, logit)
+    loss = tf.losses.softmax_cross_entropy(onehot, logit, label_smoothing=label_smoothing)
   return loss
 
 
@@ -303,25 +303,32 @@ def summary_test(names):
   return summ, summ_placeholder
 
 
-def loss_functions(logit, label_gt, num_class, weight_decay, var_name):
+def loss_functions(logit, label_gt, num_class, weight_decay, var_name, label_smoothing=0.0):
   with tf.name_scope('loss'):
-    loss = softmax_loss(logit, label_gt, num_class)
+    loss = softmax_loss(logit, label_gt, num_class, label_smoothing)
     accu = softmax_accuracy(logit, label_gt)
     regularizer = l2_regularizer(var_name, weight_decay)
   return [loss, accu, regularizer]
 
 
-def loss_functions_seg(logit, label_gt, num_class, weight_decay, var_name):
+def loss_functions_seg(logit, label_gt, num_class, weight_decay, var_name, mask=-1):
   with tf.name_scope('loss_seg'): 
-    label_mask = label_gt > -1  # filter label -1
+    label_mask = label_gt > mask  # filter label -1
     masked_logit = tf.boolean_mask(logit, label_mask)
     masked_label = tf.boolean_mask(label_gt, label_mask)
     loss = softmax_loss(masked_logit, masked_label, num_class)
 
     accu = softmax_accuracy(masked_logit, masked_label)
     regularizer = l2_regularizer(var_name, weight_decay)
-  return loss, accu, regularizer
+  return [loss, accu, regularizer]
 
+
+def get_seg_label(octree, depth):
+  with tf.name_scope('seg_label'):
+    label = octree_property(octree, property_name='label', dtype=tf.float32,
+                              depth=depth, channel=1)
+    label = tf.reshape(tf.cast(label, tf.int32), [-1])
+  return label
 
 def run_k_iterations(sess, k, tensors):
   num = len(tensors)
@@ -334,3 +341,40 @@ def run_k_iterations(sess, k, tensors):
   for j in range(num):
     avg_results[j] /= k
   return avg_results
+
+
+def tf_IoU_per_shape(pred, label, class_num, mask=-1):
+  with tf.name_scope('IoU'):
+    label_mask = label > mask  # filter label -1
+    pred = tf.boolean_mask(pred, label_mask)
+    label = tf.boolean_mask(label, label_mask)
+    pred = tf.argmax(pred, axis=1, output_type=tf.int32)
+    IoU, valid_part_num, esp = 0.0, 0.0, 1.0e-10
+    for k in range(class_num):
+      pk, lk = tf.equal(pred, k), tf.equal(label, k)
+      # pk, lk = pred == k, label == k # why can this not output the right results? 
+      intsc = tf.reduce_sum(tf.cast(pk & lk, dtype=tf.float32))
+      union = tf.reduce_sum(tf.cast(pk | lk, dtype=tf.float32))
+      valid = tf.cast(tf.reduce_any(lk), dtype=tf.float32)
+      valid_part_num += valid
+      IoU += valid * intsc / (union + esp)
+    IoU /= valid_part_num + esp
+  return IoU, valid_part_num
+
+
+class Optimizer:
+  def __init__(self, stype='SGD', var_list=None, mul=1.0):
+    self.stype = stype # TODO: support more optimizers
+    self.mul = mul # used to modulate the global learning rate
+    self.var_list = var_list
+
+  def __call__(self, total_loss, learning_rate):
+    with tf.name_scope('solver'):
+      update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+      with tf.control_dependencies(update_ops):
+        global_step = tf.Variable(0, trainable=False, name='global_step')
+        lr = learning_rate(global_step) * self.mul
+        solver = tf.train.MomentumOptimizer(lr, 0.9) \
+                         .minimize(total_loss, global_step=global_step,
+                                   var_list=self.var_list)
+    return solver, lr

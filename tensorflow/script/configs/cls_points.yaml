@@ -1,9 +1,11 @@
+# Resent with small rotations with testing accuarcy 92.5%
+
 SOLVER:
   gpu: 0,
-  logdir: logs/m40/0324_ocnn_points
+  logdir: logs/m40/0406_resnet_points
   run: train
   max_iter: 160000
-  test_iter: 925
+  test_iter: 77
   test_every_iter: 2000
   step_size: (40000,)
 
@@ -14,9 +16,9 @@ DATA:
     depth: 5
     axis: z 
     angle: (5, 5, 5)
-    interval: (1, 1, 1)
+    interval: (1, 1, 1)   # small rotation
     scale: 0.25
-    jitter: 4.0
+    jitter: 0.125
     location: dataset/m40_train_points.tfrecords 
     batch_size: 32
     x_alias: data
@@ -28,8 +30,8 @@ DATA:
     angle: (5, 5, 5)
     interval: (1, 1, 1)
     scale: 0.25
-    jitter: 4.0
-    location: dataset/m40_test_points.tfrecords
+    jitter: 0.125
+   location: dataset/m40_test_points.tfrecords
     shuffle: 0
     batch_size: 32
     x_alias: data

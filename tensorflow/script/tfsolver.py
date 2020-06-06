@@ -2,28 +2,40 @@ import os
 from ocnn import *
 from tqdm import tqdm
 import tensorflow as tf
+from learning_rate import LRFactory
 from tensorflow.python.client import timeline
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 class TFSolver:
-  def __init__(self, solver_flags):
-    self.flags = solver_flags
-    gpus = ','.join([str(a) for a in self.flags.gpu])
-    os.environ['CUDA_VISIBLE_DEVICES'] = gpus
+  def __init__(self, flags, compute_graph=None, build_solver=build_solver):
+    self.flags = flags
+    self.graph = compute_graph
+    self.build_solver = build_solver
 
   def build_train_graph(self):
-    self.op_train, self.train_tensors, self.test_tensors = None, None, None
-    train_names, test_names = [''], ['']
-    self.summaries(train_names, train_tensors, test_names)
+    self.train_tensors, train_names = self.graph('train', training=True, reuse=False)
+    self.test_tensors, self.test_names  = self.graph('test', training=False, reuse=True)
+    total_loss = self.train_tensors[train_names.index('total_loss')] # TODO: use dict
+    self.train_op, lr = self.build_solver(total_loss, LRFactory(self.flags))
+    self.summaries(train_names + ['lr'], self.train_tensors + [lr,], self.test_names)
     
   def summaries(self, train_names, train_tensors, test_names):
     self.summ_train = summary_train(train_names, train_tensors)
     self.summ_test, self.summ_holder = summary_test(test_names)
+    self.summ2txt(test_names, 'step', 'w')
+
+  def summ2txt(self, values, step, flag='a'):
+    test_summ = os.path.join(self.flags.logdir, 'test_summaries.csv')
+    with open(test_summ, flag) as fid:      
+      msg = '{}'.format(step)
+      for v in values:
+        msg += ', {}'.format(v)
+      fid.write(msg + '\n')
 
   def build_test_graph(self):
-    self.test_tensors, self.test_names = None, None
+    self.test_tensors, self.test_names = self.graph('test', training=False, reuse=False)
 
   def restore(self, sess, ckpt):
     print('Load checkpoint: ' + ckpt)
@@ -32,13 +44,25 @@ class TFSolver:
   def initialize(self, sess):
     sess.run(tf.global_variables_initializer())
 
+  def run_k_iterations(self, sess, k, tensors):
+    num = len(tensors)
+    avg_results = [0] * num
+    for _ in range(k):
+      iter_results = sess.run(tensors)
+      for j in range(num):
+        avg_results[j] += iter_results[j]
+    
+    for j in range(num):
+      avg_results[j] /= k
+    return avg_results
+
   def train(self):
     # build the computation graph
     self.build_train_graph()
 
     # checkpoint
     start_iter = 1
-    self.tf_saver = tf.train.Saver(max_to_keep=20)
+    self.tf_saver = tf.train.Saver(max_to_keep=self.flags.ckpt_num)
     ckpt_path = os.path.join(self.flags.logdir, 'model')
     if self.flags.ckpt:        # restore from the provided checkpoint
       ckpt = self.flags.ckpt  
@@ -57,20 +81,21 @@ class TFSolver:
       if ckpt: self.restore(sess, ckpt)
 
       print('Start training ...')
-      for i in tqdm(range(start_iter, self.flags.max_iter + 1)):
+      for i in tqdm(range(start_iter, self.flags.max_iter + 1), ncols=80):
         # training
-        summary, _ = sess.run([self.summ_train, self.op_train])
+        summary, _ = sess.run([self.summ_train, self.train_op])
         summary_writer.add_summary(summary, i)
 
         # testing
         if i % self.flags.test_every_iter == 0:
           # run testing average
-          avg_test = run_k_iterations(sess, self.flags.test_iter, self.test_tensors)
+          avg_test = self.run_k_iterations(sess, self.flags.test_iter, self.test_tensors)
 
           # run testing summary
           summary = sess.run(self.summ_test, 
                              feed_dict=dict(zip(self.summ_holder, avg_test)))
           summary_writer.add_summary(summary, i)
+          self.summ2txt(avg_test, i)
 
           # save session
           ckpt_name = os.path.join(ckpt_path, 'iter_%06d.ckpt' % i)
@@ -95,9 +120,9 @@ class TFSolver:
       print('Start profiling ...')
       for i in tqdm(range(0, timeline_skip + timeline_iter)):
         if i < timeline_skip:
-          summary, _ = sess.run([self.summ_train, self.op_train])
+          summary, _ = sess.run([self.summ_train, self.train_op])
         else:
-          summary, _ = sess.run([self.summ_train, self.op_train], 
+          summary, _ = sess.run([self.summ_train, self.train_op], 
                                 options=options, run_metadata=run_metadata)
           if (i == timeline_skip + timeline_iter - 1):
             # summary_writer.add_run_metadata(run_metadata, 'step_%d'%i, i)
@@ -109,13 +134,30 @@ class TFSolver:
         summary_writer.add_summary(summary, i)        
       print('Profiling done!')
 
+  def param_stats(self):
+    # build the computation graph
+    self.build_train_graph()
+
+    # get variables
+    train_vars = tf.trainable_variables()
+
+    # print
+    total_num = 0
+    for idx, v in enumerate(train_vars):
+      shape = v.get_shape()
+      shape_str = '; '.join([str(s) for s in shape])
+      shape_num = shape.num_elements()
+      print("{:3}, {:15}, [{}], {}".format(idx, v.name, shape_str, shape_num))
+      total_num += shape_num
+    print('Total trainable parameters: {}'.format(total_num))
+
   def test(self):
     # build graph
     self.build_test_graph()
 
     # checkpoint
     assert(self.flags.ckpt)   # the self.flags.ckpt should be provided
-    tf_saver = tf.train.Saver(max_to_keep=20)
+    tf_saver = tf.train.Saver(max_to_keep=10)
 
     # start
     num_tensors = len(self.test_tensors)
@@ -123,6 +165,9 @@ class TFSolver:
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
+      summary_writer = tf.summary.FileWriter(self.flags.logdir, sess.graph)
+      self.summ2txt(self.test_names, 'batch')
+
       # restore and initialize
       self.initialize(sess)
       tf_saver.restore(sess, self.flags.ckpt)
@@ -138,6 +183,7 @@ class TFSolver:
         for j in range(num_tensors):
           reports += '%s: %0.4f; ' % (self.test_names[j], iter_test_result[j])
         print(reports)
+        self.summ2txt(iter_test_result, i)
 
     # summary
     print('Testing done!\n')
@@ -146,3 +192,7 @@ class TFSolver:
       avg_test[j] /= self.flags.test_iter
       reports += '%s: %0.4f; ' % (self.test_names[j], avg_test[j])
     print(reports)
+    self.summ2txt(avg_test, 'ALL')
+
+  def run(self):
+    eval('self.{}()'.format(self.flags.run))

@@ -1,3 +1,5 @@
+# To test the model with the tensorflow checkpoint
+
 SOLVER:
   gpu: 0,
   logdir: logs/m40/0322_ocnn_octree_test

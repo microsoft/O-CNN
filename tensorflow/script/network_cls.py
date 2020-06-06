@@ -24,6 +24,9 @@ def network_resnet(octree, flags, training=True, reuse=None):
     with tf.variable_scope("global_average"):
       data = octree_full_voxel(data, depth=2)
       data = tf.reduce_mean(data, 2)
+    
+    if flags.dropout[0]:
+      data = tf.layers.dropout(data, rate=0.5, training=training)
 
     with tf.variable_scope("fc2"):
       logit = dense(data, flags.nout, use_bias=True)
@@ -59,7 +62,7 @@ def network_ocnn(octree, flags, training=True, reuse=None):
   return logit
 
 
-def network(octree, flags, training, reuse=False):
+def cls_network(octree, flags, training, reuse=False):
   if flags.name.lower() == 'ocnn':
     return network_ocnn(octree, flags, training, reuse)
   elif flags.name.lower() == 'resnet':

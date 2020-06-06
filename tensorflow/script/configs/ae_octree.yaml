@@ -1,9 +1,9 @@
 SOLVER:
   gpu: 0,
-  logdir: logs/ae/0322_ocnn
+  logdir: logs/ae/0327_ocnn
   run: train
   max_iter: 320000
-  test_iter: 248
+  test_iter: 336
   test_every_iter: 2000
   step_size: (80000,)
 
@@ -25,9 +25,8 @@ DATA:
 MODEL:
   name: ocnn
   channel: 4
-  nout: 128   # the hidden code
+  nout: 256   # the hidden code
   depth: 6
 
 LOSS:
-  num_class: 40
   weight_decay: 0.0005

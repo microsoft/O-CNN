@@ -1,0 +1,29 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/completion/skip_connections_test
+  ckpt: logs/completion/skip_connectinos/model/iter_320000.ckpt
+  run: decode_shape
+  test_iter: 1200
+
+
+DATA:
+  test:
+    dtype: points
+    depth: 6
+    distort: False
+    location: dataset/ocnn_completion/completion_test_points.tfrecords
+    batch_size: 1
+    depth: 6   
+    offset: 0.0
+    node_dis: True
+    split_label: True
+    x_alias: data
+    y_alias: index
+    shuffle: 0
+
+
+MODEL:
+  name: resnet
+  channel: 4
+  depth: 6
+  skip_connections: True

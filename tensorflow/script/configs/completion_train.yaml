@@ -1,0 +1,44 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/completion/skip_connectinos
+  run: train
+  max_iter: 320000
+  test_iter: 100
+  test_every_iter: 2000
+  step_size: (80000,)
+  ckpt_num: 20
+
+
+DATA:
+  train:
+    dtype: points
+    depth: 6
+    distort: False
+    location: dataset/ocnn_completion/completion_train_points.tfrecords
+    camera: dataset/ocnn_completion/completion_train_points.camera_path.dict
+    batch_size: 16
+    depth: 6
+    offset: 0.0
+    node_dis: True
+    split_label: True
+
+  test:
+    dtype: points
+    depth: 6
+    distort: False
+    location: dataset/ocnn_completion/completion_train_points.tfrecords
+    batch_size: 16
+    depth: 6
+    offset: 0.0
+    node_dis: True
+    split_label: True
+
+
+MODEL:
+  name: resnet
+  channel: 4
+  depth: 6
+
+
+LOSS:
+  weight_decay: 0.0005
