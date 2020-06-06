@@ -1,10 +1,10 @@
-#include "octree_nn.h"
-#include "octree_parser.h"
-
 #include <cuda_runtime.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <tensorflow/core/framework/shape_inference.h>
+
+#include "octree_nn.h"
+#include "octree_parser.h"
 
 namespace tensorflow {
 
@@ -19,7 +19,7 @@ REGISTER_OP("OctreeAlign")
       auto shape = c->input(0);
       TF_RETURN_IF_ERROR(c->ReplaceDim(shape, 2, c->UnknownDim(), &shape));
       c->set_output(0, shape);
-      c->set_output(1, c->MakeShape({ c->UnknownDim() }));
+      c->set_output(1, c->MakeShape({c->UnknownDim()}));
       return Status::OK();
     })
     .Doc(R"doc(Octree align operator.)doc");
@@ -35,7 +35,6 @@ REGISTER_OP("OctreeAlignGrad")
       return Status::OK();
     })
     .Doc(R"doc(Octree align grad operator.)doc");
-
 
 class OctreeAlignOp : public OpKernel {
  public:
@@ -73,27 +72,26 @@ class OctreeAlignOp : public OpKernel {
 
     // binary search
     Tensor* idx_tensor = nullptr;
-    TensorShape idx_shape({ src_h });
+    TensorShape idx_shape({src_h});
     OP_REQUIRES_OK(context, context->allocate_output(1, idx_shape, &idx_tensor));
     auto idx_ptr = idx_tensor->flat<int>().data();
     search_key_gpu(idx_ptr, des_key, des_h, src_key, src_h);
 
     // out data
     Tensor* des_tensor = nullptr;
-    TensorShape des_shape({ 1, channel, des_h, 1});
+    TensorShape des_shape({1, channel, des_h, 1});
     OP_REQUIRES_OK(context, context->allocate_output(0, des_shape, &des_tensor));
     auto des_ptr = des_tensor->flat<float>().data();
 
     // exec
-    int num = channel * des_h;
-    align_forward_gpu(des_ptr, des_h, channel, src_ptr, src_h, idx_ptr, num);
+    align_forward_gpu(des_ptr, des_h, channel, src_ptr, src_h, idx_ptr);
   }
 
  protected:
   void xyz2key_gpu_op(OpKernelContext* context, Tensor* key_tensor,
-      const uint32* xyz, const int num, const int depth) {
-    OP_REQUIRES_OK(context,
-        context->allocate_temp(DT_UINT32, TensorShape({ num }), key_tensor));
+                      const uint32* xyz, const int num, const int depth) {
+    OP_REQUIRES_OK(context, context->allocate_temp(
+                                DT_UINT32, TensorShape({num}), key_tensor));
     auto ptr = key_tensor->flat<uint32>().data();
     xyz2key_gpu(ptr, xyz, num, depth);
   }
@@ -102,12 +100,10 @@ class OctreeAlignOp : public OpKernel {
   int curr_depth_;
 };
 
-
 class OctreeAlignGradOp : public OpKernel {
  public:
-  explicit OctreeAlignGradOp(OpKernelConstruction* context) :
-    OpKernel(context) {
-  }
+  explicit OctreeAlignGradOp(OpKernelConstruction* context)
+      : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override {
     // gradients
@@ -128,8 +124,7 @@ class OctreeAlignGradOp : public OpKernel {
     auto src_ptr = src_tensor->flat<float>().data();
 
     // exec
-    int num = channel * des_h;
-    align_backward_gpu(des_ptr, des_h, channel, src_ptr, src_h, idx_ptr, num);
+    align_backward_gpu(des_ptr, des_h, channel, src_ptr, src_h, idx_ptr);
   }
 };
 

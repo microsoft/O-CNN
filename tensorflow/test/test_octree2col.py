@@ -33,11 +33,11 @@ class Octree2ColTest(tf.test.TestCase):
     for c in range(0, self.channel):
       for k in range(0, kernel):
         for h in range(0, top_h):
-            z = h & 1;
-            y = (h & 2) >> 1;
-            x = h >> 2;
+            z = h & 1
+            y = (h & 2) >> 1
+            x = h >> 2
 
-            kmap = idx_map[k];
+            kmap = idx_map[k]
             dz = kmap % 3
             t  = kmap // 3
             dy = t % 3

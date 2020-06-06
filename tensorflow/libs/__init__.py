@@ -6,30 +6,34 @@ from tensorflow.python.framework import ops
 _current_path   = os.path.dirname(os.path.realpath(__file__))
 _tf_ocnn_module = tf.load_op_library(os.path.join(_current_path, 'libocnn.so'))
 
-bounding_sphere = _tf_ocnn_module.bounding_sphere
-points_database = _tf_ocnn_module.points_database # todo: delete this operator
-transform_points= _tf_ocnn_module.transform_points
-octree_dropout  = _tf_ocnn_module.octree_dropout
-octree_batch    = _tf_ocnn_module.octree_batch
-points2octree   = _tf_ocnn_module.points_to_octree
-octree_property = _tf_ocnn_module.octree_property
-octree_pad      = _tf_ocnn_module.octree_pad
-octree_depad    = _tf_ocnn_module.octree_depad
-octree2col      = _tf_ocnn_module.octree_to_col
-col2octree      = _tf_ocnn_module.col_to_octree
-octree_grow     = _tf_ocnn_module.octree_grow
-octree_new      = _tf_ocnn_module.octree_new
-octree_update   = _tf_ocnn_module.octree_update
-octree_align    = _tf_ocnn_module.octree_align
-octree_mask     = _tf_ocnn_module.octree_mask
-octree_samples  = _tf_ocnn_module.octree_samples
-octree_search   = _tf_ocnn_module.octree_search
-octree_key2xyz  = _tf_ocnn_module.octree_key_to_xyz
-octree_xyz2key  = _tf_ocnn_module.octree_xyz_to_key
-octree_decode_key = _tf_ocnn_module.octree_decode_key
-octree_encode_key = _tf_ocnn_module.octree_encode_key
-octree_search_key = _tf_ocnn_module.octree_search_key
+bounding_sphere     = _tf_ocnn_module.bounding_sphere
+points_property     = _tf_ocnn_module.points_property
+transform_points    = _tf_ocnn_module.transform_points
+octree_drop         = _tf_ocnn_module.octree_drop
+octree_scan         = _tf_ocnn_module.octree_scan
+octree_cast         = _tf_ocnn_module.octree_cast
+octree_batch        = _tf_ocnn_module.octree_batch
+points2octree       = _tf_ocnn_module.points_to_octree
+octree_property     = _tf_ocnn_module.octree_property
+octree_pad          = _tf_ocnn_module.octree_pad
+octree_depad        = _tf_ocnn_module.octree_depad
+octree2col          = _tf_ocnn_module.octree_to_col
+col2octree          = _tf_ocnn_module.col_to_octree
+octree_grow         = _tf_ocnn_module.octree_grow
+octree_new          = _tf_ocnn_module.octree_new
+octree_update       = _tf_ocnn_module.octree_update
+octree_align        = _tf_ocnn_module.octree_align
+octree_mask         = _tf_ocnn_module.octree_mask
+octree_samples      = _tf_ocnn_module.octree_samples
+octree_search       = _tf_ocnn_module.octree_search
+octree_key2xyz      = _tf_ocnn_module.octree_key_to_xyz
+octree_xyz2key      = _tf_ocnn_module.octree_xyz_to_key
+octree_decode_key   = _tf_ocnn_module.octree_decode_key
+octree_encode_key   = _tf_ocnn_module.octree_encode_key
+octree_search_key   = _tf_ocnn_module.octree_search_key
 octree_set_property = _tf_ocnn_module.octree_set_property
+octree_gather       = _tf_ocnn_module.octree_gather
+octree_gatherbk     = _tf_ocnn_module.octree_gatherbk
 _octree_max_pool    = _tf_ocnn_module.octree_max_pool
 _octree_mask_pool   = _tf_ocnn_module.octree_mask_pool
 _octree_max_unpool  = _tf_ocnn_module.octree_max_unpool
@@ -44,7 +48,6 @@ _octree_bilinear    = _tf_ocnn_module.octree_bilinear
 ops.NotDifferentiable('BoundingSphere')
 ops.NotDifferentiable('OctreeSetProperty')
 ops.NotDifferentiable('OctreeBatch')
-ops.NotDifferentiable('PointsDatabase')
 ops.NotDifferentiable('TransformPoints')
 ops.NotDifferentiable('PointsToOctree')
 ops.NotDifferentiable('OctreeProperty')
@@ -59,6 +62,11 @@ ops.NotDifferentiable('OctreeDecodeKey')
 ops.NotDifferentiable('OctreeEncodeKey')
 ops.NotDifferentiable('OctreeSearchKey')
 ops.NotDifferentiable('OctreeSearch')
+ops.NotDifferentiable('PointsProperty')
+ops.NotDifferentiable('OctreeScan')
+ops.NotDifferentiable('OctreeCast')
+ops.NotDifferentiable('OctreeDrop')
+
 
 
 @ops.RegisterGradient('OctreePad')
@@ -126,13 +134,20 @@ def _OctreeDeconvGrad(op, grad):
 
 @ops.RegisterGradient('OctreeAlign')
 def _OctreeAlignGrad(op, *grad):
-  grad_out = octree_align_grad(grad[0], op.outputs[1])
+  grad_out = _octree_align_grad(grad[0], op.outputs[1])
   return [grad_out, None, None]
 
 
 @ops.RegisterGradient('OctreeMask')
 def _OctreeMaskGrad(op, grad):
-  grad_out = octree_mask(grad, op.inputs[1], op.get_attr('mask'));
+  grad_out = octree_mask(grad, op.inputs[1], op.get_attr('mask'))
+  return [grad_out, None]
+
+
+@ops.RegisterGradient('OctreeGather')
+def _OctreeGatherGrad(op, grad):
+  shape = tf.shape(op.inputs[0])
+  grad_out = octree_gatherbk(grad, op.inputs[1], shape)
   return [grad_out, None]
 
 
@@ -268,7 +283,6 @@ def octree_bilinear_legacy(data, octree, depth, target_depth):
   return output
 
 
-
 # pts: (N, 4), i.e. N x (x, y, z, id)
 # data: (1, C, H, 1)
 def octree_bilinear_v1(pts, data, octree, depth):
@@ -303,3 +317,137 @@ def octree_bilinear_v1(pts, data, octree, depth):
 
   return output, frac
 
+# pts: (N, 4), i.e. N x (x, y, z, id)
+# data: (1, C, H, 1)
+def octree_bilinear_v2(pts, data, octree, depth):
+  with tf.variable_scope('octree_bilinear'):
+    mask = tf.constant(
+      [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], 
+       [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]], dtype=tf.float32)
+    
+    xyzf, ids = tf.split(pts, [3, 1], 1)    
+    xyzf = xyzf - 0.5     # since the value is defined on the center of each voxel
+    xyzi = tf.floor(xyzf) # the integer part 
+    frac = xyzf - xyzi    # the fraction part
+    
+    output = tf.zeros([1, tf.shape(data)[1], tf.shape(xyzi)[0], 1], dtype=tf.float32)
+    norm   = tf.zeros([tf.shape(xyzi)[0], 1], dtype=tf.float32)
+
+    for i in range(8):
+      maski = mask[i, :]
+      maskc = 1.0 - maski
+      xyzm = xyzi + maski
+      xyzm = tf.cast(tf.concat([xyzm, ids], axis=1), dtype=tf.uint8)
+      # !!! Note some elements of idxi may be -1
+      idxi = octree_search_key(octree_encode_key(xyzm), octree, depth, is_xyz=True)
+    
+      weight = tf.abs(tf.reduce_prod(maskc - frac, axis=1, keepdims=True))
+      # output += weight * tf.gather(data, idxi, axis=2) 
+      output += weight * octree_gather(data, idxi)
+      norm   += weight * tf.expand_dims(tf.cast(idxi > -1, dtype=tf.float32), -1)
+    output = tf.div(output, norm) 
+  return output
+
+
+# pts: (N, 4), i.e. N x (x, y, z, id). 
+# data: (1, C, H, 1)
+# !!! Note: the pts should be scaled into [0, 2^depth]
+def octree_bilinear_v3(pts, data, octree, depth):
+  with tf.variable_scope('octree_linear'):
+    mask = tf.constant(
+        [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], 
+         [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]], dtype=tf.float32)
+    masku = tf.constant([0, 65536, 256, 65792, 1, 65537, 257, 65793], dtype=tf.int32)
+    maskc = 1 - mask
+    
+    xyzf, ids = tf.split(pts, [3, 1], 1)    
+    xyzf = xyzf - 0.5     # since the value is defined on the center of each voxel
+    xyzi = tf.floor(xyzf) # the integer part  (N, 3)
+    frac = xyzf - xyzi    # the fraction part (N, 3)
+    
+    key = tf.cast(tf.concat([xyzi, ids], axis=1), dtype=tf.uint8)
+    key = tf.cast(octree_encode_key(key), dtype=tf.int32)
+    # Cast the key to `int32` since the `add` below does not support `uint32`
+    # The size effect is that the batch_size must be smaller than 128
+    key = tf.expand_dims(key, 1) + masku  # (N, 8), 
+    key = tf.cast(tf.reshape(key, [-1]), dtype=tf.uint32)
+            
+    idx = octree_search_key(key, octree, depth)  # (N*8,)
+    flgs = idx > -1  # filtering flags
+    idx = tf.boolean_mask(idx, flgs)
+    
+    npt = tf.shape(xyzi)[0]
+    ids = tf.reshape(tf.range(npt), [-1, 1])
+    ids = tf.reshape(tf.tile(ids, [1, 8]), [-1])  # (N*8,)    
+    ids = tf.boolean_mask(ids, flgs)
+
+    frac = maskc - tf.expand_dims(frac, axis=1)
+    weight = tf.abs(tf.reshape(tf.reduce_prod(frac, axis=2), [-1]))
+    weight = tf.boolean_mask(weight, flgs)
+
+    indices = tf.concat([tf.expand_dims(ids, 1), tf.expand_dims(idx, 1)], 1) 
+    indices = tf.cast(indices, tf.int64)
+    data = tf.squeeze(data, [0, 3])  # (C, H)
+    h = tf.shape(data)[1]
+    mat = tf.SparseTensor(indices=indices, values=weight, dense_shape=[npt, h])
+    
+    # channel, max_channel = int(data.shape[0]), 512
+    # if channel > max_channel:
+    #   num = channel // max_channel
+    #   remain = channel % max_channel
+    #   splits = [max_channel] * num
+    #   if remain != 0:
+    #     splits.append(remain)
+    #     num += 1
+    #   output_split = [None] * num
+    #   data_split = tf.split(data, splits, axis=0)
+    #   for i in range(num):
+    #     with tf.name_scope('mat_%d' % i):
+    #       output_split[i] = tf.sparse.sparse_dense_matmul(
+    #           mat, data_split[i], adjoint_a=False, adjoint_b=True)
+    #   output = tf.concat(output_split, axis=1)
+    # else:
+    #   output = tf.sparse.sparse_dense_matmul(mat, data, adjoint_a=False, adjoint_b=True)
+
+    output = tf.sparse.sparse_dense_matmul(mat, data, adjoint_a=False, adjoint_b=True)
+    norm = tf.sparse.sparse_dense_matmul(mat, tf.ones([h, 1]))
+    output = tf.div(output, norm + 1.0e-10) # avoid dividing by zeros
+    output = tf.expand_dims(tf.expand_dims(tf.transpose(output), 0), -1)
+  return output
+
+
+def octree_bilinear(data, octree, depth, target_depth, mask=None):
+  with tf.name_scope('Octree_bilinear'):
+    xyz = octree_property(octree, property_name='xyz', depth=target_depth,
+                          channel=1, dtype=tf.uint32)
+    xyz = tf.reshape(xyz, [-1])
+    if mask is not None: xyz = tf.boolean_mask(xyz, mask)
+    xyz = tf.cast(octree_decode_key(xyz), dtype=tf.float32)
+    
+    # Attention: displacement 0.5, scale 
+    scale = 2.0**(depth-target_depth)
+    xyz += tf.constant([0.5, 0.5, 0.5, 0.0], dtype=tf.float32)
+    xyz *= tf.constant([scale, scale, scale, 1.0], dtype=tf.float32)
+    
+    output = octree_bilinear_v3(xyz, data, octree, depth)
+  return output
+
+
+# pts: (N, 4), i.e. N x (x, y, z, id)
+# data: (1, C, H, 1)
+def octree_nearest_interp(pts, data, octree, depth):
+  with tf.variable_scope('octree_nearest_interp'):
+    # The value is defined on the center of each voxel,
+    # so we can get the closest grid point by simply casting the value to uint8
+    pts = tf.cast(pts, dtype=tf.uint8)
+    key = tf.reshape(octree_encode_key(pts), [-1])
+
+    idx = octree_search_key(key, octree, depth)
+    # !!! Note that some of idx may be -1 or over-bound
+    # Use tf.gather may be problematic with some version of tensorflow 
+    # according to my experiments. So I implemented octree_gather to 
+    # replace the original tf.gather. If you encounter errors, please 
+    # use the octree_gather
+    # output = tf.gather(data, idx, axis=2)
+    output = octree_gather(data, idx)
+  return output

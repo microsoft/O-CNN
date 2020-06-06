@@ -94,11 +94,11 @@ class TransformPointsOp : public OpKernel {
 
     // centralize & displacement
     const float kEPS = 1.0e-10f;
-    const float kMul = 2.0f * radius / float(1 << depth_);
     float dis[3] = { -center[0], -center[1], -center[2] };
     pts.translate(dis);
     if (offset_ > kEPS) {
-      float offset = offset_ * kMul;
+      // !!! rescale the offset, relative to the octree node size
+      float offset = offset_ * 2.0f * radius / float(1 << depth_);
       pts.displace(offset);
       radius += offset;
     }
@@ -121,8 +121,11 @@ class TransformPointsOp : public OpKernel {
     // jitter
     float max_jitter = -1.0;
     for (int i = 0; i < 3; i++) {
-      jitter[i] *= kMul;
-      if (max_jitter < fabs(jitter[i])) { max_jitter = fabs(jitter[i]); }
+      // !!! rescale the jitter, relative to the radius
+      jitter[i] *= 2.0 * radius;
+      if (max_jitter < fabs(jitter[i])) {
+        max_jitter = fabs(jitter[i]);
+      }
     }
     if (fabs(max_jitter) > kEPS) {
       pts.translate(jitter);

@@ -57,7 +57,7 @@ def get_data_label_pair(list_file):
       file, label = line.split()
       file_list.append(file)
       label_list.append(int(label))
-  index_list = [i for i in range(len(label_list))]
+  index_list = list(range(len(label_list)))
 
   if shuffle_data:
     c = list(zip(file_list, label_list, index_list))

@@ -1,25 +1,24 @@
-#include "octree_nn.h"
-#include "octree_parser.h"
-
 #include <cuda_runtime.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <tensorflow/core/framework/shape_inference.h>
 
+#include "octree_nn.h"
+#include "octree_parser.h"
+
 namespace tensorflow {
 
 REGISTER_OP("OctreeNew")
-    .Attr("batch_size: int")
+    .Attr("batch_size: int = 1")
     .Attr("adaptive_layer: int = 0")
     .Attr("channel: int = 3")
     .Attr("has_displace: bool = false")
     .Output("out_octree: int8")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
-      c->set_output(0, c->MakeShape({ c->UnknownDim() }));
+      c->set_output(0, c->MakeShape({c->UnknownDim()}));
       return Status::OK();
     })
     .Doc(R"doc(Octree new operator.)doc");
-
 
 class OctreeNewOp : public OpKernel {
  public:
@@ -44,7 +43,7 @@ class OctreeNewOp : public OpKernel {
     if (adaptive_ > 1) {
       oct_info_.set_adaptive(true);
       oct_info_.set_adaptive_layer(adaptive_);
-    } else  {
+    } else {
       oct_info_.set_adaptive(false);
     }
     oct_info_.set_key2xyz(true);
@@ -52,8 +51,8 @@ class OctreeNewOp : public OpKernel {
     oct_info_.set_property(OctreeInfo::kChild, 1, -1);
     oct_info_.set_property(OctreeInfo::kNeigh, 8, -1);
     oct_info_.set_property(OctreeInfo::kFeature, channel_, -1);
-    float bbmin[] = { 0, 0, 0 };
-    float bbmax[] = { 2, 2, 2 };
+    float bbmin[] = {0, 0, 0};
+    float bbmax[] = {2, 2, 2};
     oct_info_.set_bbox(bbmin, bbmax);
     oct_info_.set_nnum(depth_, node_num_);
     oct_info_.set_nnum_cum();
@@ -62,11 +61,11 @@ class OctreeNewOp : public OpKernel {
 
     // out octree
     Tensor* tensor_out = nullptr;
-    TensorShape shape_out({ oct_info_.sizeof_octree() });
+    TensorShape shape_out({oct_info_.sizeof_octree()});
     OP_REQUIRES_OK(context, context->allocate_output(0, shape_out, &tensor_out));
     auto* ptr_out = tensor_out->flat<int8>().data();
     cudaMemset(ptr_out, 0, tensor_out->NumElements());
-    
+
     // set octree, skip the propoerties neigh and feature
     OctreeParser octree_out;
     octree_out.set_gpu(ptr_out, &oct_info_);
