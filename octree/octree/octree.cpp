@@ -386,14 +386,19 @@ void Octree::calc_signal(const Points& point_cloud, const vector<float>& pts_sca
       int t = children[i];
       if (node_type(t) == kLeaf) continue;
 
+      int valid_num = 0;
       vector<int> avg_label(max_label_, 0);
       for (uint32 j = unique_idx[t]; j < unique_idx[t + 1]; j++) {
         int h = sorted_idx[j];
-        avg_label[static_cast<int>(labels[h])] += 1;
+        int l = static_cast<int>(labels[h]);
+        if (l < 0) { continue; }  // invalid labels
+        avg_label[l] += 1;
+        valid_num += 1;
       }
-
-      avg_labels_[depth][i] = static_cast<float>(std::distance(avg_label.begin(),
-                  std::max_element(avg_label.begin(), avg_label.end())));
+      if (valid_num > 0) {
+        avg_labels_[depth][i] = static_cast<float>(std::distance(avg_label.begin(),
+                    std::max_element(avg_label.begin(), avg_label.end())));
+      }
     }
   }
 
@@ -564,12 +569,17 @@ void Octree::calc_signal(const bool calc_normal_err, const bool calc_dist_err) {
 
       vector<int> l_avg(max_label_, 0);
       if (has_label) {
+        int valid_num = 0;
         for (int j = didx_d[i]; j < didx_d[i] + dnum_d[i]; ++j) {
-          if (node_type(children_depth[j]) == kLeaf) continue;
-          l_avg[static_cast<int>(label_depth[j])] += 1;
+          int l = static_cast<int>(label_depth[j]);
+          if (l < 0) continue;
+          l_avg[l] += 1;
+          valid_num += 1;
         }
-        label_d[i] = static_cast<float>(std::distance(l_avg.begin(),
-                    std::max_element(l_avg.begin(), l_avg.end())));
+        if (valid_num > 0) {
+          label_d[i] = static_cast<float>(std::distance(l_avg.begin(),
+                      std::max_element(l_avg.begin(), l_avg.end())));
+        }
       }
 
       uint32 ptu_base[3];
@@ -721,12 +731,17 @@ void Octree::extrapolate_signal() {
 
       vector<int> l_avg(max_label_, 0);
       if (has_label) {
+        int valid_num = 0;
         for (int j = i_base; j < i_base + 8; ++j) {
-          if (node_type(children_d[j]) == kLeaf) continue;
-          l_avg[static_cast<int>(label_d[j])] += 1;
+          int l = static_cast<int>(label_d[j]);
+          if (l < 0) { continue; }  // invalid labels
+          l_avg[l] += 1;
+          valid_num += 1;
         }
-        label_d[i] = static_cast<float>(std::distance(l_avg.begin(),
-                    std::max_element(l_avg.begin(), l_avg.end())));
+        if (valid_num > 0) {
+          label_d[i] = static_cast<float>(std::distance(l_avg.begin(),
+                      std::max_element(l_avg.begin(), l_avg.end())));
+        }
       }
 
       if (has_dis && count > 0.5f) {

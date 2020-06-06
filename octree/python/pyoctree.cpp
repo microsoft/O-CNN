@@ -39,7 +39,7 @@ PYBIND11_MODULE(pyoctree, m) {
   using vectorf = vector<float>;
   using vectorfc = const vector<float>;
   auto Points_set_points = (bool(Points::*)(vectorfc&, vectorfc&, vectorfc&,
-                                            vectorfc&))&Points::set_points;
+              vectorfc&))&Points::set_points;
   py::class_<Points>(m, "Points")
   .def(py::init<>())
   .def("read_points", &Points::read_points)
@@ -61,6 +61,12 @@ PYBIND11_MODULE(pyoctree, m) {
     const float* ptr = pts.normal();
     int num = pts.info().pt_num();
     return vectorf(ptr, ptr + num * 3);
+  })
+  .def("features", [](const Points& pts) {
+    const float* ptr = pts.feature();
+    int num = pts.info().pt_num();
+    const int ch = pts.info().channel(PointsInfo::kFeature);
+    return vectorf(ptr, ptr + num * ch);
   })
   .def("labels", [](const Points& pts) {
     const float* ptr = pts.label();

@@ -165,10 +165,24 @@ void search_key_gpu(int* idx, const uint32* key, const int n_key,
 
 template <typename Dtype>
 void align_forward_gpu(Dtype* top_data, const int top_h, const int channel,
-    const Dtype* btm_data, const int btm_h, const int* idx, const int num);
+    const Dtype* btm_data, const int btm_h, const int* idx);
 template <typename Dtype>
 void align_backward_gpu(const Dtype* top_data, const int top_h, const int channel,
-    Dtype* btm_data, const int btm_h, const int* idx, const int num);
+    Dtype* btm_data, const int btm_h, const int* idx);
+
+
+// TODO: The implementation of align_forward_gpu, octree_pad_gpu, and 
+// octree_gather_gpu is very similar, try to merge these codes:
+// 1. Merge octree_gather_gpu and octree_pad_gpu: 
+//    the height of `idx` is `top_h` in octree_gather_gpu
+// 2. Change the implementation of align_forward_gpu to make the height
+//    of `idx` is `top_h` instead of `btm_h`
+template <typename Dtype>
+void octree_gather_gpu(Dtype* top_data, const int top_h, const int channel,
+  const Dtype* btm_data, const int btm_h, const int* idx);
+template <typename Dtype>
+void octree_gatherbk_gpu(const Dtype* top_data, const int top_h, const int channel,
+  Dtype* btm_data, const int btm_h, const int* idx);
 
 
 void octree_mask_gpu(float* out_data, const float* in_data, const int* label,

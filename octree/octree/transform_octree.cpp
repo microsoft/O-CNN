@@ -20,7 +20,7 @@ void ScanOctree::set_axis(const float* axis, int n) {
   }
 }
 
-void ScanOctree::scan(Octree& octree_out, const Octree& octree_in,
+void ScanOctree::scan(vector<char>& octree_out, const OctreeParser& octree_in,
     const vector<float>& axis) {
   // drop_flags: 1 - drop; 0 - keep, iff the node is visible and non-empty
   int depth = octree_in.info().depth();
@@ -94,7 +94,7 @@ void ScanOctree::reset_buffer() {
   z_buffer_.assign(width_ * width_, std::numeric_limits<float>::max());
 }
 
-void ScanOctree::z_buffer(vector<int>& drop_flags, const Octree& octree_in) {
+void ScanOctree::z_buffer(vector<int>& drop_flags, const OctreeParser& octree_in) {
   // reset the buffer
   reset_buffer();
 
@@ -129,7 +129,8 @@ void ScanOctree::z_buffer(vector<int>& drop_flags, const Octree& octree_in) {
   }
 }
 
-void ScanOctree::generate_flags(vector<vector<int>>& drop_flags, const Octree& octree_in) {
+void ScanOctree::generate_flags(vector<vector<int>>& drop_flags,
+    const OctreeParser& octree_in) {
   int depth = octree_in.info().depth();
   int depth_full = octree_in.info().full_layer();
   for (int d = 0; d < depth_full; ++d) {
@@ -157,8 +158,8 @@ void ScanOctree::generate_flags(vector<vector<int>>& drop_flags, const Octree& o
   }
 }
 
-void ScanOctree::trim_octree(Octree& octree_out, const Octree& octree_in,
-    vector<vector<int>>& drop_flags) {
+void ScanOctree::trim_octree(vector<char>& octree_buffer,
+    const OctreeParser& octree_in, vector<vector<int>>& drop_flags) {
   // calculate the node number for the octree_out
   int depth = octree_in.info().depth();
   int depth_full = octree_in.info().full_layer();
@@ -185,8 +186,9 @@ void ScanOctree::trim_octree(Octree& octree_out, const Octree& octree_in,
   info_out.set_nempty(node_num_nempty.data());
   info_out.set_nnum_cum();
   info_out.set_ptr_dis();
-  octree_out.resize_octree(info_out.sizeof_octree());
-  octree_out.mutable_info() = info_out;
+  octree_buffer.resize(info_out.sizeof_octree());
+  OctreeParser octree_out;
+  octree_out.set_cpu(octree_buffer.data(), &info_out);
 
   // copy data
   // !!! current channel_key = 1

@@ -46,6 +46,9 @@ int main(int argc, char* argv[]) {
 
     simplify_pts.simplify();
     string filename = extract_filename(all_files[i]);
+    if (FLAGS_verbose) {
+      std::cout << "Processing: " + filename + "\n";
+    }
     simplify_pts.write_point_cloud(output_path + filename + ".smp.points");
   }
 

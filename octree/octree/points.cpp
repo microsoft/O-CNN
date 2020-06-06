@@ -69,7 +69,7 @@ bool Points::write_ply(const string & filename) const {
   const int channel_normal = info_->channel(PointsInfo::kNormal);   // 3 channel
   const int channel_feature = info_->channel(PointsInfo::kFeature); // x channel
   const int channel_label = info_->channel(PointsInfo::kLabel);     // 1 channel
-  assert(channel_pts == 3 && channel_normal == 3 && channel_label == 1);
+  // assert(channel_pts == 3 && channel_normal == 3 && channel_label == 1);
 
   // write header
   std::ostringstream oss;

@@ -2,9 +2,10 @@
 #include <string>
 #include <random>
 #include <vector>
-#include <limits>
+#include <fstream>
 #include <ctime>
 
+#include "octree.h"
 #include "filenames.h"
 #include "cmd_flags.h"
 #include "math_functions.h"
@@ -86,7 +87,7 @@ int main(int argc, char* argv[]) {
 
     // dropout
     ScanOctree zbuffer;
-    Octree octree_out;
+    vector<char> octree_out;
     vector<float> axis = { 0, 0, 1, 0, 0, 1 };
     rand_axis(axis.data());
     rand_axis(axis.data() + 3);
@@ -94,7 +95,9 @@ int main(int argc, char* argv[]) {
 
     // save octree
     string filename_output = output_path + filename + ".zbuffer.octree";
-    octree_out.write_octree(filename_output);
+    std::ofstream outfile(filename_output, std::ios::binary);
+    outfile.write(octree_out.data(), octree_out.size());
+    outfile.close();
   }
 
   return 0;

@@ -598,45 +598,98 @@ void coord2xyz_gpu(uint32* xyz, const float* pt, const int num, const int channe
 
 
 template <typename Dtype>
-__global__ void align_forward_kernel(Dtype* top_data, const int Htop,
-    const Dtype* btm_data, const int Hbtm, const int* index_data, const int num) {
-  CUDA_KERNEL_LOOP(i, num) {
-    int h = i % Hbtm;
-    int c = i / Hbtm;
+__global__ void align_forward_kernel(Dtype* top_data, const int top_h,
+    const Dtype* btm_data, const int btm_h, const int* index_data, 
+    const int btm_num) {
+  CUDA_KERNEL_LOOP(i, btm_num) {
+    int h = i % btm_h;
+    int c = i / btm_h;
     int j = index_data[h];
     if (j != -1) {
-      top_data[c * Htop + j] = btm_data[i];
+      top_data[c * top_h + j] = btm_data[i];
     }
   }
 }
 
 template <typename Dtype>
 void align_forward_gpu(Dtype* top_data, const int top_h, const int channel,
-    const Dtype* btm_data, const int btm_h, const int* idx, const int num) {
-  memset_gpu(num, Dtype(0), top_data);
-  align_forward_kernel <<< CudaGetBlocks(num), kCudaThreadsNum >>> (
-      top_data, top_h, btm_data, btm_h, idx, num);
+    const Dtype* btm_data, const int btm_h, const int* idx) {
+  int btm_num = btm_h * channel;
+  memset_gpu(top_h * channel, Dtype(0), top_data);
+  align_forward_kernel <<< CudaGetBlocks(btm_num), kCudaThreadsNum >>> (
+      top_data, top_h, btm_data, btm_h, idx, btm_num);
   CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename Dtype>
-__global__ void align_backward_kernel(const Dtype* top_data, const int Htop,
-    Dtype* btm_data, const int Hbtm, const int* index_data, const int num) {
-  CUDA_KERNEL_LOOP(i, num) {
-    int h = i % Hbtm;
-    int c = i / Hbtm;
+__global__ void align_backward_kernel(const Dtype* top_data, const int top_h,
+    Dtype* btm_data, const int btm_h, const int* index_data, const int btm_num) {
+  CUDA_KERNEL_LOOP(i, btm_num) {
+    int h = i % btm_h;
+    int c = i / btm_h;
     int j = index_data[h];
-    btm_data[i] = j == -1 ? 0 : top_data[c * Htop + j];
+    btm_data[i] = j == -1 ? 0 : top_data[c * top_h + j];
   }
 }
 
 template <typename Dtype>
 void align_backward_gpu(const Dtype* top_data, const int top_h, const int channel,
-    Dtype* btm_data, const int btm_h, const int* idx, const int num) {
-  align_backward_kernel <<< CudaGetBlocks(num), kCudaThreadsNum >>> (
+    Dtype* btm_data, const int btm_h, const int* idx) {
+  int btm_num = btm_h * channel;
+  align_backward_kernel <<< CudaGetBlocks(btm_num), kCudaThreadsNum >>> (
+      top_data, top_h, btm_data, btm_h, idx, btm_num);
+  CUDA_POST_KERNEL_CHECK;
+}
+
+
+template <typename Dtype>
+__global__ void octree_gather_kernel(Dtype* top_data, const int top_h,
+    const Dtype* btm_data, const int btm_h, const int* index_data, const int num) {
+  CUDA_KERNEL_LOOP(i, num) {
+    int h = i % top_h;
+    int c = i / top_h;
+    int j = index_data[h];
+    if (j != -1) {
+      top_data[i] = btm_data[c * btm_h + j];
+    }
+  }
+}
+
+template <typename Dtype>
+void octree_gather_gpu(Dtype* top_data, const int top_h, const int channel,
+    const Dtype* btm_data, const int btm_h, const int* idx) {
+  pad_forward_gpu<Dtype>(top_data, top_h, channel, btm_data, btm_h, idx, Dtype(0));
+  
+  //int num = top_h * channel;
+  //memset_gpu(num, Dtype(0), top_data);
+  //octree_gather_kernel <<< CudaGetBlocks(num), kCudaThreadsNum >>> (
+  //    top_data, top_h, btm_data, btm_h, idx, num);
+  //CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename Dtype>
+__global__ void octree_gatherbk_kernel(const Dtype* top_data, const int top_h,
+    Dtype* btm_data, const int btm_h, const int* index_data, const int num) {
+  CUDA_KERNEL_LOOP(i, num) {
+    int h = i % top_h;
+    int c = i / top_h;
+    int j = index_data[h];
+    if (j != -1) {
+      caffe_gpu_atomic_add(top_data[i], btm_data + c * btm_h + j);
+    }
+  }
+}
+
+template <typename Dtype>
+void octree_gatherbk_gpu(const Dtype* top_data, const int top_h, const int channel,
+    Dtype* btm_data, const int btm_h, const int* idx) {
+  int num = top_h * channel;
+  memset_gpu(channel * btm_h, Dtype(0), btm_data);
+  octree_gatherbk_kernel <<< CudaGetBlocks(num), kCudaThreadsNum >>> (
       top_data, top_h, btm_data, btm_h, idx, num);
   CUDA_POST_KERNEL_CHECK;
 }
+
 
 
 __global__ void octree_mask_kernel(float* des, const float* src,
@@ -707,10 +760,18 @@ template void octree_mask_pool_gpu<float>(float* top_data, int top_h,
 template void octree_mask_pool_gpu<double>(double* top_data, int top_h,
     const int* mask, const double* btm_data, int bottom_h, int channel);
 template void align_forward_gpu(float* top_data, const int top_h, const int c,
-    const float* btm_data, const int btm_h, const int* idx, const int n);
+    const float* btm_data, const int btm_h, const int* idx);
 template void align_forward_gpu(double* top_data, const int top_h, const int c,
-    const double* btm_data, const int btm_h, const int* idx, const int n);
+    const double* btm_data, const int btm_h, const int* idx);
 template void align_backward_gpu(const float* top_data, const int top_h,
-    const int c, float* btm_data, const int btm_h, const int* idx, const int n);
+    const int c, float* btm_data, const int btm_h, const int* idx);
 template void align_backward_gpu(const double* top_data, const int top_h,
-    const int c, double* btm_data, const int btm_h, const int* idx, const int n);
+    const int c, double* btm_data, const int btm_h, const int* idx);
+template void octree_gather_gpu(float* top_data, const int top_h, const int c,
+    const float* btm_data, const int btm_h, const int* idx);
+template void octree_gather_gpu(double* top_data, const int top_h, const int c,
+    const double* btm_data, const int btm_h, const int* idx);
+template void octree_gatherbk_gpu(const float* top_data, const int top_h,
+    const int c, float* btm_data, const int btm_h, const int* idx);
+template void octree_gatherbk_gpu(const double* top_data, const int top_h,
+    const int c, double* btm_data, const int btm_h, const int* idx);

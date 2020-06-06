@@ -103,8 +103,9 @@ void SimplifyPoints::transform() {
   // bounding sphere
   int npt = point_cloud_.info().pt_num();
   bounding_sphere(radius_, center_, point_cloud_.ptr(PointsInfo::kPoint), npt);
-
+  
   // centralize & displacement
+  radius_ *= 1.001f;
   if (offset_ > 1.0e-10f) {
     offest_obj_ = offset_ * 2.0f * radius_ / float(dim_);
     point_cloud_.displace(offest_obj_);
