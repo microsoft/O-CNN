@@ -12,14 +12,14 @@ DATA:
     dtype: octree
     distort: True
     depth: 5
-    location: dataset/m40_5_2_12_train_octree.tfrecords 
+    location: dataset/ModelNet40/m40_5_2_12_train_octree.tfrecords 
     batch_size: 32
     x_alias: data
   test: 
     dtype: octree
     distort: False
     depth: 5
-    location: dataset/m40_5_2_12_test_octree.tfrecords
+    location: dataset/ModelNet40/m40_5_2_12_test_octree.tfrecords
     shuffle: 0
     batch_size: 32
     x_alias: data

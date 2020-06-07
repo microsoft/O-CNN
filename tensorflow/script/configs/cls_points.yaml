@@ -19,7 +19,7 @@ DATA:
     interval: (1, 1, 1)   # small rotation
     scale: 0.25
     jitter: 0.125
-    location: dataset/m40_train_points.tfrecords 
+    location: dataset/ModelNet40/m40_train_points.tfrecords 
     batch_size: 32
     x_alias: data
   test: 
@@ -31,7 +31,7 @@ DATA:
     interval: (1, 1, 1)
     scale: 0.25
     jitter: 0.125
-   location: dataset/m40_test_points.tfrecords
+   location: dataset/ModelNet40/m40_test_points.tfrecords
     shuffle: 0
     batch_size: 32
     x_alias: data

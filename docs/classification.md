@@ -73,32 +73,53 @@ the data automatically.
 
 ## O-CNN on TensorFlow
 
-1. Follow the instructions [above](#o-cnn-on-caffe) untile the 3rd step.
-The `Tensorflow` takes `TFRecords` as input, run the following command to
-convert the point clouds to octrees, then build the `TFRecords` database
-with the executive files [`octree`](Installation.md#Octree) and
-[`convert_tfrecords.py`](../tensorflow/util/convert_tfrecords.py).
-    ```shell
-    python prepare_dataset.py --run=m40_generate_ocnn_octree_tfrecords \
-                              --octree=<The path of the octree> \
-                              --converter="../util/convert_tfrecords.py"
+1. Download [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset
+   and unzip it to the folder `dataset/ModelNet40` via the following command:
+    ```
+    python ../data/cls_modelnet.py --run download_m40
     ```
 
-2. Run the following command to train the network. 
-The performance is consistent with the `Caffe`-based implementation,  i.e. 
-the classification accuracy is 89.6% without voting.
+2. Convert triangle meshes (in `off` format) to point clouds (in `points` format)
+   with the [virtual_scanner](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
+   This process can be automatically executed by the following command.
+   Remember to provide actual `<The path of the virtual_scanner>` to run the command.
+    ```shell
+    python ../data/cls_modelnet.py --run m40_convert_mesh_to_points \
+                                   --scanner <The path of the virtual_scanner>
+    ```
+   The generated point clouds are very dense, and if you would like to save disk
+   spaces, you can optionally run the following command to simplify the point cloud.
+    ```shell
+    python ../data/cls_modelnet.py --run m40_simplify_points 
+    ```
+   We also provide the converted `point clouds` for convenience. Download the zip file
+   [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0) and
+   unzip it to the folder `dataset/ModelNet40.points`.
+   ```shell
+   python ../data/cls_modelnet.py --run download_m40_points
+   ```
+
+3. The `Tensorflow` takes `TFRecords` as input, run the following command to
+   convert the point clouds to octrees, then build the `TFRecords` database
+    ```shell
+    python ../data/cls_modelnet.py --run m40_generate_octree_tfrecords 
+    ```
+
+4. Run the following command to train the network. 
+   The performance is consistent with the `Caffe`-based implementation,  i.e. 
+   the classification accuracy is 89.6% without voting.
     ```shell
     python run_cls.py --config configs/cls_octree.yaml
     ```
 
-3. With `Tensorflow`, the network can also directly consume the points
+5. With `Tensorflow`, the network can also directly consume the points
 as input and build octrees at runtime.
 Run the following command to store the `points` into one `TFRecords` database.
     ```shell
-    python prepare_dataset.py --run=m40_generate_ocnn_points_tfrecords \
-                              --converter="../util/convert_tfrecords.py"
+    python prepare_dataset.py --run m40_generate_points_tfrecords
     ```
-4. Run the following command to train a **deeper** network with ResBlocks, 
+    
+6. Run the following command to train a **deeper** network with ResBlocks, 
 which directly takes points.
 Notable, simply using the training hyperparameters as before, the testing 
 accuracy increases from 89.6% to **92.4%**.

@@ -21,7 +21,7 @@ set PATH=the\absolute\path\octree\build\Release;%PATH%
 ```
 Or run the following command on the Ubuntu.
 ```shell
-export PATH="/the/absolute/path/octree/build:$PATH"
+export PATH=`pwd`:$PATH
 ```
 
 

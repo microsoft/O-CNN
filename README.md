@@ -2,7 +2,7 @@
 
 <!-- ## Introduction <a name="introduction"></a> -->
 
-This repository contains the implementation of *O-CNN*  and  *Aadptive O-CNN* 
+This repository contains the implementation of *O-CNN*  and  *Adaptive O-CNN* 
 introduced in our SIGGRAPH 2017 paper and SIGGRAPH Asia 2018 paper.  
 The code is released under the **MIT license**.
 
