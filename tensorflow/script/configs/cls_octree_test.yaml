@@ -11,7 +11,7 @@ DATA:
   test: 
     dtype: octree
     depth: 5
-    location: dataset/ModelNet40/M40_test.tfrecord
+    location: dataset/ModelNet40/m40_5_2_12_test_octree.tfrecords
     shuffle: 0
     batch_size: 32
     x_alias: data

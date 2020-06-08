@@ -112,17 +112,16 @@ the data automatically.
     python run_cls.py --config configs/cls_octree.yaml
     ```
 
-5. With `Tensorflow`, the network can also directly consume the points
-as input and build octrees at runtime.
-Run the following command to store the `points` into one `TFRecords` database.
+5. With `Tensorflow`, the network can also directly consume the points as input
+   and build octrees at runtime. Run the following command to store the `points`
+   into one `TFRecords` database.
     ```shell
-    python prepare_dataset.py --run m40_generate_points_tfrecords
+    python ../data/cls_modelnet.py --run m40_generate_points_tfrecords
     ```
     
-6. Run the following command to train a **deeper** network with ResBlocks, 
-which directly takes points.
-Notable, simply using the training hyperparameters as before, the testing 
-accuracy increases from 89.6% to **92.4%**.
+6. Run the following command to train a **deeper** network with ResBlocks, which
+   directly takes points. Notable, simply using the training hyperparameters as
+   before, the testing accuracy increases from 89.6% to **92.4%**.
     ```shell
     python run_cls.py --config configs/cls_points.yaml
     ```

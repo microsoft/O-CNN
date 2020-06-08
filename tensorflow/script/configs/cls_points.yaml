@@ -2,12 +2,13 @@
 
 SOLVER:
   gpu: 0,
-  logdir: logs/m40/0406_resnet_points
+  logdir: logs/m40/0608_resnet_points
   run: train
   max_iter: 160000
   test_iter: 77
   test_every_iter: 2000
   step_size: (40000,)
+  ckpt_num: 20
 
 DATA:
   train:
@@ -19,7 +20,7 @@ DATA:
     interval: (1, 1, 1)   # small rotation
     scale: 0.25
     jitter: 0.125
-    location: dataset/ModelNet40/m40_train_points.tfrecords 
+    location: dataset/ModelNet40/m40_train_points.tfrecords
     batch_size: 32
     x_alias: data
   test: 
@@ -31,7 +32,7 @@ DATA:
     interval: (1, 1, 1)
     scale: 0.25
     jitter: 0.125
-   location: dataset/ModelNet40/m40_test_points.tfrecords
+    location: dataset/ModelNet40/m40_test_points.tfrecords
     shuffle: 0
     batch_size: 32
     x_alias: data
