@@ -11,7 +11,7 @@ DATA:
     dtype: points
     depth: 6
     distort: False
-    location: dataset/ocnn_completion/completion_test_points.tfrecords
+    location: dataset/ocnn_completion/completion_test_scans_points.tfrecords
     batch_size: 1
     depth: 6   
     offset: 0.0

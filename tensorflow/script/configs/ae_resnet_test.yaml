@@ -1,0 +1,26 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/ae/0609_resnet_test
+  ckpt: logs/ae/0609_resnet/model/iter_320000.ckpt
+  run: test
+  test_iter: 336
+
+DATA:
+  test: 
+    dtype: points
+    depth: 6
+    location: dataset/ocnn_completion/completion_test_points.tfrecords
+    batch_size: 16
+    distort: False
+    offset: 0.0
+    node_dis: True
+    split_label: True
+
+MODEL:
+  name: resnet
+  channel: 4
+  nout: 32   # The channel of the hidden code, the code length is 4*4*4*32 (2048)
+  depth: 6
+
+LOSS:
+  weight_decay: 0.0005

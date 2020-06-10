@@ -20,7 +20,7 @@ def download_point_clouds():
   # download via wget
   if not os.path.exists(root_folder):
     os.makedirs(root_folder)
-  url = 'https://www.dropbox.com/s/cgto0mgaalb9rew/ocnn_completion.zip?dl=0'
+  url = 'https://www.dropbox.com/s/y5ljm2bs8649j3p/ocnn_completion.zip?dl=0'
   cmd = 'wget %s -O %s.zip' % (url, root_folder)
   print(cmd)
   os.system(cmd)
@@ -106,9 +106,18 @@ def generate_points_tfrecords():
   os.system(cmd)
 
   # tfrecords for testing
-  points_folder = os.path.join(root_folder, 'test.scans.points')
+  points_folder = os.path.join(root_folder, 'shape.points')
   filelist = os.path.join(root_folder, 'filelist_test.txt')
   records_name = os.path.join(root_folder, 'completion_test_points.tfrecords')
+  cmd = 'python %s --file_dir %s --list_file %s --records_name %s' % \
+        (converter, points_folder, filelist, records_name)
+  print(cmd)
+  os.system(cmd)
+
+  # tfrecords for testing scans
+  points_folder = os.path.join(root_folder, 'test.scans.points')
+  filelist = os.path.join(root_folder, 'filelist_test_scans.txt')
+  records_name = os.path.join(root_folder, 'completion_test_scans_points.tfrecords')
   cmd = 'python %s --file_dir %s --list_file %s --records_name %s' % \
         (converter, points_folder, filelist, records_name)
   print(cmd)
