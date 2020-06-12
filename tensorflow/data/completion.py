@@ -131,7 +131,7 @@ def generate_dataset():
 
 
 def rename_output_octree():
-  filelist = os.path.join(root_folder, 'filelist_test.txt')
+  filelist = os.path.join(root_folder, 'filelist_test_scans.txt')
   filenames = []
   with open(filelist, 'r') as fid:
     for line in fid:
