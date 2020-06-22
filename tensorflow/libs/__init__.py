@@ -165,6 +165,14 @@ def octree_max_unpool(data, mask, octree, depth):
   return data
 
 
+def octree_avg_pool(data, octree, depth):
+  with tf.variable_scope('octree_avg_pool'):
+    data = tf.reshape(data, [1, int(data.shape[1]), -1, 8])
+    data = tf.reduce_mean(data, axis=3, keepdims=True)
+    data = octree_pad(data, octree, depth-1)           # !!! depth-1
+  return data, mask
+
+
 # todo: merge octree_conv_fast and octree_conv_memory to reduce code redundancy
 def octree_conv_fast(data, octree, depth, channel, kernel_size=[3], stride=1):
   assert(type(kernel_size) is list and len(kernel_size) < 4)
