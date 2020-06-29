@@ -170,7 +170,7 @@ def octree_avg_pool(data, octree, depth):
     data = tf.reshape(data, [1, int(data.shape[1]), -1, 8])
     data = tf.reduce_mean(data, axis=3, keepdims=True)
     data = octree_pad(data, octree, depth-1)           # !!! depth-1
-  return data, mask
+  return data
 
 
 # todo: merge octree_conv_fast and octree_conv_memory to reduce code redundancy
