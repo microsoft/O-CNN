@@ -37,7 +37,7 @@ def network_resnet(octree, flags, training=True, reuse=None):
 # the ocnn in the paper
 def network_ocnn(octree, flags, training=True, reuse=None):
   depth = flags.depth
-  channels = [512, 256, 128, 64, 32, 16, 8, 4]
+  channels = [512, 256, 128, 64, 32, 16, 8, 4, 2]
   with tf.variable_scope("ocnn", reuse=reuse):
     data = octree_property(octree, property_name="feature", dtype=tf.float32, 
                            depth=depth, channel=flags.channel)
