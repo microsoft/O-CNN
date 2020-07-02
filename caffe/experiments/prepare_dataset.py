@@ -160,7 +160,7 @@ def m40_generate_ocnn_lmdb(depth=5):
   octree_folder = os.path.join(root_folder, 'ModelNet40.octree.%d' % depth)
   for folder in ['train', 'test']:
     train = folder == 'train'
-    shuffle = '--shuffle' if shuffle else '--noshuffle'
+    shuffle = '--shuffle' if train else '--noshuffle'
     filelist, idx = m40_get_filelist(octree_folder, train=train, suffix='octree')
     filename = os.path.join(root_folder, 'm40_%s_octree_list.txt' % folder)
     with open(filename, 'w') as fid:
@@ -183,7 +183,7 @@ def m40_generate_aocnn_lmdb(depth=5):
   octree_folder = os.path.join(root_folder, 'ModelNet40.octree.%d.adaptive' % depth)
   for folder in ['train', 'test']:
     train = folder == 'train'
-    shuffle = '--shuffle' if shuffle else '--noshuffle'
+    shuffle = '--shuffle' if train else '--noshuffle'
     filelist, idx = m40_get_filelist(octree_folder, train=train, suffix='octree')
     filename = os.path.join(root_folder, 'm40_%s_adaptive_octree_list.txt' % folder)
     with open(filename, 'w') as fid:
