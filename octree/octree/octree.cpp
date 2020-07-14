@@ -631,7 +631,7 @@ void Octree::calc_signal(const bool calc_normal_err, const bool calc_dist_err) {
           for (int c = 0; c < 3; ++c) {
             dis += (pt_depth[c * nnum_depth + j] - pt_avg1[c]) * n_avg[c];
           }
-          dis = abs(dis);
+          dis = fabsf(dis);
           if (dis > distance_max1) distance_max1 = dis;
         }
 
@@ -760,7 +760,7 @@ void Octree::extrapolate_signal() {
         dis /= count;
         if (dis > 3.0f) dis = 3.0f;
         if (dis < -3.0f) dis = -3.0f;
-        if (abs(dis) < 1.0f) {
+        if (fabsf(dis) < 1.0f) {
           //bool has_intersection = false;
           // make the voxel has no intersection with the current voxel
           unsigned int cube_cases = 0;
@@ -787,7 +787,7 @@ void Octree::extrapolate_signal() {
         for (int j = 0; j < nnum_d; ++j) {
           if (node_type(children_d[j]) == kLeaf) continue;
           key2xyz(ptj, keys_[d][j], d);
-          float dd = abs(pti[0] - ptj[0]) + abs(pti[1] - ptj[1]) + abs(pti[2] - ptj[2]);
+          float dd = fabsf(pti[0] - ptj[0]) + fabsf(pti[1] - ptj[1]) + fabsf(pti[2] - ptj[2]);
           if (dd < dis_min) {
             dis_min = dd;
             j_min = j;
@@ -1174,8 +1174,8 @@ void Octree::calc_split_label() {
       if (node_type(children_[d][i]) == kLeaf) {
         split_labels_[d][i] = 0;              // empty node
         if (adaptive) {
-          float t = abs(avg_normals_[d][i]) + abs(avg_normals_[d][nnum_d + i]) +
-              abs(avg_normals_[d][2 * nnum_d + i]);
+          float t = fabsf(avg_normals_[d][i]) + fabsf(avg_normals_[d][nnum_d + i]) +
+              fabsf(avg_normals_[d][2 * nnum_d + i]);
           // todo: t != 0 && has_intersection
           if (t != 0) split_labels_[d][i] = 2; // surface-well-approximated
         }
@@ -1218,7 +1218,7 @@ void Octree::octree2pts(Points& point_cloud, int depth_start, int depth_end,
 
       float n[3], pt[3];
       node_normal(n, i, d);
-      float len = abs(n[0]) + abs(n[1]) + abs(n[2]);
+      float len = fabsf(n[0]) + fabsf(n[1]) + fabsf(n[2]);
       if (len == 0 && d != depth) continue;  // for adaptive octree
       node_pos(pt, i, d);
 
@@ -1252,7 +1252,7 @@ void Octree::octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
 
       float n[3], pt[3], pt_ref[3];
       node_normal(n, i, d);
-      float len = abs(n[0]) + abs(n[1]) + abs(n[2]);
+      float len = fabsf(n[0]) + fabsf(n[1]) + fabsf(n[2]);
       if (len == 0) continue;
       node_pos(pt, i, d, pt_ref);
 

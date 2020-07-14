@@ -250,7 +250,7 @@ void adaptive_octree(vector<char>& octree_output, const vector<char>& octree_inp
         for (int c = 0; c < 3; ++c) {
           dis += (pt_depth[3 * j + c] - pt_avg1[c]) * n_avg[c];
         }
-        dis = abs(dis);
+        dis = fabsf(dis);
         if (dis > distance_max1) distance_max1 = dis;
       }
 
@@ -439,7 +439,7 @@ void adaptive_octree(vector<char>& octree_output, const vector<char>& octree_inp
         if (children_d[i] == -1) {
           split_d[i] = 0;
           if (d >= depth_output) {
-            float t = abs(data_d[i]) + abs(data_d[nnum_d + i]) + abs(data_d[nnum_d * 2 + i]);
+            float t = fabsf(data_d[i]) + fabsf(data_d[nnum_d + i]) + fabsf(data_d[nnum_d * 2 + i]);
             if (t != 0) split_d[i] = 2;
           }
         }

@@ -2,6 +2,7 @@
 #include "math_functions.h"
 
 #include <queue>
+#include <cmath>
 
 pair<float, float> OctreeValue::fval(const float x, const float y, const float z) const {
   int oct_depth = octree_->info().depth();
@@ -36,7 +37,7 @@ pair<float, float> OctreeValue::fval(const float x, const float y, const float z
           // This node has no children
           if (depth_child >= adp_depth) {
             octree_->node_normal(nm, i, depth_child);
-            float len = abs(nm[0]) + abs(nm[1]) + abs(nm[2]);
+            float len = fabsf(nm[0]) + fabsf(nm[1]) + fabsf(nm[2]);
             if (len != 0) {
               // This node has plane information
               phi += w * basis(pos_in, pos_child, nm);
