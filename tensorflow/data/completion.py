@@ -114,10 +114,19 @@ def generate_points_tfrecords():
   print(cmd)
   os.system(cmd)
 
-  # tfrecords for testing scans
+  # tfrecords for 1200 testing scans
   points_folder = os.path.join(root_folder, 'test.scans.points')
   filelist = os.path.join(root_folder, 'filelist_test_scans.txt')
   records_name = os.path.join(root_folder, 'completion_test_scans_points.tfrecords')
+  cmd = 'python %s --file_dir %s --list_file %s --records_name %s' % \
+        (converter, points_folder, filelist, records_name)
+  print(cmd)
+  os.system(cmd)
+
+  # tfrecords for original shape of 1200 testing scans
+  points_folder = os.path.join(root_folder, 'shape.points')
+  filelist = os.path.join(root_folder, 'filelist_test_scans.txt')
+  records_name = os.path.join(root_folder, 'completion_test_1200_points.tfrecords')
   cmd = 'python %s --file_dir %s --list_file %s --records_name %s' % \
         (converter, points_folder, filelist, records_name)
   print(cmd)
