@@ -22,6 +22,7 @@ DATA:
     node_dis: True
     split_label: True
 
+  # no testing data here, use the completion_test.yaml for testing
   test:
     dtype: points
     depth: 6

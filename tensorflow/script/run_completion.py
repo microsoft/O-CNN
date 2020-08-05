@@ -30,10 +30,12 @@ class NormalizePoints:
 
 
 class PointDataset:
-  def __init__(self, parse_example, transform_points, points2octree):
+  def __init__(self, parse_example, normalize_points, transform_points, points2octree):
     self.parse_example = parse_example
+    self.normalize_points = normalize_points
     self.transform_points = transform_points
     self.points2octree = points2octree
+    # reuse the DATA.train.camera for testing data
     with open(FLAGS.DATA.train.camera, 'rb') as fid:
       self.camera_path = pickle.load(fid)
 
@@ -53,8 +55,9 @@ class PointDataset:
     with tf.name_scope('points_dataset'):
       def preprocess(record):
         points, label = self.parse_example(record)
+        points = self.normalize_points(points)
         points = self.transform_points(points)
-        octree1 = self.points2octree(points)         # the complete octree
+        octree1 = self.points2octree(points)        # the complete octree
         scan_axis = tf.py_func(self.gen_scan_axis, [label], tf.float32)
         octree0 = octree_scan(octree1, scan_axis)   # the transformed octree
         return octree0, octree1
@@ -101,7 +104,7 @@ class CompletionSolver(TFSolver):
 
   def decode_shape(self):
     # build graph
-    octree_in, _ = DatasetFactory(FLAGS.DATA.test, bounding_sphere)()
+    octree_in, _ = DatasetFactory(FLAGS.DATA.test, NormalizePoints)()
     convd = network.octree_encoder(octree_in, training=False, reuse=False)
     octree_out = network.decode_shape(convd, octree_in, training=False, reuse=False)
 
