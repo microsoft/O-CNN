@@ -28,6 +28,8 @@ DATA:
     offset: 0.0
     node_dis: True
     split_label: True
+    shuffle: 0
+
 
 MODEL:
   name: resnet
