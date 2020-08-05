@@ -1,23 +1,25 @@
-#include <fstream>
-#include <string>
-#include <iostream>
-#include <vector>
-#include <random>
 #include <ctime>
+#include <iostream>
+#include <random>
+#include <string>
+#include <vector>
 
 #include "cmd_flags.h"
-#include "points.h"
 #include "filenames.h"
+#include "math_functions.h"
+#include "points.h"
 
-
-using std::vector;
-using std::string;
+using cflags::Require;
 using std::cout;
 using std::endl;
-using cflags::Require;
+using std::string;
+using std::vector;
 
 DEFINE_string(filenames, kRequired, "", "The input filenames");
 DEFINE_string(output_path, kOptional, ".", "The output path");
+DEFINE_float(ratio, kOptional, 0.1f, "The ratio of perturbed points");
+DEFINE_float(dp, kOptional, 1.0f, "The deviation of point noise");
+DEFINE_float(dn, kOptional, 0.1f, "The deviation of normal noise");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
 class GaussianRand {
@@ -63,22 +65,27 @@ class BernoulliRand {
 };
 
 
-
-void add_noise(Points& pts) {
-  BernoulliRand bernoulli(0.1f);
-  GaussianRand pt_noise(3.0f), normal_noise(0.1f);
+void add_noise(Points& pts, GaussianRand& pt_noise, GaussianRand& normal_noise,
+    BernoulliRand& bernoulli) {
+  // bounding sphere of the points
+  float radius = 0, center[3] = { 0 };
+  int npts = pts.info().pt_num();
+  bounding_sphere(radius, center, pts.points(), npts);
+  radius = radius / 100.0f;
 
   // add pt noise
-  int npts = pts.info().pt_num();
   vector<float> noise(npts);
   pt_noise(noise.data(), npts);
-  vector<int> mask(npts);
-  bernoulli(mask.data(), npts);
-
-  float* ptr_pts = pts.mutable_ptr(PointsInfo::kPoint);
-  float* ptr_normal = pts.mutable_ptr(PointsInfo::kNormal);
   for (int i = 0; i < npts; ++i) {
-    if (mask[i] == 0) continue;
+    noise[i] *= radius;    // rescale the noise according to the radius
+  }
+  //vector<int> mask(npts);
+  //bernoulli(mask.data(), npts);
+
+  float* ptr_pts = pts.mutable_points();
+  float* ptr_normal = pts.mutable_normal();
+  for (int i = 0; i < npts; ++i) {
+    //if (mask[i] == 0) continue;
     for (int c = 0; c < 3; ++c) {
       ptr_pts[i * 3 + c] += noise[i] * ptr_normal[i * 3 + c];
     }
@@ -105,29 +112,33 @@ void add_noise(Points& pts) {
 int main(int argc, char* argv[]) {
   bool succ = cflags::ParseCmd(argc, argv);
   if (!succ) {
-    cflags::PrintHelpInfo("\nUsage: simplify_points");
+    cflags::PrintHelpInfo("\nUsage: points_noise");
     return 0;
   }
 
   // file path
   string file_path = FLAGS_filenames;
   string output_path = FLAGS_output_path;
-  if (output_path != ".") mkdir(output_path);
-  else output_path = extract_path(file_path);
+  if (output_path != ".") { mkdir(output_path); }
+  else { output_path = extract_path(file_path); }
   output_path += "/";
 
   vector<string> all_files;
   get_all_filenames(all_files, file_path);
 
+  // declare the random number generator as global variables
+  BernoulliRand bernoulli(FLAGS_ratio);
+  GaussianRand pt_noise(FLAGS_dp), normal_noise(FLAGS_dn);
+
   for (int i = 0; i < all_files.size(); i++) {
     Points pts;
     pts.read_points(all_files[i]);
 
-    add_noise(pts);
+    add_noise(pts, pt_noise, normal_noise, bernoulli);
 
     string filename = extract_filename(all_files[i]);
     if (FLAGS_verbose) cout << "Processing: " << filename << std::endl;
-    filename = output_path + filename + "_noise.points";
+    filename = output_path + filename + ".points";
     pts.write_points(filename);
   }
 

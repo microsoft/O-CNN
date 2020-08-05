@@ -114,7 +114,7 @@ TEST_F(OctreeTest, TestOctreeBuild) {
   EXPECT_EQ(info.node_num_cum(depth + 1), nnum_cum[depth + 1]);
 
   // test the key
-  const unsigned int keys[] = {
+  const uintk keys[] = {
     0, 0, 1, 2, 3, 4, 5, 6, 7,
     0, 1, 2, 3, 4, 5, 6, 7, 48, 49, 50, 51, 52, 53, 54, 55,
     0, 1, 2, 3, 4, 5, 6, 7, 384, 385, 386, 387, 388, 389, 390, 391,
@@ -123,7 +123,7 @@ TEST_F(OctreeTest, TestOctreeBuild) {
   };
   for (int d = 0, j = 0; d <= depth; ++d) {
     const int nnum_d = info.node_num(d);
-    const unsigned int* key_d = octree_.key_cpu(d);
+    const uintk* key_d = octree_.key_cpu(d);
     for (int i = 0; i < nnum_d; ++i, j++) {
       EXPECT_EQ(key_d[i], keys[j]);
     }
@@ -220,7 +220,7 @@ TEST_F(OctreeTest, TestOctreeTrim) {
   EXPECT_EQ(info.node_num_cum(depth + 1), nnum_cum[depth + 1]);
 
   // test the key
-  const unsigned int keys[] = {
+  const uintk keys[] = {
     0, 0, 1, 2, 3, 4, 5, 6, 7,
     0, 1, 2, 3, 4, 5, 6, 7, 48, 49, 50, 51, 52, 53, 54, 55,
     0, 1, 2, 3, 4, 5, 6, 7, 384, 385, 386, 387, 388, 389, 390, 391,
@@ -229,7 +229,7 @@ TEST_F(OctreeTest, TestOctreeTrim) {
   };
   for (int d = 0, j = 0; d <= depth; ++d) {
     const int nnum_d = info.node_num(d);
-    const unsigned int* key_d = octree_.key_cpu(d);
+    const uintk* key_d = octree_.key_cpu(d);
     for (int i = 0; i < nnum_d; ++i, j++) {
       EXPECT_EQ(key_d[i], keys[j]);
     }

@@ -1,6 +1,7 @@
 #ifndef _OCTREE_OCTREE_INFO_
 #define _OCTREE_OCTREE_INFO_
 
+#include <cstring>
 #include <string>
 
 class Points;
@@ -44,6 +45,7 @@ class OctreeInfo {
   int total_nnum_capacity() const { return nnum_cum_[depth_ + 2]; }
   int content_flags() const { return content_flags_; }
   int channel(PropType ptype) const;
+  int size_of(PropType ptype) const;
   int locations(PropType ptype) const;
   int ptr_dis(PropType ptype, const int depth) const;
   float bbox_max_width() const;
@@ -55,6 +57,7 @@ class OctreeInfo {
   // todo: modify sizeof_octinfo() according to magic_str_ for back-compatibility
   int sizeof_octinfo() const { return sizeof(OctreeInfo); }
   int sizeof_octree() const { return ptr_dis_[kPTypeNum]; }
+  void set_magic_str(const char* str) { strcpy(magic_str_, str); }
   void set_content_flags(int cf);
   void set_batch_size(int b);
   void set_depth(int d);

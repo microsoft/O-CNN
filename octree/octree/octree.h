@@ -31,25 +31,27 @@ class Octree : public OctreeParser {
   void serialize();
   bool save_legacy(string& filename);
 
-  void octree2pts(Points& point_cloud, int depth_start, int depth_end, bool rescale = true) const;
-  void octree2mesh(vector<float>& V, vector<int>& F, int depth_start, int depth_end) const;
+  void octree2pts(Points& point_cloud, int depth_start, int depth_end,
+      bool rescale = true) const;
+  void octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
+      int depth_end, bool rescale = true) const;
 
  protected:
   void clear(int depth = 0);
   void normalize_pts(vector<float>& pts_scaled, const Points& pts);
-  void sort_keys(vector<uint32>& sorted_keys, vector<uint32>& sorted_idx,
+  void sort_keys(vector<uintk>& sorted_keys, vector<uintk>& sorted_idx,
       const vector<float>& pts_scaled);
-  void unique_key(vector<uint32>& node_key, vector<uint32>& pidx);
+  void unique_key(vector<uintk>& node_key, vector<uintk>& pidx);
 
-  void build_structure(vector<uint32>& node_keys);
+  void build_structure(vector<uintk>& node_keys);
   void calc_node_num();  // called after the function build_structure()
 
   void calc_signal(const Points& point_cloud, const vector<float>& pts_scaled,
-      const vector<uint32>& sorted_idx, const vector<uint32>& unique_idx);
+      const vector<uintk>& sorted_idx, const vector<uintk>& unique_idx);
   void calc_signal(const bool calc_normal_err, const bool calc_dist_err);
   void extrapolate_signal();
 
-  void key_to_xyz(vector<vector<uint32> >& xyz);
+  void key_to_xyz(vector<vector<uintk>>& xyz);
   void calc_split_label();
 
   template<typename Dtype>
@@ -61,12 +63,7 @@ class Octree : public OctreeParser {
  protected:
   // the octree is serialized into buffer_
   vector<char> buffer_;
-
-  // Note: structure of arrays(SoA), instead of array of structures(AoS), is
-  // adopted. The reason is that the SoA is more friendly to GPU-based implementation.
-  // In the future, probably I will try to implement this class with CUDA accroding
-  // to this CPU-based code.
-  vector<vector<uint32> > keys_;
+  vector<vector<uintk> > keys_;
   vector<vector<int> > children_;
 
   vector<vector<float> > displacement_;

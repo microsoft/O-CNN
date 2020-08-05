@@ -1,9 +1,14 @@
 #include "octree_info.h"
 #include "points.h"
+#include "types.h"
 
 #include <cstring>
 
+#ifdef KEY64
+const char OctreeInfo::kMagicStr[16] = "_OCTREE_2.0_";
+#else
 const char OctreeInfo::kMagicStr[16] = "_OCTREE_1.0_";
+#endif
 
 void OctreeInfo::initialize(int depth, int full_depth, bool node_displacement,
     bool node_feature, bool split_label, bool adaptive, int adaptive_depth,
@@ -74,14 +79,16 @@ void OctreeInfo::reset() {
 
 bool OctreeInfo::check_format(string& msg) const {
   msg.clear();
+  const int max_depth = strcmp(kMagicStr, "_OCTREE_2.0_") ? 8 : 16;
   if (strcmp(kMagicStr, magic_str_) != 0) {
-    msg += "The version of octree format is not " + string(kMagicStr) + ".\n";
+    msg += "The version of the provided octree format is " +
+        string(magic_str_) + ", not " + string(kMagicStr) + ".\n";
   }
   if (batch_size_ < 0) {
     msg += "The batch_size_ should be larger than 0.\n";
   }
-  if (depth_ < 1 || depth_ > 8) {
-    msg += "The depth_ should be in range [1, 8].\n";
+  if (depth_ < 1 || depth_ > max_depth) {
+    msg += "The depth_ should be in [1, " + std::to_string(max_depth) + "].\n";
   }
   if (full_layer_ < 0 || full_layer_ > depth_) {
     msg += "The full_layer_ should be in range [1, depth_].\n";
@@ -127,6 +134,20 @@ int OctreeInfo::channel(PropType ptype) const {
   return channels_[i];
 }
 
+int OctreeInfo::size_of(PropType ptype) const {
+  int sz = 0;
+  if (ptype == kChild || ptype == kNeigh) {
+    sz = sizeof(int);
+  } else if (ptype == kFeature || ptype == kLabel || ptype == kSplit) {
+    sz = sizeof(float);
+  } else if (ptype == kKey) {
+    sz = sizeof(uintk);
+  } else {
+    // pass
+  }
+  return sz;
+}
+
 int OctreeInfo::locations(PropType ptype) const {
   if (!has_property(ptype)) return 0;
   int i = property_index(ptype);
@@ -138,8 +159,7 @@ int OctreeInfo::ptr_dis(PropType ptype, const int depth) const {
   int i = property_index(ptype);
   int dis = ptr_dis_[i];
   if (locations(ptype) == -1) {
-    // !!! Note: sizeof(int)
-    dis += nnum_cum_[depth] * channel(ptype) * sizeof(int);
+    dis += nnum_cum_[depth] * channel(ptype) * size_of(ptype);
   } else {
     // ignore the input parameter depth
   }
@@ -233,7 +253,9 @@ void OctreeInfo::set_location(PropType ptype, int lc) {
 
 void OctreeInfo::set_ptr_dis() {
   // the accumulated pointer displacement
-  ptr_dis_[0] = sizeof(OctreeInfo);
+  // !!! ALERT !!! Make ptr_dis_[0] be equal to 8*n, otherwise there will be
+  // the memory alignment issue for CUDA when the we use 64 bit key.
+  ptr_dis_[0] = (sizeof(OctreeInfo) + 7) / 8 * 8;
   for (int i = 1; i <= kPTypeNum; ++i) { // note the " <= " is used here
     PropType ptype = static_cast<PropType>(1 << (i - 1));
     int lc = locations(ptype);
@@ -241,8 +263,7 @@ void OctreeInfo::set_ptr_dis() {
     // If the property do not exist, lc is equal to 0, then num = 8, both of them
     // are meaningless. Their values are wiped out by channels_[i - 1] (= 0).
     // So the value of ptr_dis_[i] is still correct.
-    // !!! Note: sizeof(int)
-    ptr_dis_[i] = ptr_dis_[i - 1] + sizeof(int) * num * channels_[i - 1];
+    ptr_dis_[i] = ptr_dis_[i - 1] + size_of(ptype) * num * channels_[i - 1];
   }
 }
 

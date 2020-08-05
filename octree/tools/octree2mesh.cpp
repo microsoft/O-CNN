@@ -16,6 +16,7 @@ DEFINE_string(filenames, kRequired, "", "The input filenames");
 DEFINE_string(output_path, kOptional, ".", "The output path");
 DEFINE_int(depth_start, kOptional, 0, "The starting depth");
 DEFINE_int(depth_end, kOptional, 10, "The ending depth");
+DEFINE_bool(rescale, kOptional, true, "Scale the mesh according to the bbox");
 DEFINE_bool(pu, kOptional, false, "Partition of Unity");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
@@ -59,10 +60,10 @@ int main(int argc, char* argv[]) {
     // convert
     vector<float> V; vector<int> F;
     if (!FLAGS_pu) {
-      octree.octree2mesh(V, F, FLAGS_depth_start, FLAGS_depth_end);
+      octree.octree2mesh(V, F, FLAGS_depth_start, FLAGS_depth_end, FLAGS_rescale);
     } else {
       clock_t t = clock();
-      Contour contour(&octree);
+      Contour contour(&octree, FLAGS_rescale);
       contour.marching_cube(V, F);
       t = clock() - t;
       cout << "time : " << t << endl;

@@ -42,6 +42,7 @@ class PointsParser {
   void clip(const float* bbmin, const float* bbmax);
   void add_noise(const float std_pt, const float std_nm);
   void normalize(); // translate and scale the points to unit sphere
+  void orient_normal(const string axis);
 
   
  protected:

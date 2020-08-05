@@ -84,6 +84,8 @@ void PointsParser::scale(const float* s) {
     }
   }
 
+  if (s[0] == s[1] && s[0] == s[2]) { return; } // uniform scale
+
   if (this->info().has_property(PointsInfo::kNormal)) {
     float* nm = this->mutable_normal();
     for (int i = 0; i < npt; ++i) {
@@ -215,4 +217,37 @@ void PointsParser::normalize() {
 
   this->translate(trans);
   this->uniform_scale(1 / (radius + 1.0e-10f));
+}
+
+void PointsParser::orient_normal(const string axis) {
+  if (!this->info().has_property(PointsInfo::kNormal)) {
+    return;  // directly return if there is no normal
+  }
+
+  int npt = info_->pt_num();
+  float* normal = this->mutable_normal();
+  if (axis == "x" || axis == "y" || axis == "z") {
+    int j = 0;
+    if (axis == "y") j = 1;
+    if (axis == "z") j = 2;
+    for (int i = 0; i < npt; ++i) {
+      int ix3 = i * 3;
+      if (normal[ix3 + j] < 0) {
+        for (int c = 0; c < 3; ++c) {
+          normal[ix3 + c] = -normal[ix3 + c];
+        }
+      }
+    }
+  } else if (axis == "xyz") {
+    for (int i = 0; i < npt; ++i) {
+      int ix3 = i * 3;
+      for (int c = 0; c < 3; ++c) {
+        if (normal[ix3 + c] < 0) {
+          normal[ix3 + c] = -normal[ix3 + c];
+        }
+      }
+    }
+  } else {
+    // do nothing
+  }
 }

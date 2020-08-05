@@ -10,6 +10,7 @@
 #include "octree.h"
 #include "contour.h"
 #include "cmd_flags.h"
+#include "types.h"
 
 using namespace std;
 using cflags::Require;
@@ -68,11 +69,11 @@ void prune_octree(Octree& octree_out, const Octree& octree_in) {
     int id = 0, j = 0;
     int* child_out = octree_out.mutable_children_cpu(d);
     const int* child_in = octree_in.children_cpu(d);
-    unsigned int* key_out = octree_out.mutable_key_cpu(d);
+    uintk* key_out = octree_out.mutable_key_cpu(d);
     float* split_out = octree_out.mutable_split_cpu(d);
 
     for (int i = 0; i < octree_in.info().node_num(d); ++i) {
-      unsigned int key = i, pt[3];
+      uintk key = i, pt[3];
       octree_in.key2xyz(pt, key, d);
       if (pt[0] < bnd0[d][0] && pt[1] < bnd0[d][1] &&
           pt[2] < bnd0[d][2]) {
@@ -104,8 +105,8 @@ void prune_octree(Octree& octree_out, const Octree& octree_in) {
     int* child_out = octree_out.mutable_children_cpu(d);
     std::copy_n(child_in, num, child_out);
 
-    const unsigned int* key_in = octree_in.key_cpu(d);
-    unsigned int* key_out = octree_out.mutable_key_cpu(d);
+    const uintk* key_in = octree_in.key_cpu(d);
+    uintk* key_out = octree_out.mutable_key_cpu(d);
     std::copy_n(key_in, num, key_out);
 
     if (location_feature == -1 || d == depth) {

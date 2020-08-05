@@ -31,7 +31,7 @@ void bounding_sphere(float& radius, float* center, const float* pt, const int np
     // if so, just calculate the bounding box
     float bbmin[3] = { 0.0f, 0.0f, 0.0f };
     float bbmax[3] = { 0.0f, 0.0f, 0.0f };
-    bouding_box(bbmin, bbmax, pt, npt);
+    bounding_box(bbmin, bbmax, pt, npt);
 
     for (int j = 0; j < dim; ++j) {
       center[j] = (bbmax[j] + bbmin[j]) / 2.0f;
@@ -110,7 +110,7 @@ void bounding_sphere(float& radius, float* center, const float* pt, const int np
 #endif
 
 
-void bouding_box(float* bbmin, float* bbmax, const float* pt, const int npt) {
+void bounding_box(float* bbmin, float* bbmax, const float* pt, const int npt) {
   const int dim = 3;
   if (npt < 1) return;
   for (int i = 0; i < 3; ++i) {

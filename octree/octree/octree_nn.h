@@ -1,15 +1,15 @@
 #ifndef _OCTREE_OCTREE_NN_
 #define _OCTREE_OCTREE_NN_
 
-#include <cstdint>
 #include <vector>
 #include <string>
 #include <unordered_map>
 
+#include "types.h"
+
 using std::string;
 using std::vector;
 using std::unordered_map;
-typedef uint32_t uint32;
 
 
 // A singleton class to hold global & common stuff for octree neighbor
@@ -49,8 +49,8 @@ class NeighHelper {
 
 // !!! TODO: support gpu stream for gpu functions !!!
 
-int num_elements(const vector<int>& vec);
-void resize_with_last_val(vector<int>& vec, const int size);
+int num_elements(const vector<int>& shape);
+void resize_with_last_val(vector<int>& shape, const int size);
 
 template <typename Dtype>
 void memset_cpu(const int N, const Dtype alpha, Dtype *X);
@@ -125,13 +125,17 @@ void calc_neigh_gpu(int* neigh_child, const int* neigh, const int* children,
 void calc_neigh_cpu(int* neigh, const int depth, const int batch_size);
 void calc_neigh_gpu(int* neigh, const int depth, const int batch_size);
 
-
-void generate_key_gpu(uint32* key_child, const uint32* key, const int* child,
+// !!! The generated key is in the format of zipped (x,y,z,id)
+template <typename Dtype>
+void generate_key_gpu(Dtype* key_child, const Dtype* key, const int* child,
     const int node_num);
-void generate_key_cpu(uint32* key_child, const uint32* key, const int* child,
+template <typename Dtype>
+void generate_key_cpu(Dtype* key_child, const Dtype* key, const int* child,
     const int node_num);
-void generate_key_gpu(uint32* key, const int depth, const int batch_size);
-void generate_key_cpu(uint32* key, const int depth, const int batch_size);
+template <typename Dtype>
+void generate_key_gpu(Dtype* key, const int depth, const int batch_size);
+template <typename Dtype>
+void generate_key_cpu(Dtype* key, const int depth, const int batch_size);
 
 
 template <typename Dtype>
@@ -146,21 +150,25 @@ void bilinear_neigh_cpu(int* bidx, const int* neigh, const int* child,
     const int node_num, const int* table);
 void bilinear_neigh_gpu(int* bidx, const int* neigh, const int* child,
     const int node_num, const int* table);
-void bilinear_xyz_cpu(uint32* xyz0, float* dis, const int d0, const uint32* xyz1,
+void bilinear_xyz_cpu(uintk* xyz0, float* dis, const int d0, const uintk* xyz1,
     const int d1, const int num);
-void bilinear_xyz_gpu(uint32* xyz0, float* dis, const int d0, const uint32* xyz1,
+void bilinear_xyz_gpu(uintk* xyz0, float* dis, const int d0, const uintk* xyz1,
     const int d1, const int num);
 
 
+template <typename Dtype>
+void sequence_cpu(Dtype* ptr, const int num);
 template <typename Dtype>
 void sequence_gpu(Dtype* ptr, const int num);
 
 
 // TODO: The performance can be improved via descent along the octree
-void search_key_cpu(int* idx, const uint32* key, const int n_key,
-    const uint32* query, const int n_query);
-void search_key_gpu(int* idx, const uint32* key, const int n_key,
-    const uint32* query, const int n_query);
+template <typename Dtype>
+void search_key_cpu(int* idx, const Dtype* key, const int n_key,
+    const Dtype* query, const int n_query);
+template <typename Dtype>
+void search_key_gpu(int* idx, const Dtype* key, const int n_key,
+    const Dtype* query, const int n_query);
 
 
 template <typename Dtype>
@@ -191,24 +199,35 @@ void octree_mask_gpu(float* out_data, const float* in_data, const int* label,
 
 // !!! Caveat: for the following two functions, pt and depth
 // must be consistent, i.e pt must be in the range [0, 2^depth]^3
-void compute_key(uint32& key, const uint32* pt, const int depth);
-void compute_pt(uint32* pt, const uint32& key, const int depth);
+template <typename Dtype>
+void compute_key(Dtype& key, const Dtype* pt, const int depth);
+template <typename Dtype>
+void compute_pt(Dtype* pt, const Dtype& key, const int depth);
 
-void xyz2key_cpu(uint32* key, const uint32* xyz, const int num, const int depth);
-void xyz2key_gpu(uint32* key, const uint32* xyz, const int num, const int depth);
-void key2xyz_cpu(uint32* xyz, const uint32* key, const int num, const int depth);
-void key2xyz_gpu(uint32* xyz, const uint32* key, const int num, const int depth);
+template <typename Dtype>
+void xyz2key_cpu(Dtype* key, const Dtype* xyz, const int num, const int depth);
+template <typename Dtype>
+void xyz2key_gpu(Dtype* key, const Dtype* xyz, const int num, const int depth);
+template <typename Dtype>
+void key2xyz_cpu(Dtype* xyz, const Dtype* key, const int num, const int depth);
+template <typename Dtype>
+void key2xyz_gpu(Dtype* xyz, const Dtype* key, const int num, const int depth);
 
-void key2idx_cpu(int* idx, const uint32* key, const int num);
-void key2idx_gpu(int* idx, const uint32* key, const int num);
+template <typename Dtype>
+void key2idx_cpu(int* idx, const Dtype* key, const int num);
+template <typename Dtype>
+void key2idx_gpu(int* idx, const Dtype* key, const int num);
 
-void xyz2coord_cpu(float* pt, const uint32* xyz, const int num, const int channel);
-void xyz2coord_gpu(float* pt, const uint32* xyz, const int num, const int channel);
-void coord2xyz_cpu(uint32* xyz, const float* pt, const int num, const int channel);
-void coord2xyz_gpu(uint32* xyz, const float* pt, const int num, const int channel);
+template <typename Dtype>
+void xyz2coord_cpu(float* pt, const Dtype* xyz, const int num, const int channel);
+template <typename Dtype>
+void xyz2coord_gpu(float* pt, const Dtype* xyz, const int num, const int channel);
+template <typename Dtype>
+void coord2xyz_cpu(Dtype* xyz, const float* pt, const int num, const int channel);
+template <typename Dtype>
+void coord2xyz_gpu(Dtype* xyz, const float* pt, const int num, const int channel);
 
-//int content_flag(string str);
-template<typename Dtype>
-void key2xyz(Dtype* xyz, const uint32 key, const int depth);
+template<typename Dtype1, typename Dtype2>
+void key2xyz(Dtype1* xyz, const Dtype2 key, const int depth);
 
 #endif // _OCTREE_OCTREE_NN_

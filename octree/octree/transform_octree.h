@@ -32,4 +32,6 @@ class ScanOctree {
 void octree_dropout(vector<char>& octree_output, const string& octree_input,
     const int depth_dropout, const float threshold);
 
+void upgrade_key64(vector<char>& octree_out, const vector<char>& octree_in);
+
 #endif // _OCTREE_TRANSFORM_OCTREES_

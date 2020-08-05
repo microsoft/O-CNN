@@ -36,25 +36,6 @@ bool Points::write_points(const string& filename) const {
   return true;
 }
 
-//bool Points::write_ply(const string & filename) const {
-//  std::ofstream outfile(filename, std::ios::binary);
-//  if (!outfile) return false;
-//
-//  // write header
-//  int n = info_->pt_num();
-//  outfile << "ply\nformat ascii 1.0\nelement vertex " << n
-//    << "\nproperty float x\nproperty float y\nproperty float z\n"
-//    << "property float nx\nproperty float ny\nproperty float nz\n"
-//    << "element face 0\nproperty list uchar int vertex_indices\n"
-//    << "end_header" << std::endl;
-//
-//  // wirte contents
-//  const float* pts = ptr(PointsInfo::kPoint);
-//  const float* normals = ptr(PointsInfo::kNormal);
-//  if (normals == nullptr) {
-//    outfile.close();
-//    return false;
-//  }
 
 bool Points::write_ply(const string & filename) const {
   std::ofstream outfile(filename, std::ios::binary);

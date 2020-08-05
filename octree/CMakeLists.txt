@@ -8,11 +8,14 @@ option(USE_PYTHON "Build the python interface with pybind11" ON)
 option(USE_GLOG "Use glog" OFF)
 option(USE_OPENMP "Use OpenMP for speed up" OFF)
 option(USE_RPLY "Use the library rply in the project octree" OFF)
+option(KEY64 "Use 64-bit key for deeper octrees" OFF)
+option(ABI "Open CXX11_ABI compatibility" OFF)
 set(VCPKG "<Set VCPKG path>" CACHE PATH "The VCPKG path, containing glog and gtest")
 
 
 # set languanges
 if(USE_CUDA)
+  message(STATUS "octree: USE_CUDA")
   project(Octree LANGUAGES CUDA CXX C)
   add_definitions(-DUSE_CUDA)
 else()
@@ -24,29 +27,47 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # # c++11 Support
 set (CMAKE_CXX_STANDARD 11) 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
+if(ABI)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
+endif()
 
-# add target_link_libraries
-if(USE_MINIBALL) 
+# add libraries
+if(USE_MINIBALL)
+  message(STATUS "octree: USE_MINIBALL")
   add_definitions(-DUSE_MINIBALL) 
   set(miniball_path "${PROJECT_SOURCE_DIR}/external/octree-ext/miniball") 
   include_directories(${miniball_path})
 endif()
 
 if(USE_RPLY)
+  message(STATUS "octree: USE_RPLY")
   add_definitions(-DUSE_RPLY)
-  file(GLOB  src_rply 
-    "${PROJECT_SOURCE_DIR}/external/octree-ext/rply-1.1.4/*.h"
-    "${PROJECT_SOURCE_DIR}/external/octree-ext/rply-1.1.4/*.c")
-  include_directories("${PROJECT_SOURCE_DIR}/external/octree-ext/rply-1.1.4")
-  add_library(rply ${src_rply})
+endif()
+file(GLOB  src_rply 
+  "${PROJECT_SOURCE_DIR}/external/octree-ext/rply-1.1.4/*.h"
+  "${PROJECT_SOURCE_DIR}/external/octree-ext/rply-1.1.4/*.c")
+include_directories("${PROJECT_SOURCE_DIR}/external/octree-ext/rply-1.1.4")
+add_library(rply ${src_rply})
+set_target_properties(rply PROPERTIES FOLDER "ext")
+
+if(KEY64)
+  message(STATUS "octree: KEY64")
+  add_definitions(-DKEY64)
 endif()
 
 if(USE_GLOG)
+  message(STATUS "octree: USE_GLOG")
   add_definitions(-DUSE_GLOG)
+  set(glog_path "${PROJECT_SOURCE_DIR}/external/octree-ext/glog")
+  set(WITH_GFLAGS OFF CACHE BOOL "Disable WITH_GFLAGS")
+  set(BUILD_TESTING OFF CACHE BOOL "Disable BUILD_TESTING")
+  add_subdirectory(${glog_path})
+  set_target_properties(glog PROPERTIES FOLDER "ext")
 endif()
 
 if(USE_WINDOWS_IO)
+  message(STATUS "octree: USE_WINDOWS_IO")
   add_definitions(-DUSE_WINDOWS_IO)
 endif()
 
@@ -98,6 +119,9 @@ target_compile_features(octree_lib PUBLIC cxx_std_11)
 if(USE_RPLY)
   target_link_libraries(octree_lib rply)
 endif(USE_RPLY)
+if(USE_GLOG)
+  target_link_libraries(octree_lib glog::glog)
+endif(USE_GLOG)
 
 # add tools
 file(GLOB_RECURSE srcs "${PROJECT_SOURCE_DIR}/tools/*.cpp")
@@ -114,5 +138,16 @@ endforeach(source)
 
 # add the python interface
 if(USE_PYTHON)
+  message(STATUS "octree: USE_PYTHON")
   add_subdirectory(python)
 endif()
+
+# add gtest
+set(gtest_path "${PROJECT_SOURCE_DIR}/external/octree-ext/googletest")
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+add_subdirectory(${gtest_path}  EXCLUDE_FROM_ALL)
+set_target_properties(gtest gtest_main PROPERTIES FOLDER "ext")
+
+# add the test
+add_executable(octree_test ${src_test})
+target_link_libraries(octree_test octree_lib gtest gtest_main)

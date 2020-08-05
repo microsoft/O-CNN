@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
 
     if (FLAGS_type == "box") {
       float bbmin[3], bbmax[3];
-      bouding_box(bbmin, bbmax, pt, npt);
+      bounding_box(bbmin, bbmax, pt, npt);
       cout << bbmin[0] << ", " << bbmin[1] << ", " << bbmin[2] << ", "
            << bbmax[0] << ", " << bbmax[1] << ", " << bbmax[2] << endl;
     } else {

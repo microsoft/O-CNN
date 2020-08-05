@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "math_functions.h"
+#include <cmath>
 #include <mesh.h>
 #include <filenames.h>
 

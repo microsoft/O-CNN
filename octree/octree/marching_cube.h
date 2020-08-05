@@ -10,13 +10,19 @@ class MarchingCube {
   MarchingCube() : fval_(nullptr), iso_value_(0), left_btm_(nullptr), vtx_id_(0) {}
   MarchingCube(const float* fval, float iso_val, const float* left_btm, int vid);
   void set(const float* fval, float iso_val, const float* left_btm, int vid);
-  void contouring(vector<float>& vtx, vector<int>& face) const;
+  void contouring(vector<float>& vtx, vector<int>& face);
+  void compute(const vector<float>& fval, float iso_val, 
+                  const vector<float>& left_btm, int vid);
   unsigned int compute_cube_case() const;
 
  private:
   inline int btwhere(int x) const;
   inline void interpolation(float* pt, const float* pt1, const float* pt2,
-      const float f1, const float f2) const;
+                            const float f1, const float f2) const;
+
+ public:
+  vector<float> vtx_;
+  vector<int> face_;
 
  protected:
   const float* fval_;

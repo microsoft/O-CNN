@@ -53,7 +53,7 @@ void memset_gpu(const int N, const Dtype alpha, Dtype* Y) {
 
 template <typename Dtype>
 void memcpy_gpu(const int N, const Dtype* X, Dtype* Y) {
-  if (X != Y) {
+  if (X != Y && N > 0) {
     CUDA_CHECK(cudaMemcpy(Y, X, sizeof(Dtype) * N, cudaMemcpyDefault));
   }
 }
@@ -280,37 +280,37 @@ void calc_neigh_gpu(int* neigh_split, const int* neigh,  const int* children,
 __global__ void calc_full_neigh_kernel(int* neigh, const int depth,
     const int batch_size, const int thread_num) {
   CUDA_KERNEL_LOOP(id, thread_num) {
-    const unsigned  bound = 1 << depth;
-    unsigned node_num = 1 << 3 * depth;
-    unsigned num = node_num >> 3;
+    const uintk  bound = 1 << depth;
+    uintk node_num = 1 << 3 * depth;
+    uintk num = node_num >> 3;
 
-    unsigned tm = id;
-    unsigned z = tm % 4; tm /= 4;
-    unsigned y = tm % 4; tm /= 4;
-    unsigned x = tm % 4; tm /= 4;
-    unsigned i = (tm % num) * 8;
-    unsigned n = tm / num;
+    uintk tm = id;
+    uintk z = tm % 4; tm /= 4;
+    uintk y = tm % 4; tm /= 4;
+    uintk x = tm % 4; tm /= 4;
+    uintk i = (tm % num) * 8;
+    uintk n = tm / num;
 
-    unsigned x0 = 0, y0 = 0, z0 = 0;
+    uintk x0 = 0, y0 = 0, z0 = 0;
 #pragma unroll 4
-    for (unsigned d = 0; d < depth; d++) {
+    for (uintk d = 0; d < depth; d++) {
       x0 |= (i & (1 << 3 * d + 2)) >> (2 * d + 2);
       y0 |= (i & (1 << 3 * d + 1)) >> (2 * d + 1);
       z0 |= (i & (1 << 3 * d + 0)) >> (2 * d + 0);
     }
 
-    unsigned x1 = x0 + x - 1;
-    unsigned y1 = y0 + y - 1;
-    unsigned z1 = z0 + z - 1;
+    uintk x1 = x0 + x - 1;
+    uintk y1 = y0 + y - 1;
+    uintk z1 = z0 + z - 1;
 
     int v = -1;
     if ((x1 & bound) == 0 &&
         (y1 & bound) == 0 &&
         (z1 & bound) == 0) {
-      unsigned key1 = 0;
+      uintk key1 = 0;
 #pragma unroll 4
       for (int d = 0; d < depth; d++) {
-        unsigned mask = 1u << d;
+        uintk mask = 1u << d;
         key1 |= ((x1 & mask) << (2 * d + 2)) |
             ((y1 & mask) << (2 * d + 1)) |
             ((z1 & mask) << (2 * d));
@@ -330,17 +330,18 @@ void calc_neigh_gpu(int* neigh, const int depth, const int batch_size) {
 }
 
 
-__global__ void gen_key_kernel(uint32* key_child, const uint32* key,
+template<typename Dtype>
+__global__ void gen_key_kernel(Dtype* key_child, const Dtype* key,
     const int* child, const int thread_num) {
-  typedef unsigned char ubyte;
+  typedef typename KeyTrait<Dtype>::uints T;
   CUDA_KERNEL_LOOP(id, thread_num) {
     int i = id >> 3;
     int j = id % 8;
 
     int label = child[i];
     if (label != -1) {
-      const ubyte* k0 = (const ubyte*)(key + i);
-      ubyte* k1 = (ubyte*)(key_child + 8 * label + j);
+      const T* k0 = (const T*)(key + i);
+      T* k1 = (T*)(key_child + 8 * label + j);
       k1[0] = (k0[0] << 1) | ((j & 4) >> 2);
       k1[1] = (k0[1] << 1) | ((j & 2) >> 1);
       k1[2] = (k0[2] << 1) | (j & 1);
@@ -350,7 +351,8 @@ __global__ void gen_key_kernel(uint32* key_child, const uint32* key,
 }
 
 // use the information from parent layer to calculate the key of current layer
-void generate_key_gpu(uint32* key_child, const uint32* key, const int* child,
+template<typename Dtype>
+void generate_key_gpu(Dtype* key_child, const Dtype* key, const int* child,
     const int node_num) {
   int n = node_num << 3; // node_num: the node number of parent layer
   gen_key_kernel <<< CudaGetBlocks(n), kCudaThreadsNum >>> (
@@ -358,13 +360,15 @@ void generate_key_gpu(uint32* key_child, const uint32* key, const int* child,
   CUDA_POST_KERNEL_CHECK;
 }
 
-__global__ void gen_full_key_kernel(uint32* key, const int depth,
+template<typename Dtype>
+__global__ void gen_full_key_kernel(Dtype* key, const int depth,
     const int batch_size, const int thread_num) {
+  typedef typename KeyTrait<Dtype>::uints T;
   CUDA_KERNEL_LOOP(i, thread_num) {
-    unsigned node_num = 1 << 3 * depth;
-    unsigned k = i % node_num;
-    unsigned xyz = 0;
-    unsigned char* ptr = (unsigned char*)(&xyz);
+    Dtype node_num = 1 << 3 * depth;
+    Dtype k = i % node_num;
+    Dtype xyz = 0;
+    T* ptr = (T*)(&xyz);
 #pragma unroll 8
     for (int d = 0; d < depth; d++) {
       ptr[0] |= (k & (1 << 3 * d + 2)) >> (2 * d + 2);
@@ -376,7 +380,8 @@ __global__ void gen_full_key_kernel(uint32* key, const int depth,
   }
 }
 
-void generate_key_gpu(uint32* key, const int depth, const int batch_size) {
+template<typename Dtype>
+void generate_key_gpu(Dtype* key, const int depth, const int batch_size) {
   int thread_num = batch_size * (1 << 3 * depth);
   gen_full_key_kernel <<< CudaGetBlocks(thread_num), kCudaThreadsNum >>> (
       key, depth, batch_size, thread_num);
@@ -426,8 +431,9 @@ void bilinear_neigh_gpu(int* bidx, const int* neigh, const int* child,
 }
 
 
-__global__ void bilinear_xyz_kernel(uint32* xyz0, float* fracs,
-    const uint32* xyz1, const float scale, const int num) {
+__global__ void bilinear_xyz_kernel(uintk* xyz0, float* fracs,
+    const uintk* xyz1, const float scale, const int num) {
+  typedef typename KeyTrait<uintk>::uints uints;
   const int mask[8][3] = {                       // bilinear mask:
     {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {1, 0, 0},  // 27, 9, 9, 9
     {0, 1, 1}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},  //  3, 3, 3, 1
@@ -437,7 +443,7 @@ __global__ void bilinear_xyz_kernel(uint32* xyz0, float* fracs,
     float pt[3] = { 0.0f };
     float* frac = fracs + 3 * i;
     int bnd[2][3] = { 0 };
-    const unsigned char* ptr1 = (const unsigned char*)(xyz1 + i);
+    const uints* ptr1 = (const uints*)(xyz1 + i);
 #pragma unroll 3
     for (int c = 0; c < 3; ++c) {
       pt[c] = (static_cast<float>(ptr1[c]) + 0.5f) / scale - 0.5f;
@@ -456,9 +462,9 @@ __global__ void bilinear_xyz_kernel(uint32* xyz0, float* fracs,
 
 #pragma unroll 8
     for (int j = 0; j < 8; ++j) {
-      unsigned char* ptr0 = (unsigned char*)(xyz0 + i * 8 + j);
+      uints* ptr0 = (uints*)(xyz0 + i * 8 + j);
       for (int c = 0; c < 3; ++c) {
-        ptr0[c] = static_cast<unsigned char>(bnd[mask[j][c]][c]);
+        ptr0[c] = static_cast<uints>(bnd[mask[j][c]][c]);
       }
       ptr0[3] = ptr1[3];
     }
@@ -466,7 +472,7 @@ __global__ void bilinear_xyz_kernel(uint32* xyz0, float* fracs,
 }
 
 
-void bilinear_xyz_gpu(uint32* xyz0, float* fracs, const int d0, const uint32* xyz1,
+void bilinear_xyz_gpu(uintk* xyz0, float* fracs, const int d0, const uintk* xyz1,
     const int d1, const int num) {
   const float scale = static_cast<float>(1 << (d1 - d0));
   bilinear_xyz_kernel <<< CudaGetBlocks(num), kCudaThreadsNum >>> (
@@ -481,16 +487,18 @@ void sequence_gpu(Dtype* ptr, const int num) {
 }
 
 
-__global__ void validate_search_kernel(int* idx, const unsigned* key, const int n_key,
-    const unsigned* query, const int n_query) {
+template <typename Dtype>
+__global__ void validate_search_kernel(int* idx, const Dtype* key, const int n_key,
+    const Dtype* query, const int n_query) {
   CUDA_KERNEL_LOOP(i, n_query) {
     int j = idx[i];
     if (j >= n_key || key[j] != query[i]) idx[i] = -1;
   }
 }
 
-void search_key_gpu(int* idx, const uint32* key, const int n_key,
-    const uint32* query, const int n_query) {
+template <typename Dtype>
+void search_key_gpu(int* idx, const Dtype* key, const int n_key,
+    const Dtype* query, const int n_query) {
   thrust::lower_bound(thrust::device, key, key + n_key, query, query + n_query, idx);
   validate_search_kernel <<< CudaGetBlocks(n_query), kCudaThreadsNum >>> (
       idx, key, n_key, query, n_query);
@@ -498,17 +506,19 @@ void search_key_gpu(int* idx, const uint32* key, const int n_key,
 }
 
 
-// NOTE: !!! currently the depth should be less than 8
-__global__ void xyz2key_kernel(uint32* key, const uint32* xyz,
+template <typename Dtype>
+__global__ void xyz2key_kernel(Dtype* key, const Dtype* xyz,
     const int num, const int depth) {
+  typedef typename KeyTrait<Dtype>::uints T;
+
   CUDA_KERNEL_LOOP(i, num) {
-    uint32 xyz_in = xyz[i];
-    uint32 key_out = 0;
-    unsigned char* ptr = (unsigned char*)(&xyz_in);
-    unsigned char* ptr_out = (unsigned char*)(&key_out);
+    Dtype xyz_in = xyz[i];
+    Dtype key_out = 0;
+    T* ptr = (T*)(&xyz_in);
+    T* ptr_out = (T*)(&key_out);
 #pragma unroll 8
     for (int d = 0; d < depth; ++d) {
-      unsigned char mask = 1 << d;
+      T mask = 1 << d;
       key_out |= (ptr[0] & mask) << (2 * d + 2) |
           (ptr[1] & mask) << (2 * d + 1) |
           (ptr[2] & mask) << (2 * d + 0);
@@ -518,19 +528,22 @@ __global__ void xyz2key_kernel(uint32* key, const uint32* xyz,
   }
 }
 
-void xyz2key_gpu(uint32* key, const uint32* xyz, const int num, const int depth) {
+template <typename Dtype>
+void xyz2key_gpu(Dtype* key, const Dtype* xyz, const int num, const int depth) {
   xyz2key_kernel <<< CudaGetBlocks(num), kCudaThreadsNum >>> (
       key, xyz, num, depth);
   CUDA_POST_KERNEL_CHECK;
 }
 
-// NOTE: !!! currently the depth should be less than 8
-__global__ void key2xyz_kernel(uint32* xyz, const uint32* key,
+template <typename Dtype>
+__global__ void key2xyz_kernel(Dtype* xyz, const Dtype* key,
     const int num, const int depth) {
+  typedef typename KeyTrait<Dtype>::uints T;
+
   CUDA_KERNEL_LOOP(i, num) {
-    uint32 key_in = key[i], xyz_out = 0;
-    unsigned char* pt = (unsigned char*)(&xyz_out);
-    unsigned char* ptr = (unsigned char*)(&key_in);
+    Dtype key_in = key[i], xyz_out = 0;
+    T* pt = (T*)(&xyz_out);
+    T* ptr = (T*)(&key_in);
     pt[3] = ptr[3];
 #pragma unroll 8
     for (int d = 0; d < depth; d++) {
@@ -543,36 +556,44 @@ __global__ void key2xyz_kernel(uint32* xyz, const uint32* key,
   }
 }
 
-void key2xyz_gpu(uint32* xyz, const uint32* key, const int num, const int depth) {
+template <typename Dtype>
+void key2xyz_gpu(Dtype* xyz, const Dtype* key, const int num, const int depth) {
   key2xyz_kernel <<< CudaGetBlocks(num), kCudaThreadsNum >>> (
       xyz, key, num, depth);
   CUDA_POST_KERNEL_CHECK;
 }
 
-__global__ void key2idx_kernel(int* idx, const uint32* key, const int num) {
+template<typename Dtype>
+__global__ void key2idx_kernel(int* idx, const Dtype* key, const int num) {
+  typedef typename KeyTrait<Dtype>::uints T;
+
   CUDA_KERNEL_LOOP(i, num) {
-    const unsigned char* ptr = (const unsigned char*)(key + i);
+    const T* ptr = (const T*)(key + i);
     idx[i] = static_cast<int>(ptr[3]);
   }
 }
 
-void key2idx_gpu(int* idx, const uint32* key, const int num) {
+template<typename Dtype>
+void key2idx_gpu(int* idx, const Dtype* key, const int num) {
   key2idx_kernel <<< CudaGetBlocks(num), kCudaThreadsNum >>> (idx, key, num);
   CUDA_POST_KERNEL_CHECK;
 }
 
 
-__global__ void xyz2coord_kernel(float* pt, const uint32* xyz, const int num,
+template<typename Dtype>
+__global__ void xyz2coord_kernel(float* pt, const Dtype* xyz, const int num,
     const int nthreads) {
+  typedef typename KeyTrait<Dtype>::uints T;
+
   CUDA_KERNEL_LOOP(i, nthreads) {
     int h = i % num, c = i / num;
-    const unsigned char* ptr = (const unsigned char*)(xyz + h);
+    const T* ptr = (const T*)(xyz + h);
     pt[i] = static_cast<float>(ptr[c]);
-    // ref: pt[c * num + h] = static_cast<float>(ptr[c]);
   }
 }
 
-void xyz2coord_gpu(float* pt, const uint32* xyz, const int num, const int channel) {
+template<typename Dtype>
+void xyz2coord_gpu(float* pt, const Dtype* xyz, const int num, const int channel) {
   int nthreads = num * channel;
   xyz2coord_kernel <<< CudaGetBlocks(nthreads), kCudaThreadsNum >>> (
       pt, xyz, num, nthreads);
@@ -580,16 +601,20 @@ void xyz2coord_gpu(float* pt, const uint32* xyz, const int num, const int channe
 }
 
 
-__global__ void coord2xyz_kernel(uint32* xyz, const float* pt, const int num,
+template<typename Dtype>
+__global__ void coord2xyz_kernel(Dtype* xyz, const float* pt, const int num,
     const int nthreads) {
+  typedef typename KeyTrait<Dtype>::uints T;
+
   CUDA_KERNEL_LOOP(i, nthreads) {
     int h = i % num, c = i / num;
-    unsigned char* ptr = (unsigned char*)(xyz + h);
-    ptr[c] = static_cast<unsigned char>(pt[i]);
+    T* ptr = (T*)(xyz + h);
+    ptr[c] = static_cast<T>(pt[i]);
   }
 }
 
-void coord2xyz_gpu(uint32* xyz, const float* pt, const int num, const int channel) {
+template<typename Dtype>
+void coord2xyz_gpu(Dtype* xyz, const float* pt, const int num, const int channel) {
   int nthreads = num * channel;
   coord2xyz_kernel <<< CudaGetBlocks(nthreads), kCudaThreadsNum >>> (
       xyz, pt, num, nthreads);
@@ -599,7 +624,7 @@ void coord2xyz_gpu(uint32* xyz, const float* pt, const int num, const int channe
 
 template <typename Dtype>
 __global__ void align_forward_kernel(Dtype* top_data, const int top_h,
-    const Dtype* btm_data, const int btm_h, const int* index_data, 
+    const Dtype* btm_data, const int btm_h, const int* index_data,
     const int btm_num) {
   CUDA_KERNEL_LOOP(i, btm_num) {
     int h = i % btm_h;
@@ -659,7 +684,7 @@ template <typename Dtype>
 void octree_gather_gpu(Dtype* top_data, const int top_h, const int channel,
     const Dtype* btm_data, const int btm_h, const int* idx) {
   pad_forward_gpu<Dtype>(top_data, top_h, channel, btm_data, btm_h, idx, Dtype(0));
-  
+
   //int num = top_h * channel;
   //memset_gpu(num, Dtype(0), top_data);
   //octree_gather_kernel <<< CudaGetBlocks(num), kCudaThreadsNum >>> (
@@ -716,11 +741,12 @@ template void memset_gpu<char>(const int N, const char alpha, char* Y);
 template void memset_gpu<int8_t>(const int N, const int8_t alpha, int8_t* Y);
 template void memset_gpu<uint8_t>(const int N, const uint8_t alpha, uint8_t* Y);
 template void memcpy_gpu<int>(const int N, const int* X, int* Y);
-template void memcpy_gpu<unsigned>(const int N, const unsigned* X, unsigned* Y);
+template void memcpy_gpu<uint32>(const int N, const uint32* X, uint32* Y);
+template void memcpy_gpu<uint64>(const int N, const uint64* X, uint64* Y);
 template void memcpy_gpu<float>(const int N, const float* X, float* Y);
 template void memcpy_gpu<double>(const int N, const double* X, double* Y);
 template void sequence_gpu<int>(int* ptr, const int num);
-template void sequence_gpu<unsigned int>(unsigned int* ptr, const int num);
+template void sequence_gpu<uintk>(uintk* ptr, const int num);
 template void pad_forward_gpu<float>(float* Y, const int Hy, const int Cy,
     const float* X, const int Hx, const int* label, const float dval);
 template void pad_forward_gpu<double>(double* Y, const int Hy, const int Cy,
@@ -775,3 +801,17 @@ template void octree_gatherbk_gpu(const float* top_data, const int top_h,
     const int c, float* btm_data, const int btm_h, const int* idx);
 template void octree_gatherbk_gpu(const double* top_data, const int top_h,
     const int c, double* btm_data, const int btm_h, const int* idx);
+template void generate_key_gpu<uintk>(uintk* key, const int depth, const int batch_size);
+template void generate_key_gpu<uintk>(uintk* key_child, const uintk* key,
+  const int* child, const int node_num);
+template void search_key_gpu<uintk>(int* idx, const uintk* key, const int n_key,
+  const uintk* query, const int n_query);
+template void xyz2key_gpu<uintk>(uintk* key, const uintk* xyz, const int num,
+  const int depth);
+template void key2xyz_gpu<uintk>(uintk* xyz, const uintk* key, const int num,
+  const int depth);
+template void key2idx_gpu<uintk>(int* idx, const uintk* key, const int num);
+template void xyz2coord_gpu<uintk>(float* pt, const uintk* xyz, const int num,
+  const int channel);
+template void coord2xyz_gpu<uintk>(uintk* xyz, const float* pt, const int num,
+  const int channel);

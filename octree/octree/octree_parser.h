@@ -3,7 +3,8 @@
 
 #include <vector>
 #include <string>
-#include <cstdint>
+
+#include "types.h"
 #include "octree_info.h"
 
 using std::vector;
@@ -11,8 +12,6 @@ using std::string;
 
 class OctreeParser {
  public:
-  typedef uint32_t uint32;
-  typedef uint64_t uint64;
   typedef OctreeInfo::PropType PropType;
   enum NodeType {kNonEmptyLeaf = -2, kLeaf = -1, kInternelNode = 0 };
 
@@ -32,7 +31,7 @@ class OctreeParser {
 
   const char* ptr_raw_cpu() const { return h_metadata_; }
   const char* ptr_cpu(const PropType ptype, const int depth) const;
-  const uint32* key_cpu(const int depth) const;
+  const uintk* key_cpu(const int depth) const;
   const int* children_cpu(const int depth) const;
   const int* neighbor_cpu(const int depth) const;
   const float* feature_cpu(const int depth) const;
@@ -41,7 +40,7 @@ class OctreeParser {
 
   const char* ptr_raw_gpu() const { return d_metadata_; }
   const char* ptr_gpu(const PropType ptype, const int depth) const;
-  const uint32* key_gpu(const int depth) const;
+  const uintk* key_gpu(const int depth) const;
   const int* children_gpu(const int depth) const;
   const int* neighbor_gpu(const int depth) const;
   const float* feature_gpu(const int depth) const;
@@ -49,7 +48,7 @@ class OctreeParser {
   const float* split_gpu(const int depth) const;
 
   char* mutable_ptr_cpu(const PropType ptype, const int depth);
-  uint32* mutable_key_cpu(const int depth);
+  uintk* mutable_key_cpu(const int depth);
   int* mutable_children_cpu(const int depth);
   int* mutable_neighbor_cpu(const int depth);
   float* mutable_feature_cpu(const int depth);
@@ -57,7 +56,7 @@ class OctreeParser {
   float* mutable_split_cpu(const int depth);
 
   char* mutable_ptr_gpu(const PropType ptype, const int depth);
-  uint32* mutable_key_gpu(const int depth);
+  uintk* mutable_key_gpu(const int depth);
   int* mutable_children_gpu(const int depth);
   int* mutable_neighbor_gpu(const int depth);
   float* mutable_feature_gpu(const int depth);
@@ -69,7 +68,7 @@ class OctreeParser {
   void node_normal(float* n, int id, int depth) const;
   float node_dis(int id, int depth) const;
   template<typename Dtype>
-  void key2xyz(Dtype* xyz, const uint32& key, const int depth) const;
+  void key2xyz(Dtype* xyz, const uintk& key, const int depth) const;
 
  protected:
   // original pointer

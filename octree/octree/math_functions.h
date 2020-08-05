@@ -8,7 +8,7 @@ using std::vector;
 const float ESP = 1.0e-30f;
 
 void bounding_sphere(float& radius, float* center, const float* pt, const int npt);
-void bouding_box(float* bbmin, float* bbmax, const float* pt, const int npt);
+void bounding_box(float* bbmin, float* bbmax, const float* pt, const int npt);
 
 // !!! The matrix in this header is in column-major storage order !!!
 

@@ -1,4 +1,5 @@
 #include "octree_samples.h"
+#include "transform_octree.h"
 
 namespace octree {
 
@@ -2138,18 +2139,31 @@ static const unsigned char octree_6[] = {
   0000, 0000, 0000, 0000, 0000, 0000, 0x80, 0x3f, 0000, 0000, 0000, 0000, 0x00
 };
 
-const struct embedded_file {
+class embedded_file {
+ public:
+  embedded_file(const char* nm, const unsigned char* d, size_t sz)
+    : name(nm), data(d), size(sz) {
+#ifdef KEY64
+    vector<char> octree_in(d, d + sz);
+    upgrade_key64(octree_64, octree_in);
+    data = (unsigned char *)octree_64.data();
+    size = octree_64.size();
+#endif // KEY64
+  }
   const char *name;
   const unsigned char *data;
   size_t size;
-} embedded_octrees[] = {
+  vector<char> octree_64;
+};
+
+embedded_file embedded_octrees[] = {
   { "octree_1", octree_1, sizeof(octree_1) - 1 },
   { "octree_2", octree_2, sizeof(octree_2) - 1 },
   { "octree_3", octree_3, sizeof(octree_3) - 1 },
   { "octree_4", octree_4, sizeof(octree_4) - 1 },
   { "octree_5", octree_5, sizeof(octree_5) - 1 },
-  { "octree_6", octree_6, sizeof(octree_6) - 1 },
-  { nullptr, nullptr, 0 }
+  { "octree_6", octree_6, sizeof(octree_6) - 1 }
+  //{ nullptr, nullptr, 0 }
 };
 
 const unsigned char* get_one_octree(const char *name, size_t *size) {

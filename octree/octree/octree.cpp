@@ -10,6 +10,7 @@
 #include <random>
 #include <ctime>
 #include <cstring>
+#include <cmath>
 
 #include "math_functions.h"
 #include "octree_nn.h"
@@ -79,9 +80,9 @@ void Octree::build(const OctreeInfo& octree_info, const Points& point_cloud) {
   // preprocess, get key and sort
   vector<float> pts_scaled;
   normalize_pts(pts_scaled, point_cloud);
-  vector<uint32> node_keys, sorted_idx;
+  vector<uintk> node_keys, sorted_idx;
   sort_keys(node_keys, sorted_idx, pts_scaled);
-  vector<uint32> unique_idx;
+  vector<uintk> unique_idx;
   unique_key(node_keys, unique_idx);
 
   // build octree structure
@@ -159,7 +160,7 @@ void Octree::normalize_pts(vector<float>& pts_scaled, const Points& point_cloud)
   pts_scaled.resize(3 * npt);
 
   // normalize the points into the range [0, 1 << depth_) using bbox_width
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for (int i = 0; i < npt; i++) {
     int i3 = i * 3;
     for (int j = 0; j < 3; j++) {
@@ -168,26 +169,24 @@ void Octree::normalize_pts(vector<float>& pts_scaled, const Points& point_cloud)
   }
 }
 
-void Octree::sort_keys(vector<uint32>& sorted_keys, vector<uint32>& sorted_idx,
+void Octree::sort_keys(vector<uintk>& sorted_keys, vector<uintk>& sorted_idx,
     const vector<float>& pts_scaled) {
-
-  // compute the code
   int depth_ = oct_info_.depth();
   int npt = pts_scaled.size() / 3;
-  vector<uint64> code(npt);
-  #pragma omp parallel for
+  vector<std::pair<uintk, uintk>> code;
+  code.reserve(npt);
+
+  //#pragma omp parallel for
   for (int i = 0; i < npt; i++) {
     // compute key
-    uint32 pt[3], key;
+    uintk pt[3], key;
     for (int j = 0; j < 3; ++j) {
-      pt[j] = static_cast<uint32>(pts_scaled[3 * i + j]);
+      pt[j] = static_cast<uintk>(pts_scaled[3 * i + j]);
     }
     compute_key(key, pt, depth_);
 
     // generate code
-    uint32* ptr = reinterpret_cast<uint32*>(&code[i]);
-    ptr[0] = i;
-    ptr[1] = key;
+    code.push_back(std::make_pair(key, i));
   }
 
   // sort all the code
@@ -196,15 +195,14 @@ void Octree::sort_keys(vector<uint32>& sorted_keys, vector<uint32>& sorted_idx,
   // unpack the code
   sorted_keys.resize(npt);
   sorted_idx.resize(npt);
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for (int i = 0; i < npt; i++) {
-    uint32* ptr = reinterpret_cast<uint32*>(&code[i]);
-    sorted_idx[i] = ptr[0];
-    sorted_keys[i] = ptr[1];
+    sorted_keys[i] = code[i].first;
+    sorted_idx[i] = code[i].second;
   }
 }
 
-void Octree::build_structure(vector<uint32>& node_keys) {
+void Octree::build_structure(vector<uintk>& node_keys) {
   const int depth_ = oct_info_.depth();
   const int full_layer_ = oct_info_.full_layer();
   children_.resize(depth_ + 1);
@@ -213,7 +211,7 @@ void Octree::build_structure(vector<uint32>& node_keys) {
   // layer 0 to full_layer_: the octree is full in these layers
   for (int curr_depth = 0; curr_depth <= full_layer_; curr_depth++) {
     vector<int>& children = children_[curr_depth];
-    vector<uint32>& keys = keys_[curr_depth];
+    vector<uintk>& keys = keys_[curr_depth];
 
     int n = 1 << 3 * curr_depth;
     keys.resize(n, -1); children.resize(n, -1);
@@ -229,21 +227,21 @@ void Octree::build_structure(vector<uint32>& node_keys) {
   for (int curr_depth = depth_; curr_depth > full_layer_; --curr_depth) {
     // compute parent key, i.e. keys of layer (curr_depth -1)
     int n = node_keys.size();
-    vector<uint32> parent_keys(n);
+    vector<uintk> parent_keys(n);
     #pragma omp parallel for
     for (int i = 0; i < n; i++) {
       parent_keys[i] = node_keys[i] >> 3;
     }
 
     // compute unique parent key
-    vector<uint32> parent_pidx;
+    vector<uintk> parent_pidx;
     unique_key(parent_keys, parent_pidx);
 
     // augment children keys and create nodes
     int np = parent_keys.size();
     int nch = np << 3;
     vector<int>& children = children_[curr_depth];
-    vector<uint32>& keys = keys_[curr_depth];
+    vector<uintk>& keys = keys_[curr_depth];
     children.resize(nch, -1);
     keys.resize(nch, 0);
 
@@ -253,18 +251,18 @@ void Octree::build_structure(vector<uint32>& node_keys) {
     }
 
     // compute base address for each node
-    vector<uint32> addr(nch);
+    vector<uintk> addr(nch);
     for (int i = 0; i < np; i++) {
-      for (uint32 j = parent_pidx[i]; j < parent_pidx[i + 1]; j++) {
+      for (uintk j = parent_pidx[i]; j < parent_pidx[i + 1]; j++) {
         addr[j] = i << 3;
       }
     }
 
     // set children pointer and parent pointer
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int i = 0; i < n; i++) {
       // address
-      uint32 k = (node_keys[i] & 7u) | addr[i];
+      uintk k = (node_keys[i] & 7u) | addr[i];
 
       // set children pointer for layer curr_depth
       children[k] = i;
@@ -278,7 +276,7 @@ void Octree::build_structure(vector<uint32>& node_keys) {
   // Now the node_keys are the key for full_layer
   if (depth_ > full_layer_) {
     for (int i = 0; i < node_keys.size(); i++) {
-      uint32 j = node_keys[i];
+      uintk j = node_keys[i];
       children_[full_layer_][j] = i;
     }
   }
@@ -312,7 +310,7 @@ void Octree::calc_node_num() {
 
 // compute the average signal for the last octree layer
 void Octree::calc_signal(const Points& point_cloud, const vector<float>& pts_scaled,
-    const vector<uint32>& sorted_idx, const vector<uint32>& unique_idx) {
+    const vector<uintk>& sorted_idx, const vector<uintk>& unique_idx) {
   int depth = oct_info_.depth();
   const float* normals = point_cloud.ptr(PointsInfo::kNormal);
   const float* features = point_cloud.ptr(PointsInfo::kFeature);
@@ -330,7 +328,7 @@ void Octree::calc_signal(const Points& point_cloud, const vector<float>& pts_sca
       if (node_type(t) == kLeaf) continue;
 
       vector<float> avg_normal(channel, 0.0f);
-      for (uint32 j = unique_idx[t]; j < unique_idx[t + 1]; j++) {
+      for (uintk j = unique_idx[t]; j < unique_idx[t + 1]; j++) {
         int h = sorted_idx[j];
         for (int c = 0; c < channel; ++c) {
           avg_normal[c] += normals[channel * h + c];
@@ -361,7 +359,7 @@ void Octree::calc_signal(const Points& point_cloud, const vector<float>& pts_sca
       if (node_type(t) == kLeaf) continue;
 
       vector<float> avg_feature(channel, 0.0f);
-      for (uint32 j = unique_idx[t]; j < unique_idx[t + 1]; j++) {
+      for (uintk j = unique_idx[t]; j < unique_idx[t + 1]; j++) {
         int h = sorted_idx[j];
         for (int c = 0; c < channel; ++c) {
           avg_feature[c] += features[channel * h + c];
@@ -388,7 +386,7 @@ void Octree::calc_signal(const Points& point_cloud, const vector<float>& pts_sca
 
       int valid_num = 0;
       vector<int> avg_label(max_label_, 0);
-      for (uint32 j = unique_idx[t]; j < unique_idx[t + 1]; j++) {
+      for (uintk j = unique_idx[t]; j < unique_idx[t + 1]; j++) {
         int h = sorted_idx[j];
         int l = static_cast<int>(labels[h]);
         if (l < 0) { continue; }  // invalid labels
@@ -416,7 +414,7 @@ void Octree::calc_signal(const Points& point_cloud, const vector<float>& pts_sca
       if (node_type(t) == kLeaf) continue;
 
       float avg_pt[3] = { 0.0f, 0.0f, 0.0f };
-      for (uint32 j = unique_idx[t]; j < unique_idx[t + 1]; j++) {
+      for (uintk j = unique_idx[t]; j < unique_idx[t + 1]; j++) {
         int h = sorted_idx[j];
         for (int c = 0; c < 3; ++c) {
           avg_pt[c] += pts_scaled[3 * h + c];
@@ -482,7 +480,7 @@ void Octree::calc_signal(const bool calc_normal_err, const bool calc_dist_err) {
     const vector<int>& dnum_d = dnum_[d];
     const vector<int>& didx_d = didx_[d];
     const vector<int>& children_d = children_[d];
-    const vector<uint32>& key_d = keys_[d];
+    const vector<uintk>& key_d = keys_[d];
     const float scale = static_cast<float>(1 << (depth - d));
 
     vector<float>& normal_d = avg_normals_[d];
@@ -582,7 +580,7 @@ void Octree::calc_signal(const bool calc_normal_err, const bool calc_dist_err) {
         }
       }
 
-      uint32 ptu_base[3];
+      uintk ptu_base[3];
       compute_pt(ptu_base, key_d[i], d);
       float pt_base[3] = { ptu_base[0], ptu_base[1], ptu_base[2] };
       if (has_dis) {
@@ -763,7 +761,7 @@ void Octree::extrapolate_signal() {
         if (fabsf(dis) < 1.0f) {
           //bool has_intersection = false;
           // make the voxel has no intersection with the current voxel
-          unsigned int cube_cases = 0;
+          uint32 cube_cases = 0;
           for (int k = 0; k < 8; ++k) {
             float fval = dis;
             for (int j = 0; j < 3; ++j) {
@@ -808,6 +806,7 @@ void Octree::extrapolate_signal() {
 }
 
 bool Octree::save_legacy(std::string& filename) {
+  typedef typename KeyTrait<uintk>::uints uints;
   int depth_ = oct_info_.depth();
   int full_layer_ = oct_info_.full_layer();
 
@@ -830,18 +829,18 @@ bool Octree::save_legacy(std::string& filename) {
   std::vector<int> key(total_node_num), children(total_node_num);
   int idx = 0;
   for (int d = 0; d <= depth_; ++d) {
-    vector<uint32>& keys = keys_[d];
+    vector<uintk>& keys = keys_[d];
     for (int i = 0; i < keys.size(); ++i) {
       // calc point
-      uint32 k = keys[i], pt[3];
+      uintk k = keys[i], pt[3];
       compute_pt(pt, k, d);
 
       // compress
-      unsigned char* ptr = reinterpret_cast<unsigned char*>(&key[idx]);
-      ptr[0] = static_cast<unsigned char>(pt[0]);
-      ptr[1] = static_cast<unsigned char>(pt[1]);
-      ptr[2] = static_cast<unsigned char>(pt[2]);
-      ptr[3] = static_cast<unsigned char>(d);
+      uints* ptr = reinterpret_cast<uints*>(&key[idx]);
+      ptr[0] = static_cast<uints>(pt[0]);
+      ptr[1] = static_cast<uints>(pt[1]);
+      ptr[2] = static_cast<uints>(pt[2]);
+      ptr[3] = static_cast<uints>(d);
 
       // children
       children[idx] = children_[d][i];
@@ -888,7 +887,7 @@ bool Octree::save_legacy(std::string& filename) {
 //  }
 //}
 
-void Octree::unique_key(vector<uint32>& keys, vector<uint32>& idx) {
+void Octree::unique_key(vector<uintk>& keys, vector<uintk>& idx) {
   idx.clear();
   idx.push_back(0);
 
@@ -933,11 +932,11 @@ void Octree::serialize() {
   } while(0)                                                                  \
 
   if (oct_info_.is_key2xyz()) {
-    vector<vector<uint32> > xyz;
+    vector<vector<uintk> > xyz;
     key_to_xyz(xyz);
-    SERIALIZE_PROPERTY(uint32, OctreeInfo::kKey, xyz);
+    SERIALIZE_PROPERTY(uintk, OctreeInfo::kKey, xyz);
   } else {
-    SERIALIZE_PROPERTY(uint32, OctreeInfo::kKey, keys_);
+    SERIALIZE_PROPERTY(uintk, OctreeInfo::kKey, keys_);
   }
   SERIALIZE_PROPERTY(int, OctreeInfo::kChild, children_);
   SERIALIZE_PROPERTY(float, OctreeInfo::kFeature, features);
@@ -1081,7 +1080,7 @@ void Octree::trim_octree() {
     int nnum_d = oct_info_.node_num(d);
     const vector<TrimType>& drop_d = drop[d];
 
-    vector<uint32> key;
+    vector<uintk> key;
     for (int i = 0; i < nnum_d; ++i) {
       if (drop_d[i] == kDrop) continue;
       key.push_back(keys_[d][i]);
@@ -1135,28 +1134,22 @@ void Octree::trim_octree() {
   serialize();
 }
 
-void Octree::key_to_xyz(vector<vector<uint32> >& xyz) {
+void Octree::key_to_xyz(vector<vector<uintk> >& xyz) {
+  typedef typename KeyTrait<uintk>::uints uints;
   const int depth = oct_info_.depth();
   const int channel = oct_info_.channel(OctreeInfo::kKey);
+  //assert(channel == 1);
   xyz.resize(depth + 1);
   for (int d = 0; d <= depth; ++d) {
     int nnum = oct_info_.node_num(d);
     xyz[d].resize(nnum * channel, 0);
-    uint32* xyz_d = xyz[d].data();
+    uintk* xyz_d = xyz[d].data();
     for (int i = 0; i < nnum; ++i) {
-      uint32 pt[3] = { 0, 0, 0 };
+      uintk pt[3] = { 0, 0, 0 };
       compute_pt(pt, keys_[d][i], d);
-
-      if (channel == 1) {
-        unsigned char* ptr = reinterpret_cast<unsigned char*>(xyz_d + i);
-        for (int c = 0; c < 3; ++c) {
-          ptr[c] = static_cast<unsigned char>(pt[c]);
-        }
-      } else {
-        unsigned short* ptr = reinterpret_cast<unsigned short*>(xyz_d + 2 * i);
-        for (int c = 0; c < 3; ++c) {
-          ptr[c] = static_cast<unsigned short>(pt[c]);
-        }
+      uints* ptr = reinterpret_cast<uints*>(xyz_d + i);
+      for (int c = 0; c < 3; ++c) {
+        ptr[c] = static_cast<uints>(pt[c]);
       }
     }
   }
@@ -1175,7 +1168,7 @@ void Octree::calc_split_label() {
         split_labels_[d][i] = 0;              // empty node
         if (adaptive) {
           float t = fabsf(avg_normals_[d][i]) + fabsf(avg_normals_[d][nnum_d + i]) +
-              fabsf(avg_normals_[d][2 * nnum_d + i]);
+                    fabsf(avg_normals_[d][2 * nnum_d + i]);
           // todo: t != 0 && has_intersection
           if (t != 0) split_labels_[d][i] = 2; // surface-well-approximated
         }
@@ -1202,7 +1195,7 @@ void Octree::octree2pts(Points& point_cloud, int depth_start, int depth_end,
     bool rescale) const {
   const int depth = info_->depth();
   const float* bbmin = info_->bbmin();
-  const float kMul = rescale ? info_->bbox_max_width() / float(1 << depth) : 1.0f;
+  const float kMul = info_->bbox_max_width() / float(1 << depth);
   valid_depth_range(depth_start, depth_end);
 
   vector<float> pts, normals, labels;
@@ -1223,8 +1216,11 @@ void Octree::octree2pts(Points& point_cloud, int depth_start, int depth_end,
       node_pos(pt, i, d);
 
       for (int c = 0; c < 3; ++c) {
+        if (rescale) {                       // !!! note the scale and bbmin
+          pt[c] = pt[c] * scale + bbmin[c];
+        }
         normals.push_back(n[c]);
-        pts.push_back(pt[c] * scale + bbmin[c]); // !!! note the scale and bbmin
+        pts.push_back(pt[c]);
       }
       if (label_d != nullptr) labels.push_back(label_d[i]);
     }
@@ -1234,7 +1230,7 @@ void Octree::octree2pts(Points& point_cloud, int depth_start, int depth_end,
 }
 
 void Octree::octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
-    int depth_end) const {
+    int depth_end, bool rescale) const {
   const int depth = info_->depth();
   const float* bbmin = info_->bbmin();
   const float kMul = info_->bbox_max_width() / float(1 << depth);
@@ -1278,7 +1274,10 @@ void Octree::octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
     nv = vtx.size() / 3;
     for (int i = 0; i < nv; ++i) {
       for (int c = 0; c < 3; ++c) {
-        float vl = vtx[i * 3 + c] * scale + bbmin[c];
+        float vl = vtx[i * 3 + c];
+        if (rescale) {                     // !!! note the scale and bbmin
+          vl = vl * scale + bbmin[c];
+        }
         V.push_back(vl);
       }
     }
@@ -1299,7 +1298,7 @@ void Octree::octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
 //  for (int d = depth; d >= full_layer; --d) {
 //    const int nnum_d = info().node_num(d);
 //    const int* child_d = children_cpu(d);
-//    const uint32* keys_d = key_cpu(d);
+//    const uintk* keys_d = key_cpu(d);
 //    float* normal_d = mutable_feature_cpu(d);
 //    //float* label_d = mutable_label(d); // !!!todo: label
 //    float* displacement_d = normal_d + 3 * nnum_d;
@@ -1313,7 +1312,7 @@ void Octree::octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
 //      if (node_type(children_d[i]) == kLeaf) {
 //        float n[3] = { 0 };
 //        node_normal(n, i, d);
-//        float len = abs(n[0]) + abs(n[1]) + abs(n[2]);
+//        float len = fabsf(n[0]) + fabsf(n[1]) + fabsf(n[2]);
 //        if (len != 0) { children_d[i] = -2; }
 //      }
 //    }
@@ -1358,9 +1357,9 @@ void Octree::octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
 //        dis /= count;
 //        if (dis > 3.0f) dis = 3.0f;
 //        if (dis < -3.0f) dis = -3.0f;
-//        if (abs(dis) < 1.0f) {
+//        if (fabsf(dis) < 1.0f) {
 //          // make the voxel has no intersection with the current voxel
-//          uint32 cube_cases = 0;
+//          uintk cube_cases = 0;
 //          for (int k = 0; k < 8; ++k) {
 //            float fval = dis;
 //            for (int j = 0; j < 3; ++j) {

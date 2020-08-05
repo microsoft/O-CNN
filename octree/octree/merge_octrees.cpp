@@ -1,8 +1,10 @@
 #include "merge_octrees.h"
-#include "octree_nn.h"
-#include "logs.h"
 
-void merge_octrees(vector<char>& octree_out, const vector<const char *> octrees_in) {
+#include "logs.h"
+#include "octree_nn.h"
+#include "types.h"
+
+void merge_octrees(vector<char>& octree_out, const vector<const char*> octrees_in) {
   MergeOctrees mo;
   mo.init(octrees_in);
   mo.check_input();
@@ -11,7 +13,6 @@ void merge_octrees(vector<char>& octree_out, const vector<const char *> octrees_
   mo.set_batch_parser(octree_out);
   mo.merge_octree();
 }
-
 
 void MergeOctrees::init(const vector<const char*>& octrees) {
   batch_size_ = octrees.size();
@@ -23,7 +24,6 @@ void MergeOctrees::init(const vector<const char*>& octrees) {
   full_layer_ = octree_parsers_[0].info().full_layer();
 }
 
-
 void MergeOctrees::check_input() {
   string err_msg;
   bool valid = octree_parsers_[0].info().check_format(err_msg);
@@ -32,7 +32,7 @@ void MergeOctrees::check_input() {
     valid = octree_parsers_[i].info().check_format(err_msg);
     CHECK(valid) << err_msg;
     CHECK(octree_parsers_[0].info().is_consistent(octree_parsers_[i].info()))
-        << "The formats of input octrees are not consistent, check the database";
+        << "The formats of input octrees are not consistent";
   }
 }
 
@@ -101,8 +101,8 @@ void MergeOctrees::set_batch_info() {
   info_batch_.set_nempty(nnum_nempty_batch_.data());
   info_batch_.set_nnum_cum();
   info_batch_.set_ptr_dis();
-  //bool valid = info_batch.check_format(err_msg);
-  //CHECK(valid) << err_msg;
+  // bool valid = info_batch.check_format(err_msg);
+  // CHECK(valid) << err_msg;
 }
 
 void MergeOctrees::set_batch_parser(vector<char>& octree_out) {
@@ -112,20 +112,21 @@ void MergeOctrees::set_batch_parser(vector<char>& octree_out) {
 }
 
 void MergeOctrees::merge_octree() {
-  //omp_set_num_threads(8);
+  typedef typename KeyTrait<uintk>::uints uints;
+
+  // omp_set_num_threads(8);
   //#pragma omp parallel for
   for (int i = 0; i < batch_size_; ++i) {
     // copy key
-    // the channel and location of key is 1 and -1 (todo: !!! channel 2 for deeper key)
+    // the channel and location of key is 1 and -1 
     for (int d = 0; d < depth_ + 1; ++d) {
       if (!info_batch_.has_property(OctreeInfo::kKey)) break;
       int p = i * (depth_ + 1) + d;
-      uint32* des = octbatch_parser_.mutable_key_cpu(d) + nnum_cum_layer_[p];
-      const uint32* src = octree_parsers_[i].key_cpu(d);
+      uintk* des = octbatch_parser_.mutable_key_cpu(d) + nnum_cum_layer_[p];
+      const uintk* src = octree_parsers_[i].key_cpu(d);
       for (int j = 0; j < nnum_[p]; ++j) {
         des[j] = src[j];
-        // !!! todo: deal with octree depth > 8
-        unsigned char* ptr = reinterpret_cast<unsigned char*>(des + j);
+        uints* ptr = reinterpret_cast<uints*>(des + j);
         ptr[3] = i;
       }
     }
@@ -150,7 +151,8 @@ void MergeOctrees::merge_octree() {
       if (!info_batch_.has_property(OctreeInfo::kFeature)) break;
       int p = i * (depth_ + 1) + d;
       for (int c = 0; c < feature_channel; c++) {
-        float* des = octbatch_parser_.mutable_feature_cpu(d) + c * nnum_batch_[d] + nnum_cum_layer_[p];
+        float* des = octbatch_parser_.mutable_feature_cpu(d) +
+                     c * nnum_batch_[d] + nnum_cum_layer_[p];
         const float* src = octree_parsers_[i].feature_cpu(d) + c * nnum_[p];
         for (int j = 0; j < nnum_[p]; ++j) { des[j] = src[j]; }
       }
@@ -188,9 +190,9 @@ void MergeOctrees::merge_octree() {
       calc_neigh_cpu(octbatch_parser_.mutable_neighbor_cpu(d), d, batch_size_);
     } else {
       calc_neigh_cpu(octbatch_parser_.mutable_neighbor_cpu(d),
-          octbatch_parser_.neighbor_cpu(d - 1),
-          octbatch_parser_.children_cpu(d - 1),
-          octbatch_parser_.info().node_num(d - 1));
+                     octbatch_parser_.neighbor_cpu(d - 1),
+                     octbatch_parser_.children_cpu(d - 1),
+                     octbatch_parser_.info().node_num(d - 1));
     }
   }
 }

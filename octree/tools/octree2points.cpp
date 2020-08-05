@@ -14,14 +14,14 @@ DEFINE_string(output_path, kOptional, ".", "The output path");
 DEFINE_string(suffix, kOptional, "points", "The output file suffix");
 DEFINE_int(depth_start, kOptional, 0, "The starting depth");
 DEFINE_int(depth_end, kOptional, 10, "The ending depth");
-DEFINE_int(rescale, kOptional, true, "The ending depth");
+DEFINE_bool(rescale, kOptional, true, "Scale the points according to the bbox");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
 
 int main(int argc, char* argv[]) {
   bool succ = cflags::ParseCmd(argc, argv);
   if (!succ) {
-    cflags::PrintHelpInfo("\nUsage: octree2points.exe");
+    cflags::PrintHelpInfo("\nUsage: octree2points");
     return 0;
   }
 

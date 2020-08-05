@@ -6,6 +6,7 @@
 
 #include <points.h>
 #include <octree_samples.h>
+#include <marching_cube.h>
 
 namespace py = pybind11;
 
@@ -35,47 +36,61 @@ PYBIND11_MODULE(pyoctree, m) {
   });
 
 
-  // points interface
   using vectorf = vector<float>;
   using vectorfc = const vector<float>;
   auto Points_set_points = (bool(Points::*)(vectorfc&, vectorfc&, vectorfc&,
               vectorfc&))&Points::set_points;
+  auto Mcube_compute = (void(MarchingCube::*)(vectorfc&, float, vectorfc&,
+              int))&MarchingCube::compute;
+
+  // points interface
   py::class_<Points>(m, "Points")
   .def(py::init<>())
   .def("read_points", &Points::read_points)
   .def("write_points", &Points::write_points)
   .def("write_ply", &Points::write_ply)
   .def("normalize", &Points::normalize)
+  .def("orient_normal", &Points::orient_normal)
   .def("set_points", Points_set_points)
-  .def("pts_num", [](const Points& pts) {
+  .def("pts_num", [](const Points & pts) {
     return pts.info().pt_num();
   })
   // todo: fix the functions points(), normals(), labels(),
   // It is inefficient, since there is a memory-copy here
-  .def("points", [](const Points& pts) {
+  .def("points", [](const Points & pts) {
     const float* ptr = pts.points();
     int num = pts.info().pt_num();
     return vectorf(ptr, ptr + num * 3);
   })
-  .def("normals", [](const Points& pts) {
+  .def("normals", [](const Points & pts) {
     const float* ptr = pts.normal();
     int num = pts.info().pt_num();
     return vectorf(ptr, ptr + num * 3);
   })
-  .def("features", [](const Points& pts) {
+  .def("features", [](const Points & pts) {
     const float* ptr = pts.feature();
     int num = pts.info().pt_num();
     const int ch = pts.info().channel(PointsInfo::kFeature);
     return vectorf(ptr, ptr + num * ch);
   })
-  .def("labels", [](const Points& pts) {
+  .def("labels", [](const Points & pts) {
     const float* ptr = pts.label();
     int num = pts.info().pt_num();
     return vectorf(ptr, ptr + num);
   })
-  .def("buffer", [](const Points& pts) {
+  .def("buffer", [](const Points & pts) {
     const char* ptr = pts.data();
     return py::bytes(std::string(ptr, pts.info().sizeof_points()));
   });
 
+  // marching cube
+  py::class_<MarchingCube>(m, "MCube")
+  .def(py::init<>())
+  .def("compute", Mcube_compute)
+  .def("get_vtx", [](const MarchingCube & mcube) {
+    return mcube.vtx_;
+  })
+  .def("get_face", [](const MarchingCube & mcube) {
+    return mcube.face_;
+  });
 }

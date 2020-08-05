@@ -119,18 +119,6 @@ vector<int>& NeighHelper::get_ni(const vector<int>& kernel_size) {
 }
 
 
-template <typename Dtype>
-void memset_cpu(const int N, const Dtype alpha, Dtype* Y) {
-  if (alpha == 0) {
-    memset(Y, 0, sizeof(Dtype) * N);
-    return;
-  }
-  for (int i = 0; i < N; ++i) {
-    Y[i] = alpha;
-  }
-}
-
-
 int num_elements(const vector<int>& vec) {
   int count = vec.empty() ? 0 : 1;
   for (auto v : vec) { count *= v; }
@@ -153,8 +141,20 @@ void resize_with_last_val(vector<int>& vec, const int size) {
 
 
 template <typename Dtype>
+void memset_cpu(const int N, const Dtype alpha, Dtype* Y) {
+  if (alpha == 0) {
+    memset(Y, 0, sizeof(Dtype) * N);
+    return;
+  }
+  for (int i = 0; i < N; ++i) {
+    Y[i] = alpha;
+  }
+}
+
+
+template <typename Dtype>
 void memcpy_cpu(const int N, const Dtype* X, Dtype* Y) {
-  if (X != Y) {
+  if (X != Y && N > 0) {
     memcpy(Y, X, sizeof(Dtype) * N);
   }
 }
@@ -322,32 +322,32 @@ void calc_neigh_cpu(int* neigh_split, const int* neigh,
 }
 
 void calc_neigh_cpu(int* neigh, const int depth, const int batch_size) {
-  uint32 node_num = 1 << 3 * depth;
-  const uint32  bound = 1 << depth;
-  for (uint32 n = 0; n < batch_size; ++n) {
-    for (uint32 i = 0; i < node_num; i += 8) {
+  uintk node_num = 1 << 3 * depth;
+  const uintk  bound = 1 << depth;
+  for (uintk n = 0; n < batch_size; ++n) {
+    for (uintk i = 0; i < node_num; i += 8) {
       // key to xyz
-      uint32 x0 = 0, y0 = 0, z0 = 0;
-      for (uint32 d = 0; d < depth; d++) {
+      uintk x0 = 0, y0 = 0, z0 = 0;
+      for (uintk d = 0; d < depth; d++) {
         x0 |= (i & (1 << (3 * d + 2))) >> (2 * d + 2);
         y0 |= (i & (1 << (3 * d + 1))) >> (2 * d + 1);
         z0 |= (i & (1 << (3 * d + 0))) >> (2 * d + 0);
       }
 
-      for (uint32 x = 0; x < 4; ++x) {
-        for (uint32 y = 0; y < 4; ++y) {
-          for (uint32 z = 0; z < 4; ++z) {
-            uint32 x1 = x0 + x - 1;
-            uint32 y1 = y0 + y - 1;
-            uint32 z1 = z0 + z - 1;
+      for (uintk x = 0; x < 4; ++x) {
+        for (uintk y = 0; y < 4; ++y) {
+          for (uintk z = 0; z < 4; ++z) {
+            uintk x1 = x0 + x - 1;
+            uintk y1 = y0 + y - 1;
+            uintk z1 = z0 + z - 1;
 
             int v = -1;
             if ((x1 & bound) == 0 &&
                 (y1 & bound) == 0 &&
                 (z1 & bound) == 0) {
-              uint32 key1 = 0;
+              uintk key1 = 0;
               for (int d = 0; d < depth; d++) {
-                uint32 mask = 1u << d;
+                uintk mask = 1u << d;
                 key1 |= ((x1 & mask) << (2 * d + 2)) |
                     ((y1 & mask) << (2 * d + 1)) |
                     ((z1 & mask) << (2 * d));
@@ -355,7 +355,7 @@ void calc_neigh_cpu(int* neigh, const int depth, const int batch_size) {
               v = key1 + n * node_num;
             }
 
-            uint32 xyz = (x << 4) | (y << 2) | z;
+            uintk xyz = (x << 4) | (y << 2) | z;
             neigh[xyz + i * 8 + n * node_num * 8] = v;
           }
         }
@@ -365,15 +365,16 @@ void calc_neigh_cpu(int* neigh, const int depth, const int batch_size) {
 }
 
 
-void generate_key_cpu(uint32* key_child, const uint32* key, const int* child,
+template <typename Dtype>
+void generate_key_cpu(Dtype* key_child, const Dtype* key, const int* child,
     const int node_num) {
-  typedef unsigned char ubyte;
+  typedef typename KeyTrait<Dtype>::uints T;
   for (int i = 0; i < node_num; ++i) {
     int label = child[i];
-    if (label == -1) continue;
-    const ubyte* k0 = (const ubyte*)(key + i);
-    for (ubyte j = 0; j < 8; ++j) {
-      ubyte* k1 = (ubyte*)(key_child + 8 * label + j);
+    if (label < 0) continue;  // empty
+    const T* k0 = reinterpret_cast<const T*>(key + i);
+    for (T j = 0; j < 8; ++j) {
+      T* k1 = reinterpret_cast<T*>(key_child + 8 * label + j);
       k1[0] = (k0[0] << 1) | ((j & 4) >> 2);
       k1[1] = (k0[1] << 1) | ((j & 2) >> 1);
       k1[2] = (k0[2] << 1) | (j & 1);
@@ -382,12 +383,14 @@ void generate_key_cpu(uint32* key_child, const uint32* key, const int* child,
   }
 }
 
-void generate_key_cpu(uint32* key, const int depth, const int batch_size) {
+template <typename Dtype>
+void generate_key_cpu(Dtype* key, const int depth, const int batch_size) {
+  typedef typename KeyTrait<Dtype>::uints T;
   int node_num = 1 << 3 * depth;
   for (int n = 0; n < batch_size; ++n) {
     for (int k = 0; k < node_num; ++k) {
-      unsigned xyz = 0;
-      unsigned char* ptr = (unsigned char*)(&xyz);
+      Dtype xyz = 0;
+      T* ptr = reinterpret_cast<T*>(&xyz);
       for (int d = 0; d < depth; d++) {
         ptr[0] |= (k & (1 << (3 * d + 2))) >> (2 * d + 2);
         ptr[1] |= (k & (1 << (3 * d + 1))) >> (2 * d + 1);
@@ -428,8 +431,9 @@ void bilinear_neigh_cpu(int* bidx, const int* neigh, const int* child,
   }
 }
 
-void bilinear_xyz_cpu(uint32* xyz0, float* fracs, const int d0, const uint32* xyz1,
+void bilinear_xyz_cpu(uintk* xyz0, float* fracs, const int d0, const uintk* xyz1,
     const int d1, const int num) {
+  typedef typename KeyTrait<uintk>::uints uints;
   const float scale = static_cast<float>(1 << (d1 - d0));
   const int mask[8][3] = {                       // bilinear mask:
     {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {1, 0, 0},  // 27, 9, 9, 9
@@ -440,7 +444,7 @@ void bilinear_xyz_cpu(uint32* xyz0, float* fracs, const int d0, const uint32* xy
     float pt[3] = { 0.0f };
     float* frac = fracs + 3 * i;
     int bnd[2][3] = { 0 };
-    const unsigned char* ptr1 = (const unsigned char*)(xyz1 + i);
+    const uints* ptr1 = (const uints*)(xyz1 + i);
     for (int c = 0; c < 3; ++c) {
       pt[c] = (static_cast<float>(ptr1[c]) + 0.5f) / scale - 0.5f;
 
@@ -457,9 +461,9 @@ void bilinear_xyz_cpu(uint32* xyz0, float* fracs, const int d0, const uint32* xy
     }
 
     for (int j = 0; j < 8; ++j) {
-      unsigned char* ptr0 = (unsigned char*)(xyz0 + i * 8 + j);
+      uints* ptr0 = (uints*)(xyz0 + i * 8 + j);
       for (int c = 0; c < 3; ++c) {
-        ptr0[c] = static_cast<unsigned char>(bnd[mask[j][c]][c]);
+        ptr0[c] = static_cast<uints>(bnd[mask[j][c]][c]);
       }
       ptr0[3] = ptr1[3];
     }
@@ -467,8 +471,16 @@ void bilinear_xyz_cpu(uint32* xyz0, float* fracs, const int d0, const uint32* xy
 }
 
 
-void search_key_cpu(int* idx, const uint32* key, const int n_key,
-    const uint32* query, const int n_query) {
+template <typename Dtype>
+void sequence_cpu(Dtype* ptr, const int num) {
+  for (int i = 0; i < num; ++i) {
+    ptr[i] = static_cast<Dtype>(i);
+  }
+}
+
+template <typename Dtype>
+void search_key_cpu(int* idx, const Dtype* key, const int n_key,
+    const Dtype* query, const int n_query) {
   for (int i = 0; i < n_query; ++i) {
     int j = std::lower_bound(key, key + n_key, query[i]) - key;
     idx[i] = (j >= n_key || key[j] != query[i]) ? -1 : j;
@@ -476,23 +488,26 @@ void search_key_cpu(int* idx, const uint32* key, const int n_key,
 }
 
 
-void compute_key(uint32& key, const uint32* pt, const int depth) {
+template<typename Dtype>
+void compute_key(Dtype& key, const Dtype* pt, const int depth) {
   key = 0;
   for (int i = 0; i < depth; i++) {
-    uint32 mask = 1u << i;
+    Dtype mask = 1u << i;
     for (int j = 0; j < 3; j++) {
       key |= (pt[j] & mask) << (2 * i + 2 - j);
     }
   }
 }
 
-void compute_pt(uint32* pt, const uint32& key, const int depth) {
+
+template<typename Dtype>
+void compute_pt(Dtype* pt, const Dtype& key, const int depth) {
   for (int i = 0; i < 3; pt[i++] = 0u);
 
   for (int i = 0; i < depth; i++) {
     for (int j = 0; j < 3; j++) {
       // bit mask
-      uint32 mask = 1u << (3 * i + 2 - j);
+      Dtype mask = 1u << (3 * i + 2 - j);
       // put the bit to position i
       pt[j] |= (key & mask) >> (2 * i + 2 - j);
     }
@@ -500,14 +515,16 @@ void compute_pt(uint32* pt, const uint32& key, const int depth) {
 }
 
 
-// NOTE: !!! currently the depth should be less than 8
-void xyz2key_cpu(uint32* key, const uint32* xyz, const int num, const int depth) {
+template<typename Dtype>
+void xyz2key_cpu(Dtype* key, const Dtype* xyz, const int num, const int depth) {
+  typedef typename KeyTrait<Dtype>::uints T;
+
   for (int i = 0; i < num; ++i) {
-    uint32 pt[3] = { 0, 0, 0 }, key_out = 0;
-    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(xyz + i);
-    unsigned char* ptr_out = (unsigned char*)(&key_out);
+    Dtype pt[3] = { 0, 0, 0 }, key_out = 0;
+    const T* ptr = reinterpret_cast<const T*>(xyz + i);
+    T* ptr_out = reinterpret_cast<T*>(&key_out);
     for (int j = 0; j < 3; ++j) {
-      pt[j] = static_cast<uint32>(ptr[j]);
+      pt[j] = static_cast<Dtype>(ptr[j]);
     }
     compute_key(key_out, pt, depth);
     ptr_out[3] = ptr[3];
@@ -515,32 +532,38 @@ void xyz2key_cpu(uint32* key, const uint32* xyz, const int num, const int depth)
   }
 }
 
+template<typename Dtype>
+void key2xyz_cpu(Dtype* xyz, const Dtype* key, const int num, const int depth) {
+  typedef typename KeyTrait<Dtype>::uints T;
 
-void key2xyz_cpu(uint32* xyz, const uint32* key, const int num, const int depth) {
   for (int i = 0; i < num; ++i) {
-    uint32 pt[3] = { 0 };
+    Dtype pt[3] = { 0 };
     compute_pt(pt, key[i], depth);
 
     xyz[i] = key[i];
-    unsigned char* ptr = reinterpret_cast<unsigned char*>(xyz + i);
+    T* ptr = reinterpret_cast<T*>(xyz + i);
     for (int j = 0; j < 3; ++j) {
-      ptr[j] = static_cast<unsigned char>(pt[j]);
+      ptr[j] = static_cast<T>(pt[j]);
     }
   }
 }
 
 
-void key2idx_cpu(int* idx, const uint32* key, const int num) {
+template<typename Dtype>
+void key2idx_cpu(int* idx, const Dtype* key, const int num) {
+  typedef typename KeyTrait<Dtype>::uints T;
   for (int i = 0; i < num; ++i) {
-    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(key + i);
+    const T* ptr = reinterpret_cast<const T*>(key + i);
     idx[i] = static_cast<int>(ptr[3]);
   }
 }
 
 
-void xyz2coord_cpu(float* pt, const uint32* xyz, const int num, const int channel) {
+template<typename Dtype>
+void xyz2coord_cpu(float* pt, const Dtype* xyz, const int num, const int channel) {
+  typedef typename KeyTrait<Dtype>::uints T;
   for (int i = 0; i < num; ++i) {
-    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(xyz + i);
+    const T* ptr = reinterpret_cast<const T*>(xyz + i);
     for (int c = 0; c < channel; ++c) {
       pt[c * num + i] = static_cast<float>(ptr[c]);
     }
@@ -548,22 +571,24 @@ void xyz2coord_cpu(float* pt, const uint32* xyz, const int num, const int channe
 }
 
 
-void coord2xyz_cpu(uint32* xyz, const float* pt, const int num, const int channel) {
+template<typename Dtype>
+void coord2xyz_cpu(Dtype* xyz, const float* pt, const int num, const int channel) {
+  typedef typename KeyTrait<Dtype>::uints T;
   for (int i = 0; i < num; ++i) {
-    unsigned char* ptr = reinterpret_cast<unsigned char*>(xyz + i);
+    T* ptr = reinterpret_cast<T*>(xyz + i);
     for (int c = 0; c < channel; ++c) {
-      ptr[c] = static_cast<unsigned char>(pt[c * num + i]);
+      ptr[c] = static_cast<T>(pt[c * num + i]);
     }
   }
 }
 
 
-template<typename Dtype>
-void key2xyz(Dtype* xyz, const uint32 key, const int depth) {
-  uint32 pt[3];
+template<typename Dtype1, typename Dtype2>
+void key2xyz(Dtype1* xyz, const Dtype2 key, const int depth) {
+  Dtype2 pt[3];
   compute_pt(pt, key, depth);
   for (int c = 0; c < 3; ++c) {
-    xyz[c] = static_cast<Dtype>(pt[c]);
+    xyz[c] = static_cast<Dtype1>(pt[c]);
   }
 }
 
@@ -578,6 +603,8 @@ template void memcpy_cpu<int>(const int N, const int* X, int* Y);
 template void memcpy_cpu<unsigned>(const int N, const unsigned* X, unsigned* Y);
 template void memcpy_cpu<float>(const int N, const float* X, float* Y);
 template void memcpy_cpu<double>(const int N, const double* X, double* Y);
+template void sequence_cpu<int>(int* ptr, const int num);
+template void sequence_cpu<uintk>(uintk* ptr, const int num);
 template void pad_forward_cpu<float>(float* Y, const int Hy, const int Cy,
     const float* X, const int Hx, const int* label, const float dval);
 template void pad_forward_cpu<double>(double* Y, const int Hy, const int Cy,
@@ -616,6 +643,22 @@ template void octree_mask_pool_cpu<float>(float* top_data, int top_h,
     const int* mask, const float* btm_data, int bottom_h, int channel);
 template void octree_mask_pool_cpu<double>(double* top_data, int top_h,
     const int* mask, const double* btm_data, int bottom_h, int channel);
-template void key2xyz<float>(float* xyz, const uint32 key, const int d);
-template void key2xyz<uint32>(unsigned* xyz, const uint32 key, const int d);
-template void key2xyz<int>(int* xyz, const uint32 key, const int d);
+template void key2xyz<float, uintk>(float* xyz, const uintk key, const int d);
+template void key2xyz<uintk, uintk>(uintk* xyz, const uintk key, const int d);
+template void key2xyz<int, uintk>(int* xyz, const uintk key, const int d);
+template void generate_key_cpu<uintk>(uintk* key, const int depth, const int batch_size);
+template void generate_key_cpu<uintk>(uintk* key_child, const uintk* key,
+    const int* child, const int node_num);
+template void compute_key<uintk>(uintk& key, const uintk* pt, const int depth);
+template void compute_pt<uintk>(uintk* pt, const uintk& key, const int depth);
+template void search_key_cpu<uintk>(int* idx, const uintk* key, const int n_key,
+    const uintk* query, const int n_query);
+template void xyz2key_cpu<uintk>(uintk* key, const uintk* xyz, const int num,
+    const int depth);
+template void key2xyz_cpu<uintk>(uintk* xyz, const uintk* key, const int num,
+    const int depth);
+template void key2idx_cpu<uintk>(int* idx, const uintk* key, const int num);
+template void xyz2coord_cpu<uintk>(float* pt, const uintk* xyz, const int num,
+    const int channel);
+template void coord2xyz_cpu<uintk>(uintk* xyz, const float* pt, const int num,
+    const int channel);

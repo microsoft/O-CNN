@@ -22,7 +22,7 @@ void octree2pts(vector<int>& pts, vector<int>& labels, const Octree& octree) {
   const int* child = octree.children_cpu(depth);
   const float* label = octree.label_cpu(depth);
   const float* normal = octree.feature_cpu(depth);
-  const unsigned int* key = octree.key_cpu(depth);
+  const uintk* key = octree.key_cpu(depth);
 
   pts.clear(); labels.clear();
   for (int i = 0; i < num; ++i) {

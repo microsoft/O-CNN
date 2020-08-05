@@ -36,8 +36,8 @@ const char* OctreeParser::ptr_cpu(const PropType ptype, const int depth) const {
   return p;
 }
 
-const uint32* OctreeParser::key_cpu(const int depth) const {
-  return reinterpret_cast<const uint32*>(ptr_cpu(OctreeInfo::kKey, depth));
+const uintk* OctreeParser::key_cpu(const int depth) const {
+  return reinterpret_cast<const uintk*>(ptr_cpu(OctreeInfo::kKey, depth));
 }
 
 const int* OctreeParser::children_cpu(const int depth) const {
@@ -65,8 +65,8 @@ char* OctreeParser::mutable_ptr_cpu(const OctreeInfo::PropType ptype, const int 
   return const_cast<char*>(ptr_cpu(ptype, depth));
 }
 
-uint32* OctreeParser::mutable_key_cpu(const int depth) {
-  return reinterpret_cast<uint32*>(mutable_ptr_cpu(OctreeInfo::kKey, depth));
+uintk* OctreeParser::mutable_key_cpu(const int depth) {
+  return reinterpret_cast<uintk*>(mutable_ptr_cpu(OctreeInfo::kKey, depth));
 }
 
 int* OctreeParser::mutable_children_cpu(const int depth) {
@@ -92,7 +92,7 @@ float* OctreeParser::mutable_split_cpu(const int depth) {
 
 //////////////////////////////////////
 void OctreeParser::node_pos(float* xyz, int id, int depth, float* xyz_base) const {
-  const uint32* keyi = key_cpu(depth) + id;
+  const uintk* keyi = key_cpu(depth) + id;
   key2xyz(xyz, *keyi, depth);
 
   if (xyz_base != nullptr) {
@@ -141,22 +141,21 @@ float OctreeParser::node_dis(int id, int depth) const {
 }
 
 template<typename Dtype>
-void OctreeParser::key2xyz(Dtype* xyz, const uint32& key, const int depth) const {
+void OctreeParser::key2xyz(Dtype* xyz, const uintk& key, const int depth) const {
   if (info_->is_key2xyz()) {
-    //!!! Caveat: the octree depth should be less than 8
-    const unsigned char* pt = reinterpret_cast<const unsigned char*>(&key);
+    typedef typename KeyTrait<uintk>::uints uints;
+    const uints* pt = reinterpret_cast<const uints*>(&key);
     for (int c = 0; c < 3; ++c) {
       xyz[c] = static_cast<Dtype>(pt[c]);
     }
-  }
-  else {
-    uint32 pt[3];
+  } else {
+    uintk pt[3];
     compute_pt(pt, key, depth);
     for (int c = 0; c < 3; ++c) {
       xyz[c] = static_cast<Dtype>(pt[c]);
     }
   }
 }
-template void OctreeParser::key2xyz<float>(float* xyz, const unsigned& k, const int d) const;
-template void OctreeParser::key2xyz<unsigned>(unsigned* xyz, const unsigned& k, const int d) const;
-template void OctreeParser::key2xyz<int>(int* xyz, const unsigned& k, const int d) const;
+template void OctreeParser::key2xyz<float>(float* xyz, const uintk& k, const int d) const;
+template void OctreeParser::key2xyz<uintk>(uintk* xyz, const uintk& k, const int d) const;
+template void OctreeParser::key2xyz<int>(int* xyz, const uintk& k, const int d) const;

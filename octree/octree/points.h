@@ -18,6 +18,8 @@ class Points: public PointsParser {
       const vector<float>& features = vector<float>(),
       const vector<float>& labels = vector<float>());
   void set_points(vector<char>& data); // swap data and buffer_
+
+  const vector<char>& get_buffer() const { return buffer_; }
   
   bool read_points(const string& filename);
   bool write_points(const string& filename) const;

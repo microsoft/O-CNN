@@ -10,6 +10,7 @@
 #include "filenames.h"
 #include "octree.h"
 #include "marching_cube.h"
+#include "types.h"
 
 using namespace std;
 
@@ -81,6 +82,7 @@ void covered_depth_nodes(vector<vector<int>>& dnum_, vector<vector<int>>& didx_,
 void adaptive_octree(vector<char>& octree_output, const vector<char>& octree_input,
     const int depth_output) {
   /// const
+  typedef typename KeyTrait<uintk>::uints uints;
   const float mul = sqrtf(3.0f) / 2.0f;
   const float imul = 2.0f / sqrtf(3.0f);
   //const int signal_channel = 4;
@@ -101,7 +103,7 @@ void adaptive_octree(vector<char>& octree_output, const vector<char>& octree_inp
   nnum_accu_vec[depth + 1] = octree_in.info().node_num_cum(depth + 1);
   const int* node_num = nnum_vec.data();
   const int* node_num_accu = nnum_accu_vec.data();
-  const unsigned int* key = octree_in.key_cpu(0);
+  const uintk* key = octree_in.key_cpu(0);
   const int* children = octree_in.children_cpu(0);
   const float* data = octree_in.feature_cpu(0);
   const float* normal_ptr = data; // !!! channel x n
@@ -116,9 +118,9 @@ void adaptive_octree(vector<char>& octree_output, const vector<char>& octree_inp
   vector<float> pt_depth; // !!! n x channel
   if (signal_channel == 4) {
     pt_depth.resize(3 * final_node_num);
-    const unsigned int* key_depth = key + node_num_accu[depth];
+    const uintk* key_depth = key + node_num_accu[depth];
     for (int i = 0; i < final_node_num; ++i) {
-      const unsigned char* pt = reinterpret_cast<const unsigned char*>(key_depth + i);
+      const uints* pt = reinterpret_cast<const uints*>(key_depth + i);
       for (int c = 0; c < 3; ++c) {
         float nc = normal_ptr[c * final_node_num + i];
         pt_depth[i * 3 + c] = static_cast<float>(pt[c]) + 0.5f + dis_ptr[i] * nc * mul;
@@ -154,7 +156,7 @@ void adaptive_octree(vector<char>& octree_output, const vector<char>& octree_inp
   for (int d = depth - 1; d > full_layer; --d) {
     vector<int>& dnum = dnum_[d];
     vector<int>& didx = didx_[d];
-    const unsigned int* key_d = key + node_num_accu[d];
+    const uintk* key_d = key + node_num_accu[d];
     const int* children_d = children + node_num_accu[d];
     const int* children_depth = children + node_num_accu[depth];
     const float scale = static_cast<float>(1 << (depth - d));
@@ -194,7 +196,7 @@ void adaptive_octree(vector<char>& octree_output, const vector<char>& octree_inp
       len = sqrtf(len);
 
       float pt_base[3];
-      const unsigned char* pt = reinterpret_cast<const unsigned char*>(key_d + i);
+      const uints* pt = reinterpret_cast<const uints*>(key_d + i);
       for (int c = 0; c < 3; ++c) {
         n_avg[c] /= len;
         if (signal_channel == 4) {
@@ -285,7 +287,7 @@ void adaptive_octree(vector<char>& octree_output, const vector<char>& octree_inp
 
   /// trim the octree according to normal_var
   vector<vector<float> > data_output(depth + 1), label_output(depth + 1);
-  vector<vector<unsigned int> > key_output(depth + 1);
+  vector<vector<uintk> > key_output(depth + 1);
   vector<vector<int> > children_output(depth + 1), drop(depth + 1);
   for (int d = 0; d <= depth; ++d) {
     drop[d].resize(node_num[d], 0);  // 1 means dropping the sub-tree
@@ -295,7 +297,7 @@ void adaptive_octree(vector<char>& octree_output, const vector<char>& octree_inp
     int nnum_dp = node_num[d - 1];
     vector<float>& normal_err_d = normal_err[d];
     vector<float>& dist_err_d = distance_err[d];
-    const unsigned int* key_d = key + node_num_accu[d];
+    const uintk* key_d = key + node_num_accu[d];
     const int* children_d = children + node_num_accu[d];
     const int* children_dp = children + node_num_accu[d - 1];
     vector<int>& drop_d = drop[d];

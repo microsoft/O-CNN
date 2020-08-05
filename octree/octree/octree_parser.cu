@@ -36,8 +36,8 @@ const char* OctreeParser::ptr_gpu(const PropType ptype, const int depth) const {
   return p;
 }
 
-const unsigned int* OctreeParser::key_gpu(const int depth) const {
-  return reinterpret_cast<const unsigned int*>(ptr_gpu(OctreeInfo::kKey, depth));
+const uintk* OctreeParser::key_gpu(const int depth) const {
+  return reinterpret_cast<const uintk*>(ptr_gpu(OctreeInfo::kKey, depth));
 }
 
 const int* OctreeParser::children_gpu(const int depth) const {
@@ -65,8 +65,8 @@ char* OctreeParser::mutable_ptr_gpu(const OctreeInfo::PropType ptype, const int 
   return const_cast<char*>(ptr_gpu(ptype, depth));
 }
 
-unsigned int* OctreeParser::mutable_key_gpu(const int depth) {
-  return reinterpret_cast<unsigned int*>(mutable_ptr_gpu(OctreeInfo::kKey, depth));
+uintk* OctreeParser::mutable_key_gpu(const int depth) {
+  return reinterpret_cast<uintk*>(mutable_ptr_gpu(OctreeInfo::kKey, depth));
 }
 
 int* OctreeParser::mutable_children_gpu(const int depth) {

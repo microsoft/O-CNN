@@ -38,7 +38,7 @@ unsigned int MarchingCube::compute_cube_case() const {
   return cube_case;
 }
 
-void MarchingCube::contouring(vector<float>& vtx, vector<int>& face) const {
+void MarchingCube::contouring(vector<float>& vtx, vector<int>& face) {
   // compute cube cases
   unsigned int cube_case = compute_cube_case();
 
@@ -72,6 +72,13 @@ void MarchingCube::contouring(vector<float>& vtx, vector<int>& face) const {
   }
 }
 
+void MarchingCube::compute(const vector<float>& fval, float iso_val,
+                           const vector<float>& left_btm, int vid) {
+  vtx_.clear();
+  face_.clear();
+  set(fval.data(), iso_val, left_btm.data(), vid);
+  contouring(vtx_, face_);
+}
 
 void intersect_cube(vector<float>& V, const float* pt, const float* pt_base,
     const float* normal) {
