@@ -10,17 +10,33 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 class TFSolver:
   def __init__(self, flags, compute_graph=None, build_solver=build_solver):
-    self.flags = flags
+    self.flags = flags.SOLVER
     self.graph = compute_graph
     self.build_solver = build_solver
 
   def build_train_graph(self):
-    self.train_tensors, train_names = self.graph('train', training=True, reuse=False)
-    self.test_tensors, self.test_names  = self.graph('test', training=False, reuse=True)
-    total_loss = self.train_tensors[train_names.index('total_loss')] # TODO: use dict
-    self.train_op, lr = self.build_solver(total_loss, LRFactory(self.flags))
-    self.summaries(train_names + ['lr'], self.train_tensors + [lr,], self.test_names)
+    gpu_num = len(self.flags.gpu)
+    train_params = {'dataset': 'train', 'training': True,  'reuse': False}
+    test_params  = {'dataset': 'test',  'training': False, 'reuse': True}
+    if gpu_num > 1:
+      train_params['gpu_num'] = gpu_num
+      test_params['gpu_num']  = gpu_num
+      
+    self.train_tensors, train_names = self.graph(**train_params)
+    self.test_tensors, self.test_names = self.graph(**test_params)
     
+    total_loss = self.train_tensors[train_names.index('total_loss')]
+    solver_param = [total_loss, LRFactory(self.flags)]
+    if gpu_num > 1:
+      solver_param.append(gpu_num)
+    self.train_op, lr = self.build_solver(*solver_param)
+
+    if gpu_num > 1: # average the tensors from different gpus for summaries
+      with tf.device('/cpu:0'):
+        self.train_tensors = average_tensors(self.train_tensors)
+        self.test_tensors = average_tensors(self.test_tensors)        
+    self.summaries(train_names + ['lr'], self.train_tensors + [lr,], self.test_names)
+
   def summaries(self, train_names, train_tensors, test_names):
     self.summ_train = summary_train(train_names, train_tensors)
     self.summ_test, self.summ_holder = summary_test(test_names)
@@ -35,7 +51,13 @@ class TFSolver:
       fid.write(msg + '\n')
 
   def build_test_graph(self):
-    self.test_tensors, self.test_names = self.graph('test', training=False, reuse=False)
+    gpu_num = len(self.flags.gpu)
+    test_params  = {'dataset': 'test',  'training': False, 'reuse': False}
+    if gpu_num > 1: test_params['gpu_num'] = gpu_num
+    self.test_tensors, self.test_names = self.graph(**test_params)
+    if gpu_num > 1: # average the tensors from different gpus
+      with tf.device('/cpu:0'):
+        self.test_tensors = average_tensors(self.test_tensors)        
 
   def restore(self, sess, ckpt):
     print('Load checkpoint: ' + ckpt)
@@ -54,7 +76,11 @@ class TFSolver:
     
     for j in range(num):
       avg_results[j] /= k
+    avg_results = self.result_callback(avg_results)
     return avg_results
+
+  def result_callback(self, avg_results):
+    return avg_results # calc some metrics, such as IoU, based on the graph output
 
   def train(self):
     # build the computation graph
@@ -112,13 +138,14 @@ class TFSolver:
     config.gpu_options.allow_growth = True
     options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
     run_metadata = tf.RunMetadata()
-    timeline_skip, timeline_iter = 10, 2
+    timeline_skip, timeline_iter = 100, 2
     with tf.Session(config=config) as sess:
+      summary_writer = tf.summary.FileWriter(self.flags.logdir, sess.graph)
       print('Initialize ...')
       self.initialize(sess)
 
       print('Start profiling ...')
-      for i in tqdm(range(0, timeline_skip + timeline_iter)):
+      for i in tqdm(range(0, timeline_skip + timeline_iter), ncols=80):
         if i < timeline_skip:
           summary, _ = sess.run([self.summ_train, self.train_op])
         else:
@@ -131,7 +158,7 @@ class TFSolver:
             chrome_trace = fetched_timeline.generate_chrome_trace_format()
             with open(os.path.join(self.flags.logdir, 'timeline.json'), 'w') as f:
               f.write(chrome_trace)
-        summary_writer.add_summary(summary, i)        
+        summary_writer.add_summary(summary, i)
       print('Profiling done!')
 
   def param_stats(self):
@@ -162,7 +189,7 @@ class TFSolver:
     # start
     num_tensors = len(self.test_tensors)
     avg_test = [0] * num_tensors
-    config = tf.ConfigProto()
+    config = tf.ConfigProto(allow_soft_placement=True)
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
       summary_writer = tf.summary.FileWriter(self.flags.logdir, sess.graph)
@@ -170,11 +197,13 @@ class TFSolver:
 
       # restore and initialize
       self.initialize(sess)
+      print('Restore from checkpoint: %s' % self.flags.ckpt)
       tf_saver.restore(sess, self.flags.ckpt)
 
       print('Start testing ...')
       for i in range(0, self.flags.test_iter):
         iter_test_result = sess.run(self.test_tensors)
+        iter_test_result = self.result_callback(iter_test_result)
         # run testing average
         for j in range(num_tensors):
           avg_test[j] += iter_test_result[j]
@@ -185,11 +214,14 @@ class TFSolver:
         print(reports)
         self.summ2txt(iter_test_result, i)
 
-    # summary
-    print('Testing done!\n')
-    reports = 'batch: %04d; ' % self.flags.test_iter
+    # Final testing results
     for j in range(num_tensors):
       avg_test[j] /= self.flags.test_iter
+    avg_test = self.result_callback(avg_test)
+    # print the results
+    print('Testing done!\n')
+    reports = 'ALL: %04d; ' % self.flags.test_iter
+    for j in range(num_tensors):
       reports += '%s: %0.4f; ' % (self.test_names[j], avg_test[j])
     print(reports)
     self.summ2txt(avg_test, 'ALL')

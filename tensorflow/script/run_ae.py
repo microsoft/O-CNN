@@ -9,8 +9,6 @@ from network_ae import make_autoencoder
 from ocnn import l2_regularizer
 
 
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-
 FLAGS = parse_args()
 
 # get the autoencoder
@@ -34,8 +32,6 @@ def compute_graph(dataset='train', training=True, reuse=False):
 
 # define the solver
 class AeTFSolver(TFSolver):
-  def __init__(self, flags, compute_graph):
-    super(AeTFSolver, self).__init__(flags, compute_graph)
 
   def decode_shape(self):
     # build graph
@@ -66,5 +62,6 @@ class AeTFSolver(TFSolver):
           f.write(reconstructed.tobytes())
 
 # run the experiments
-solver = AeTFSolver(FLAGS.SOLVER, compute_graph)
-solver.run()
+if __name__ == '__main__':
+  solver = AeTFSolver(FLAGS, compute_graph)
+  solver.run()

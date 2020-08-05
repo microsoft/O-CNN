@@ -11,7 +11,7 @@ from dataset import DatasetFactory
 from network_completion import CompletionResnet
 from ocnn import l2_regularizer
 sys.path.append('..')
-from libs import octree_scan, octree_batch
+from libs import octree_scan, octree_batch, normalize_points
 
 
 # flags
@@ -21,10 +21,12 @@ FLAGS = parse_args()
 
 
 # the dataset
-def bounding_sphere(points):
-  radius = 64.0
-  center = (64.0, 64.0, 64.0)
-  return radius, center
+class NormalizePoints:
+  def __call__(self, points):
+    radius = 64.0
+    center = (64.0, 64.0, 64.0)
+    points = normalize_points(points, radius, center)
+    return points
 
 
 class PointDataset:
@@ -78,7 +80,7 @@ network = CompletionResnet(FLAGS.MODEL)
 # define the graph
 def compute_graph(dataset='train', training=True, reuse=False):
   flags_data = FLAGS.DATA.train if dataset == 'train' else FLAGS.DATA.test
-  octree0, octree1 = DatasetFactory(flags_data, bounding_sphere, PointDataset)()
+  octree0, octree1 = DatasetFactory(flags_data, NormalizePoints, PointDataset)()
   convd = network.octree_encoder(octree0, training, reuse)
   loss, accu = network.octree_decoder(convd, octree0, octree1, training, reuse)
 
@@ -129,5 +131,5 @@ class CompletionSolver(TFSolver):
 
 # run the experiments
 if __name__ == '__main__':
-  solver = CompletionSolver(FLAGS.SOLVER, compute_graph)
+  solver = CompletionSolver(FLAGS, compute_graph)
   solver.run()

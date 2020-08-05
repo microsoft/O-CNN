@@ -1,7 +1,8 @@
 import sys
 import tensorflow as tf
 sys.path.append("..")
-from libs import bounding_sphere, points2octree, transform_points, octree_batch
+from libs import bounding_sphere, points2octree, \
+                 transform_points, octree_batch, normalize_points
 
 
 class ParseExample:
@@ -38,12 +39,20 @@ class Points2Octree:
                            save_pts=self.save_pts)
     return octree
 
+class NormalizePoints:
+  def __init__(self):
+    pass # normalize with bounding_sphere
+
+  def __call__(self, points):
+    radius, center = bounding_sphere(points)
+    points = normalize_points(points, radius, center)
+    return points
+
 
 class TransformPoints:
   def __init__(self, distort, depth, offset=0.55, axis='xyz', scale=0.25, 
                jitter=8, drop_dim=[8, 32], angle=[20, 180, 20], dropout=[0, 0],
-               stddev=[0, 0, 0], uniform=False, interval=[1, 1, 1],
-               bounding_sphere=bounding_sphere, **kwargs):
+               stddev=[0, 0, 0], uniform=False, interval=[1, 1, 1], **kwargs):
     self.distort = distort
     self.axis = axis
     self.scale = scale
@@ -56,7 +65,6 @@ class TransformPoints:
     self.stddev = stddev
     self.uniform_scale = uniform
     self.interval = interval
-    self.bounding_sphere = bounding_sphere
 
   def __call__(self, points):
     angle, scale, jitter, ratio, dim, angle, stddev = 0.0, 1.0, 0.0, 0.0, 0, 0, 0
@@ -88,7 +96,7 @@ class TransformPoints:
       stddev = [tf.random.uniform(shape=[], minval=0, maxval=s) for s in self.stddev]
       stddev = tf.stack(stddev)
 
-    radius, center = self.bounding_sphere(points)
+    radius, center = tf.constant(1.0), tf.constant([0.0, 0.0, 0.0])
     points = transform_points(points, angle=angle, scale=scale, jitter=jitter, 
                               radius=radius, center=center, axis=self.axis, 
                               depth=self.depth, offset=self.offset,
@@ -98,8 +106,9 @@ class TransformPoints:
 
 
 class PointDataset:
-  def __init__(self, parse_example, transform_points, points2octree):
+  def __init__(self, parse_example, normalize_points, transform_points, points2octree):
     self.parse_example = parse_example
+    self.normalize_points = normalize_points
     self.transform_points = transform_points
     self.points2octree = points2octree
 
@@ -108,6 +117,7 @@ class PointDataset:
     with tf.name_scope('points_dataset'):
       def preprocess(record):
         points, label = self.parse_example(record)
+        points = self.normalize_points(points)
         points = self.transform_points(points)
         octree = self.points2octree(points)
         outputs= (octree, label)
@@ -120,7 +130,7 @@ class PointDataset:
 
       dataset = tf.data.TFRecordDataset(record_names).take(take).repeat()
       if shuffle_size > 1: dataset = dataset.shuffle(shuffle_size)
-      itr = dataset.map(preprocess, num_parallel_calls=8) \
+      itr = dataset.map(preprocess, num_parallel_calls=16) \
                    .batch(batch_size).map(merge_octrees, num_parallel_calls=8) \
                    .prefetch(8).make_one_shot_iterator() 
     return itr if return_iter else itr.get_next()
@@ -145,20 +155,19 @@ class OctreeDataset:
 
 
 class DatasetFactory:
-  def __init__(self, flags, bounding_sphere=bounding_sphere,
-               point_dataset=PointDataset):
+  def __init__(self, flags, normalize_points=NormalizePoints,
+               point_dataset=PointDataset, transform_points=TransformPoints):
     self.flags = flags
     if flags.dtype == 'points':
-      self.dataset = point_dataset(ParseExample(**flags), 
-          TransformPoints(**flags, bounding_sphere=bounding_sphere), 
-          Points2Octree(**flags))
+      self.dataset = point_dataset(ParseExample(**flags), normalize_points(),
+          transform_points(**flags), Points2Octree(**flags))
     elif flags.dtype == 'octree':
       self.dataset = OctreeDataset(ParseExample(**flags))
     else:
       print('Error: unsupported datatype ' + flags.dtype)
 
-  def __call__(self):
+  def __call__(self, return_iter=False):
     return self.dataset(
         record_names=self.flags.location, batch_size=self.flags.batch_size,
-        shuffle_size=self.flags.shuffle, return_iter=self.flags.return_iter,
+        shuffle_size=self.flags.shuffle, return_iter=return_iter,
         take=self.flags.take, return_pts=self.flags.return_pts)        

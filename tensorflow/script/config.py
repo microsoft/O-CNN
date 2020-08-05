@@ -58,7 +58,7 @@ _C.DATA.train.take       = -1         # Use at most `take` elements from this da
 _C.DATA.train.batch_size = 32         # Training data batch size
 _C.DATA.train.mask_ratio = 0.0        # Mask out some point features
 
-_C.DATA.train.return_iter= False      # Return the data iterator
+# _C.DATA.train.return_iter= False      # Return the data iterator
 _C.DATA.train.return_pts = False      # Also return points
 
 
@@ -85,6 +85,10 @@ _C.MODEL.upsample        = 'nearest'  # The method used for upsampling
 _C.LOSS = CN()
 _C.LOSS.num_class        = 40         # The class number for the cross-entropy loss
 _C.LOSS.weight_decay     = 0.0005     # The weight decay on model weights
+_C.LOSS.sigma            = 0.1        # Use for MID training
+_C.LOSS.momentum         = 0.5        # Use for MID training
+_C.LOSS.inst_num         = 57449      # The object number in MID training
+_C.LOSS.seg_num          = 100        # The clustering number in MID training
 _C.LOSS.weights          = (1.0, 1.0) # The weight factors for different losses
 _C.LOSS.label_smoothing  = 0.0        # The factor of label smoothing
 
