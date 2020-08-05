@@ -1,10 +1,9 @@
-#include "octree_nn.h"
-#include "octree_parser.h"
-
-#include <cuda_runtime.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <tensorflow/core/framework/shape_inference.h>
+
+#include "octree_nn.h"
+#include "octree_parser.h"
 
 namespace tensorflow {
 
@@ -14,11 +13,10 @@ REGISTER_OP("OctreeGrow")
     .Attr("full_octree: bool = false")
     .Output("out_octree: int8")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
-      c->set_output(0, c->MakeShape({ c->UnknownDim() }));
+      c->set_output(0, c->MakeShape({c->UnknownDim()}));
       return Status::OK();
     })
     .Doc(R"doc(Octree grow operator.)doc");
-
 
 class OctreeGrowOp : public OpKernel {
  public:
@@ -41,12 +39,12 @@ class OctreeGrowOp : public OpKernel {
 
     // out octree
     Tensor* tensor_out = nullptr;
-    TensorShape shape_out({ oct_info_.sizeof_octree() });
+    TensorShape shape_out({oct_info_.sizeof_octree()});
     OP_REQUIRES_OK(context, context->allocate_output(0, shape_out, &tensor_out));
     auto* ptr_out = tensor_out->flat<int8>().data();
-    // memset_gpu(tensor_out->NumElements(), 0, ptr_out);
-    cudaMemset(ptr_out, 0, tensor_out->NumElements());
-    
+    memset_gpu(tensor_out->NumElements(), char(0), (char*)ptr_out);
+    // cudaMemset(ptr_out, 0, tensor_out->NumElements());
+
     // copy octree
     OctreeParser octree_out;
     octree_out.set_gpu(ptr_out, &oct_info_);
@@ -55,20 +53,21 @@ class OctreeGrowOp : public OpKernel {
     // grow octree
     if (full_octree_) {
       calc_neigh_gpu(octree_out.mutable_neighbor_gpu(target_depth_),
-          target_depth_, batch_size_);
-      generate_key_gpu(octree_out.mutable_key_gpu(target_depth_),
-          target_depth_, batch_size_);
+                     target_depth_, batch_size_);
+      generate_key_gpu(octree_out.mutable_key_gpu(target_depth_), 
+                       target_depth_, batch_size_);
       sequence_gpu(octree_out.mutable_children_gpu(target_depth_), node_num_);
     } else {
       Tensor displacement, parent;
       init_neigh_ptrs(context, parent, displacement);
       const int* label_ptr = octree_out.children_gpu(target_depth_ - 1);
       calc_neigh_gpu(octree_out.mutable_neighbor_gpu(target_depth_),
-          octree_out.neighbor_gpu(target_depth_ - 1), label_ptr,
-          octree_out.info().node_num(target_depth_ - 1), ptr_parent_, ptr_dis_);
+                     octree_out.neighbor_gpu(target_depth_ - 1), label_ptr,
+                     octree_out.info().node_num(target_depth_ - 1), ptr_parent_,
+                     ptr_dis_);
       generate_key_gpu(octree_out.mutable_key_gpu(target_depth_),
-          octree_out.key_gpu(target_depth_ - 1), label_ptr,
-          octree_out.info().node_num(target_depth_ - 1));
+                       octree_out.key_gpu(target_depth_ - 1), label_ptr,
+                       octree_out.info().node_num(target_depth_ - 1));
       sequence_gpu(octree_out.mutable_children_gpu(target_depth_), node_num_);
     }
   }
@@ -80,8 +79,8 @@ class OctreeGrowOp : public OpKernel {
       oct_info_.set_full_layer(target_depth_);
     }
     float width = 1 << target_depth_;
-    float bbmin[] = { 0, 0, 0 };
-    float bbmax[] = { width, width, width };
+    float bbmin[] = {0, 0, 0};
+    float bbmax[] = {width, width, width};
     oct_info_.set_bbox(bbmin, bbmax);
     oct_info_.set_nnum(target_depth_, node_num_);
     // Just set the non-empty node number as node_num_,
@@ -91,38 +90,32 @@ class OctreeGrowOp : public OpKernel {
     oct_info_.set_ptr_dis();
   }
 
-  // todo: replace the cudaMemcpy with the wrapper function memcpy_gpu
-  
-  void copy_octree_gpu(OctreeParser& octree_out, const OctreeParser& octree_in) {
-    int node_num_cum = octree_in.info().node_num_cum(target_depth_);
-    int key_channel = octree_in.info().channel(OctreeInfo::kKey);
-    int child_channel = octree_in.info().channel(OctreeInfo::kChild);
-    int neigh_channel = octree_in.info().channel(OctreeInfo::kNeigh);
-    int feature_channel = octree_in.info().channel(OctreeInfo::kFeature);
-    cudaMemcpy(octree_out.mutable_key_gpu(0), octree_in.key_gpu(0),
-        key_channel * node_num_cum * sizeof(int), cudaMemcpyDeviceToDevice);
-    cudaMemcpy(octree_out.mutable_children_gpu(0), octree_in.children_gpu(0),
-        child_channel * node_num_cum * sizeof(int), cudaMemcpyDeviceToDevice);
-    cudaMemcpy(octree_out.mutable_neighbor_gpu(0), octree_in.neighbor_gpu(0),
-        neigh_channel * node_num_cum * sizeof(int), cudaMemcpyDeviceToDevice);
-    cudaMemcpy(octree_out.mutable_feature_gpu(0), octree_in.feature_gpu(0),
-        feature_channel * node_num_cum * sizeof(float), cudaMemcpyDeviceToDevice);
-  }
+  void copy_octree_gpu(OctreeParser& octree_o, const OctreeParser& octree_i) {
+    int node_num_cum = octree_i.info().node_num_cum(target_depth_);
+    int num = node_num_cum * octree_i.info().channel(OctreeInfo::kKey);
+    memcpy_gpu(num, octree_i.key_gpu(0), octree_o.mutable_key_gpu(0));
 
+    num = node_num_cum * octree_i.info().channel(OctreeInfo::kChild);
+    memcpy_gpu(num, octree_i.children_gpu(0), octree_o.mutable_children_gpu(0));
+
+    num = node_num_cum * octree_i.info().channel(OctreeInfo::kNeigh);
+    memcpy_gpu(num, octree_i.neighbor_gpu(0), octree_o.mutable_neighbor_gpu(0));
+
+    num = node_num_cum * octree_i.info().channel(OctreeInfo::kFeature);
+    memcpy_gpu(num, octree_i.feature_gpu(0), octree_o.mutable_feature_gpu(0));
+  }
   void init_neigh_ptrs(OpKernelContext* ctx, Tensor& parent, Tensor& dis) {
     const vector<int>& dis_cpu = NeighHelper::Get().get_dis_array();
-    TensorShape dshape({ (long long int) dis_cpu.size() });
+    TensorShape dshape({(long long int)dis_cpu.size()});
     OP_REQUIRES_OK(ctx, ctx->allocate_temp(DT_INT32, dshape, &dis));
     ptr_dis_ = dis.flat<int>().data();
-    cudaMemcpy(ptr_dis_, dis_cpu.data(), dis_cpu.size() * sizeof(int),
-        cudaMemcpyHostToDevice);
+    memcpy_gpu(dis_cpu.size(), dis_cpu.data(), ptr_dis_);
 
     const vector<int>& parent_cpu = NeighHelper::Get().get_parent_array();
-    TensorShape pshape({ (long long int) parent_cpu.size() });
+    TensorShape pshape({(long long int)parent_cpu.size()});
     OP_REQUIRES_OK(ctx, ctx->allocate_temp(DT_INT32, pshape, &parent));
     ptr_parent_ = parent.flat<int>().data();
-    cudaMemcpy(ptr_parent_, parent_cpu.data(), parent_cpu.size() * sizeof(int),
-        cudaMemcpyHostToDevice);
+    memcpy_gpu(parent_cpu.size(), parent_cpu.data(), ptr_parent_);
   }
 
  private:
@@ -133,7 +126,6 @@ class OctreeGrowOp : public OpKernel {
   int* ptr_parent_;
   int* ptr_dis_;
 };
-
 
 REGISTER_KERNEL_BUILDER(Name("OctreeGrow").Device(DEVICE_GPU), OctreeGrowOp);
 

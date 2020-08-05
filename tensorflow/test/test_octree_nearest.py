@@ -16,9 +16,7 @@ class OctreeNearestTest(tf.test.TestCase):
     data = tf.constant(data_np)
     nearest1 = octree_tile(data, octree, depth)
 
-    xyz = octree_property(
-        octree, property_name='xyz', depth=depth+1, channel=1, dtype=tf.uint32)
-    xyz = tf.reshape(xyz, [-1])
+    xyz = octree_xyz(octree, depth=depth+1, decode=False)
     xyz = tf.cast(octree_decode_key(xyz), dtype=tf.float32)    
     xyz += tf.constant([0.5, 0.5, 0.5, 0.0], dtype=tf.float32)
     xyz *= tf.constant([0.5, 0.5, 0.5, 1.0], dtype=tf.float32)    

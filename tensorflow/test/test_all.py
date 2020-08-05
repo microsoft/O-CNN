@@ -11,6 +11,8 @@ from test_octree_linear import OctreeLinearTest
 from test_octree_nearest import OctreeNearestTest
 from test_octree_gather import OctreeGatherTest
 from test_octree_align import OctreeAlignTest
+from test_octree2points import Octree2PointsTest
+from test_points_property import PointsPropertyTest
 
 
 if __name__ == "__main__":

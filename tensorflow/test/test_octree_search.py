@@ -27,7 +27,7 @@ class OctreeSearchTest(tf.test.TestCase):
   def test_forward2(self):
     octree, data, idx_gt = self.init_data()
 
-    data = tf.cast(data.T, tf.uint8)
+    data = tf.cast(data.T, tf_uints)
     data = octree_encode_key(data)
     idx = octree_search_key(data, octree, depth=5, is_xyz=True)
     with self.cached_session() as sess:
@@ -36,7 +36,7 @@ class OctreeSearchTest(tf.test.TestCase):
   def test_forward3(self):
     octree, data, idx_gt = self.init_data()
 
-    data = tf.cast(data.T, tf.uint8)
+    data = tf.cast(data.T, tf_uints)
     data = octree_encode_key(data)
     key = octree_xyz2key(data)
     idx = octree_search_key(key, octree, depth=5, is_xyz=False)

@@ -1,44 +1,55 @@
+from libs import *
 import os
 import sys
 import numpy as np
 import tensorflow as tf
 sys.path.append('..')
-from libs import *
-import pyoctree
 
-tf.enable_eager_execution()
 
-filename1 = '/home/ps/workspace/ocnn-tf/script/logs/seg/0430_run_dataset/00.points'
-filename2 = '/home/ps/workspace/ocnn-tf/script/logs/seg/0430_run_dataset/01.points'
+class PointsPropertyTest(tf.test.TestCase):
 
-with open(filename1, 'rb') as fid: 
-  points_raw1 = fid.read()
-with open(filename2, 'rb') as fid: 
-  points_raw2 = fid.read()
-points_raw = [points_raw1, points_raw2]
+  def test_points_property(self):
+    points = np.arange(15, dtype=np.float32).reshape([-1, 3])
+    index = np.array([[0.0], [0.0], [0.0], [1.0], [1.0]], dtype=np.float32)
+    points4 = np.concatenate([points, index], axis=1)
+    normals = np.arange(0, 1.5, 0.1, dtype=np.float32).reshape([-1, 3])
+    labels = np.arange(5, dtype=np.float32)
+    feats = np.arange(10, dtype=np.float32).reshape([-1, 2])
 
-tf_xyz = points_property(points_raw, property_name='xyz', channel=4)
-tf_label = points_property(points_raw, property_name='label', channel=1)
+    # creat points
+    pts1 = points_new(points[:3, :], normals[:3, :], feats[:3, :], labels[:3])
+    pts2 = points_new(points[3:, :], normals[3:, :], feats[3:, :], labels[3:])
 
-points1 = pyoctree.Points()
-succ = points1.read_points(filename1)
-points2 = pyoctree.Points()
-succ = points2.read_points(filename2)
+    # # save points
+    # with open('points1.points', 'wb') as fid:
+    #   fid.write(pts1.numpy()[0])
+    # with open('points2.points', 'wb') as fid:
+    #   fid.write(pts2.numpy()[0])
 
-np_xyz1 = np.array(points1.points()).reshape((-1, 3))
-np_xyz2 = np.array(points2.points()).reshape((-1, 3))
-np_label1 = np.array(points1.labels()).reshape((-1, 1))
-np_label2 = np.array(points2.labels()).reshape((-1, 1))
-np_id1 = np.zeros(np_label1.shape)
-np_id2 = np.ones(np_label2.shape)
+    # get property
+    tf_labels = points_property([pts1, pts2], property_name='label', channel=1)
+    tf_labels = tf.reshape(tf_labels, [-1])
+    tf_normals = points_property([pts1, pts2], property_name='normal', channel=3)
+    tf_pts3 = points_property([pts1, pts2], property_name='xyz', channel=3)
+    tf_pts4 = points_property([pts1, pts2], property_name='xyz', channel=4)
+    tf_feats = points_property([pts1, pts2], property_name='feature', channel=2)
 
-np_xyz = np.concatenate(
-    (np.concatenate((np_xyz1, np_id1), axis=1),
-     np.concatenate((np_xyz2, np_id2), axis=1)), axis=0).astype(np.float32)
-np_label = np.concatenate((np_label1, np_label2), axis=0).astype(np.float32)
+    # set property
+    points_set = -np.arange(9, dtype=np.float32).reshape([-1, 3])
+    pts3 = points_set_property(pts1, points_set, property_name='xyz')
+    tf_points_set = points_property(pts3, property_name='xyz', channel=3)
+    feats_set = -np.arange(6, dtype=np.float32).reshape([-1, 2])
+    tf_feats_set = points_property(pts3, property_name='feature', channel=2)
 
-eq1 = np.array_equal(np_xyz, tf_xyz.numpy())
-eq2 = np.array_equal(np_label, tf_label.numpy())
+    with self.cached_session() as sess:
+      self.assertAllEqual(tf_labels, labels)
+      self.assertAllEqual(tf_normals, normals)
+      self.assertAllEqual(tf_pts3, points)
+      self.assertAllEqual(tf_pts4, points4)
+      self.assertAllEqual(tf_feats, feats)
+      self.assertAllEqual(tf_points_set, points_set)
 
-print('Pass xyz test: ', eq1)
-print('Pass label test: ', eq2)
+
+if __name__ == "__main__":
+  os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+  tf.test.main()

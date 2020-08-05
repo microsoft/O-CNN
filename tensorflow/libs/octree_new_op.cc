@@ -1,4 +1,3 @@
-#include <cuda_runtime.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <tensorflow/core/framework/shape_inference.h>
@@ -47,7 +46,7 @@ class OctreeNewOp : public OpKernel {
       oct_info_.set_adaptive(false);
     }
     oct_info_.set_key2xyz(true);
-    oct_info_.set_property(OctreeInfo::kKey, 2, -1);
+    oct_info_.set_property(OctreeInfo::kKey, 1, -1);
     oct_info_.set_property(OctreeInfo::kChild, 1, -1);
     oct_info_.set_property(OctreeInfo::kNeigh, 8, -1);
     oct_info_.set_property(OctreeInfo::kFeature, channel_, -1);
@@ -63,14 +62,14 @@ class OctreeNewOp : public OpKernel {
     Tensor* tensor_out = nullptr;
     TensorShape shape_out({oct_info_.sizeof_octree()});
     OP_REQUIRES_OK(context, context->allocate_output(0, shape_out, &tensor_out));
-    auto* ptr_out = tensor_out->flat<int8>().data();
-    cudaMemset(ptr_out, 0, tensor_out->NumElements());
+    int8* ptr_out = tensor_out->flat<int8>().data();
+    memset(ptr_out, 0, tensor_out->NumElements());
 
     // set octree, skip the propoerties neigh and feature
     OctreeParser octree_out;
-    octree_out.set_gpu(ptr_out, &oct_info_);
-    sequence_gpu(octree_out.mutable_key_gpu(depth_), node_num_);
-    sequence_gpu(octree_out.mutable_children_gpu(depth_), node_num_);
+    octree_out.set_cpu(ptr_out, &oct_info_);
+    sequence_cpu(octree_out.mutable_key_cpu(depth_), node_num_);
+    sequence_cpu(octree_out.mutable_children_cpu(depth_), node_num_);
   }
 
  private:
@@ -80,6 +79,6 @@ class OctreeNewOp : public OpKernel {
   bool has_displace_;
 };
 
-REGISTER_KERNEL_BUILDER(Name("OctreeNew").Device(DEVICE_GPU), OctreeNewOp);
+REGISTER_KERNEL_BUILDER(Name("OctreeNew").Device(DEVICE_CPU), OctreeNewOp);
 
 }  // namespace tensorflow

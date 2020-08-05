@@ -1,4 +1,3 @@
-#include <cuda_runtime.h>
 #include <tensorflow/core/framework/op.h>
 #include <tensorflow/core/framework/op_kernel.h>
 #include <tensorflow/core/framework/shape_inference.h>
@@ -57,17 +56,17 @@ class OctreeAlignOp : public OpKernel {
     CHECK_EQ(src_octree.info().node_num(curr_depth_), src_h);
 
     // get key
-    const uint32* src_key = src_octree.key_gpu(curr_depth_);
+    const uintk* src_key = src_octree.key_gpu(curr_depth_);
     Tensor src_key_tensor;
     if (src_octree.info().is_key2xyz()) {
       xyz2key_gpu_op(context, &src_key_tensor, src_key, src_h, curr_depth_);
-      src_key = src_key_tensor.flat<uint32>().data();
+      src_key = src_key_tensor.flat<uintk>().data();
     }
-    const uint32* des_key = des_octree.key_gpu(curr_depth_);
+    const uintk* des_key = des_octree.key_gpu(curr_depth_);
     Tensor des_key_tensor;
     if (des_octree.info().is_key2xyz()) {
       xyz2key_gpu_op(context, &des_key_tensor, des_key, des_h, curr_depth_);
-      des_key = des_key_tensor.flat<uint32>().data();
+      des_key = des_key_tensor.flat<uintk>().data();
     }
 
     // binary search
@@ -89,10 +88,11 @@ class OctreeAlignOp : public OpKernel {
 
  protected:
   void xyz2key_gpu_op(OpKernelContext* context, Tensor* key_tensor,
-                      const uint32* xyz, const int num, const int depth) {
-    OP_REQUIRES_OK(context, context->allocate_temp(
-                                DT_UINT32, TensorShape({num}), key_tensor));
-    auto ptr = key_tensor->flat<uint32>().data();
+                      const uintk* xyz, const int num, const int depth) {
+    auto dtype = std::is_same<uintk, uint32>::value ? DT_UINT32 : DT_UINT64;
+    OP_REQUIRES_OK(
+        context, context->allocate_temp(dtype, TensorShape({num}), key_tensor));
+    auto ptr = key_tensor->flat<uintk>().data();
     xyz2key_gpu(ptr, xyz, num, depth);
   }
 

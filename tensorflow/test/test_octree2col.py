@@ -23,7 +23,7 @@ class Octree2ColTest(tf.test.TestCase):
                     [9, 10, 11, 12, 13, 14, 15, 16, 17]]
 
   def forward(self, kernel_size, stride, idx_map):
-    kernel = kernel_size[0] * kernel_size[1] * kernel_size[2];
+    kernel = kernel_size[0] * kernel_size[1] * kernel_size[2]
     # kernel = 27
     btm_h = 8
     top_h  = 8 if stride == 1 else 1
