@@ -16,6 +16,11 @@ By [Peng-Shuai Wang](https://wang-ps.github.io/), Chun-Yu Sun, [Yang Liu](https:
 and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
 ACM Transactions on Graphics (SIGGRAPH Asia), 37(6), 2018<br/>
 
+- **[Deep Octree-based CNNs with Output-Guided Skip Connections for 3D Shape and Scene Completion](https://arxiv.org/abs/2006.03762)**<br/>
+By [Peng-Shuai Wang](https://wang-ps.github.io/), [Yang Liu](https://xueyuhanlang.github.io/) 
+and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
+Computer Vision and Pattern Recognition (CVPR) Workshops, 2020<br/>
+
 
 If you use our code or models, please cite our paper.
 ```

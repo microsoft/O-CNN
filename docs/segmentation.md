@@ -1,5 +1,7 @@
 # Shape Segmentation
 
+## Shape Segmentation on ShapeNet with Caffe
+
 The experiment is based on `Caffe`. 
 It is also possible to conduct this experiment with `TensorFlow`, and the 
 instructions are on our working list.
@@ -41,3 +43,33 @@ instructions are on our working list.
 
 - For CRF refinement, please refer to the code provided 
   [here](https://github.com/wang-ps/O-CNN/tree/master/densecrf).  
+
+
+
+## Shape Segmentation on PartNet with Tensorflow
+
+We implement the [HRNet](https://github.com/HRNet) within our O-CNN framework,
+and conduct the shape segmentation on
+[PartNet](https://github.com/daerduoCarey/partnet_dataset). On the testing set
+of PartNet, we achieve an average IoU of **58.4**, significantly better than
+PointNet (IoU: 35.6), PointNet++ (IoU: 42.5), SpiderCNN (IoU: 37.0), and
+PointCNN(IoU: 46.5). For more details, please refer to Section 4.3 of our paper
+on [3D Unsupervised Learning](https://arxiv.org/abs/2008.01068).
+
+
+1. Download [PartNet](https://github.com/daerduoCarey/partnet_dataset) according
+   the provided instructions. Then unzip the data to the folder 
+   `tensorflow/script/dataset/partnet_segmentation`.
+   
+2. Run the following script to convert the original data to `tfrecords`. This
+   process may take several hours to complete.
+    ```shell
+    cd tensorflow
+    python data/seg_partnet.py 
+    ```
+
+3. Run the following script to train the network.
+    ```shell
+    cd script
+    python run_seg_partnet_cmd.py
+    ```
