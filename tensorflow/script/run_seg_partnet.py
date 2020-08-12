@@ -94,7 +94,7 @@ class PartNetSolver(TFSolver):
     self.num_class = flags.LOSS.num_class # used to calculate the IoU
 
   def result_callback(self, avg_results):
-    # calc part-IoU, update `iou`, this is in correspondence with Line 62
+    # calc part-IoU, update `iou`, this is in correspondence with Line 77
     iou_avg = 0.0
     ious = [0] * self.num_class
     for i in range(1, self.num_class):  # !!! Ignore the first label
