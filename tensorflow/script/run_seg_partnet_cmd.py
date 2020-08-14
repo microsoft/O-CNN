@@ -1,12 +1,31 @@
 import os
 import csv
 import math
+import argparse
 
-alias = '0811_partnet_randinit'
-gpu = 0
-fintune = False
-batch_size = 32
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--alias', type=str, required=False,
+                    default='0811_partnet_randinit')
+parser.add_argument('--gpu', type=int, required=False, default=0)
+parser.add_argument('--finetune', action='store_true')
+parser.add_argument('--ckpt', type=str, required=False,
+                    default='dataset/midnet_data/mid_d6_o6/model/iter_800000.ckpt')
+
+
+args = parser.parse_args()
+alias = args.alias
+gpu = args.gpu
+finetune = args.finetune
+
+
 factor = 2
+batch_size = 32
+ckpt = args.ckpt if finetune else '\'\''
+module = 'run_seg_partnet_finetune.py' if finetune else 'run_seg_partnet.py'
+script = 'python %s --config configs/seg_hrnet_partnet_pts.yaml' % module
+data = 'dataset/partnet_segmentation/dataset'
+
 
 names     = ['Bed', 'Bottle', 'Chair', 'Clock', 'Dishwasher', 'Display', 'Door', 
              'Earphone', 'Faucet', 'Knife', 'Lamp', 'Microwave', 'Refrigerator',
@@ -24,16 +43,8 @@ val_num   = [  24,    37,   617,   50,    19,   104,    25,   28,
 seg_num   = [  15,     9,    39,   11,     7,     4,     5,   10,  
                12,    10,    41,    6,     7,    24,    51,   11,     6]
 ratios    = [0.01,  0.02,  0.05, 0.10,  0.20,  0.50, 1.00]
-muls      = [   2,     2,     2,    1,     1,     1,    1]  # longer iterations when data < 10%
+muls      = [   2,     2,     2,    1,     1,     1,    1]  # longer iter when data < 10%
 
-
-data = 'dataset/partnet_segmentation/dataset'
-if not fintune:
-  script = 'python run_seg_partnet.py --config configs/seg_hrnet_partnet_pts.yaml'
-  ckpt = '\'\''
-else:
-  script = 'python run_seg_partnet_finetune.py --config configs/seg_hrnet_partnet_pts.yaml'
-  ckpt = 'logs/hrnet/0430_hrnet_d6_o6/model/iter_800000.ckpt'
 
 for i in range(len(ratios)-1, -1, -1):
   for k in range(len(names)):
@@ -44,20 +55,20 @@ for i in range(len(ratios)-1, -1, -1):
     take = int(math.ceil(train_num[k] * ratio))
 
     cmds = [
-      script,
-      'SOLVER.gpu {},'.format(gpu),
-      'SOLVER.logdir logs/seg/{}/{}/ratio_{:.2f}'.format(alias, name, ratio),
-      'SOLVER.max_iter {}'.format(max_iter),
-      'SOLVER.step_size {},{}'.format(step_size1, step_size2),
-      'SOLVER.test_every_iter {}'.format(test_every_iter),
-      'SOLVER.test_iter {}'.format(test_num[k]),
-      'SOLVER.ckpt {}'.format(ckpt),
-      'DATA.train.location {}/{}_train_level3.tfrecords'.format(data, name),
-      'DATA.train.take {}'.format(take),
-      'DATA.test.location {}/{}_test_level3.tfrecords'.format(data, name),
-      'MODEL.nout {}'.format(seg_num[k]),
-      'MODEL.factor {}'.format(factor),
-      'LOSS.num_class {}'.format(seg_num[k])]
+        script,
+        'SOLVER.gpu {},'.format(gpu),
+        'SOLVER.logdir logs/seg/{}/{}/ratio_{:.2f}'.format(alias, name, ratio),
+        'SOLVER.max_iter {}'.format(max_iter),
+        'SOLVER.step_size {},{}'.format(step_size1, step_size2),
+        'SOLVER.test_every_iter {}'.format(test_every_iter),
+        'SOLVER.test_iter {}'.format(test_num[k]),
+        'SOLVER.ckpt {}'.format(ckpt),
+        'DATA.train.location {}/{}_train_level3.tfrecords'.format(data, name),
+        'DATA.train.take {}'.format(take),
+        'DATA.test.location {}/{}_test_level3.tfrecords'.format(data, name),
+        'MODEL.nout {}'.format(seg_num[k]),
+        'MODEL.factor {}'.format(factor),
+        'LOSS.num_class {}'.format(seg_num[k])]
 
     cmd = ' '.join(cmds)
     print('\n', cmd, '\n')
@@ -68,7 +79,7 @@ summary.append('names, ' + ', '.join(names))
 summary.append('train_num, ' + ', '.join([str(x) for x in train_num]))
 summary.append('test_num, ' + ', '.join([str(x) for x in test_num]))
 for i in range(len(ratios)-1, len(ratios)-2, -1):
-  ious = [None] * len(names)  
+  ious = [None] * len(names)
   for j in range(len(names)):
     filename = 'logs/seg/{}/{}/ratio_{:.2f}/test_summaries.csv'.format(alias, names[j], ratios[i])
     with open(filename, newline='') as fid:

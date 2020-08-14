@@ -1,0 +1,49 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/hrnet/0814_hrnet_d6_o6
+  run: train
+  learning_rate: 0.03
+  max_iter: 800000
+  test_iter: 1
+  test_every_iter: 40000
+  step_size: (400000,200000)
+  ckpt_num: 20
+
+DATA:
+  train:
+    dtype: points
+    distort: True
+    depth: 6
+    axis: y
+    angle: (180, 180, 180)
+    interval: (1, 1, 1)
+    scale: 0.25
+    jitter: 0.25
+    offset: 0.0
+    node_dis: True
+    node_feat: True
+    location: dataset/midnet_data/shapenet.points.64.cluster.100.tfrecords
+    batch_size: 32
+    x_alias: data
+    y_alias: index
+    # mask_ratio: 0.5
+    # dropout: (0.0, 0.5)
+    # drop_dim: (48, 64)
+
+MODEL:
+  name: hrnet
+  channel: 4
+  depth: 6
+  factor: 2
+  nouts: 128,64
+  dropout: 0.0,
+  signal_abs: True
+  upsample: nearest
+  depth_out: 6
+
+LOSS:
+  weight_decay: 0.0005
+  sigma: 0.1
+  momentum: 0.5
+  inst_num: 57449
+  seg_num: 100
