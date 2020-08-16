@@ -21,26 +21,36 @@ By [Peng-Shuai Wang](https://wang-ps.github.io/), [Yang Liu](https://xueyuhanlan
 and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
 Computer Vision and Pattern Recognition (CVPR) Workshops, 2020<br/>
 
+- **[Unsupervised 3D Learning for Shape Analysis via Multiresolution Instance Discrimination](https://arxiv.org/abs/2008.01068)**<br/>
+By [Peng-Shuai Wang](https://wang-ps.github.io/), Yu-Qi Yang, Qian-Fang Zou, 
+[Zhirong Wu](https://www.microsoft.com/en-us/research/people/wuzhiron/), 
+[Yang Liu](https://xueyuhanlang.github.io/) 
+and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
+Arxiv preprint, 2020<br/>
 
-If you use our code or models, please cite our paper.
-```
-@article {Wang-2017-OCNN,
-    title     = {{O-CNN: Octree-based Convolutional Neural Networks for 3D Shape Analysis}},
-    author    = {Wang, Peng-Shuai and Liu, Yang and Guo, Yu-Xiao and Sun, Chun-Yu and Tong, Xin},
-    journal   = {ACM Transactions on Graphics (SIGGRAPH)},
-    volume    = {36},
-    number    = {4},
-    year      = {2017},
-}
-@article {Wang-2018-AOCNN,
-    title     = {{Adaptive O-CNN: A Patch-based Deep Representation of 3D Shapes}},
-    author    = {Wang, Peng-Shuai and Sun, Chun-Yu and Liu, Yang and Tong, Xin},
-    journal   = {ACM Transactions on Graphics (SIGGRAPH Asia)},
-    volume    = {37},
-    number    = {6},
-    year      = {2018},
-}
-```
+If you use our code or models, please [cite](docs/citation.md) our paper.
+
+
+### What's New?
+
+- 2020.08.16: We released our code for [3D unsupervised learning](docs/unsupervised.md).
+  We provided a unified network architecture for generic shape analysis tasks and 
+  an unsupervised method to pretrain the network. Our method achieved state-of-the-art 
+  performance on several benchmarks.
+- 2020.08.12: We released our code for 
+  [Partnet segmentation](docs/segmentation.md#shape-segmentation-on-partnet-with-tensorflow).
+  We achieved  an average IoU of **58.4**, significantly better than PointNet
+  (IoU: 35.6), PointNet++ (IoU: 42.5), SpiderCNN (IoU: 37.0), and PointCNN(IoU:
+  46.5).
+- 2020.08.05: We released our code for [shape completion](docs/completion.md).
+  We proposed a simple yet efficient network and output-guided skip connections
+  for 3D completion, which achieved state-of-the-art performances on several 
+  benchmarks.
+- 2020.03.16: We released ResNet-based O-CNN architecture for 
+  [shape classification](docs/classification.md#o-cnn-on-tensorflow).
+  We achieved a testing accuracy of **92.5** on ModelNet40 (without voting).
+
+
 
 ### Contents
 - [Installation](docs/installation.md)
