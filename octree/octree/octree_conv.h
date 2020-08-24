@@ -76,10 +76,10 @@ class OctreeBaseConv {
   const int* ni_cpu_ptr_; // hold cpu data from NeighHelper::get_ni(kernel_size_)
   const int* ni_gpu_ptr_; // hold gpu data from NeighHelper::get_ni(kernel_size_)
 
+  uint64 MAX_SIZE;
+
   GEMMEngine<Dtype>* engine_cpu_;
   GEMMEngine<Dtype>* engine_gpu_;
-
-  int MAX_SIZE;
 };
 
 }  // namespace octree

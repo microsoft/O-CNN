@@ -70,7 +70,7 @@ void OctreeBaseConv<Dtype>::reshape() {
   }
   workspace_n_ = 1;
   workspace_ha_ = workspace_h_;
-  int ideal_size = workspace_h_ * kernel_dim_;
+  uint64 ideal_size = (uint64) workspace_h_ * (uint64) kernel_dim_;
   if (ideal_size > MAX_SIZE && !is_1x1_) {
     workspace_n_ = (ideal_size + MAX_SIZE - 1) / MAX_SIZE;
     workspace_ha_ = (workspace_h_ + workspace_n_ - 1) / workspace_n_;
