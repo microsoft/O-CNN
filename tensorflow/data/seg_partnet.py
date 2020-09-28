@@ -117,8 +117,8 @@ def convert_points_to_tfrecords():
 
 def convert_single_data(data_path, output_path, anno_id):
   input_path = os.path.join(data_path, anno_id)
-  point_path = os.path.join(input_path, "point_sample", "sample-points-all-pts-nor-rgba-10000.txt")
-  label_path = os.path.join(input_path, "point_sample", "sample-points-all-label-10000.txt")
+  point_path = os.path.join(input_path, "point_sample", "pts-10000.pts")
+  label_path = os.path.join(input_path, "point_sample", "label-10000.txt")
   meta_json = os.path.join(input_path, "meta.json")
   result_json = os.path.join(input_path, "result.json")
   code_path = os.path.join(root_folder, 'partnet_dataset_master')
