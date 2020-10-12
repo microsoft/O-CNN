@@ -1,0 +1,36 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/m40/1011_lenet
+  run: train
+  max_iter: 160000
+  test_iter: 77
+  test_every_iter: 2000
+  step_size: (40000,)
+  ckpt_num: 20
+
+DATA:
+  train:
+    distort: True
+    depth: 5
+    angle: (0, 0, 5)      # small rotation along z axis  
+    interval: (1, 1, 1)   
+    scale: 0.25
+    jitter: 0.125
+    location: dataset/ModelNet40.points
+    batch_size: 32
+
+  test: 
+    distort: False
+    depth: 5
+    location: dataset/ModelNet40.points
+    batch_size: 32
+
+MODEL:
+  name: lenet
+  channel: 3
+  nout: 40
+  depth: 5
+
+LOSS:
+  num_class: 40
+  weight_decay: 0.0005

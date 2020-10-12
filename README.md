@@ -33,6 +33,8 @@ If you use our code or models, please [cite](docs/citation.md) our paper.
 
 ### What's New?
 
+- 2020.10.12: Release the initial version of our O-CNN under PyTorch. The code
+  has been tested with the [classification task](docs/classification.md#o-cnn-on-pytorch).
 - 2020.08.16: We released our code for [3D unsupervised learning](docs/unsupervised.md).
   We provided a unified network architecture for generic shape analysis tasks and 
   an unsupervised method to pretrain the network. Our method achieved state-of-the-art 

@@ -1,8 +1,6 @@
-octree/build
 octree/external
 tensorflow/libs/object
 tensorflow/libs/Makefile
-tensorflow/libs/libocnn.so
 caffe-official
 *.pyc
 *.vscode
@@ -10,3 +8,10 @@ caffe-official
 caffe/experiments/dataset
 tensorflow/script/dataset
 tensorflow/script/logs
+dist
+build
+__pycache__
+*.egg-info/
+.vscode/
+*.pyd
+*.so
