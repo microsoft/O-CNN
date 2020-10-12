@@ -741,6 +741,7 @@ template void memset_gpu<char>(const int N, const char alpha, char* Y);
 template void memset_gpu<int8_t>(const int N, const int8_t alpha, int8_t* Y);
 template void memset_gpu<uint8_t>(const int N, const uint8_t alpha, uint8_t* Y);
 template void memcpy_gpu<int>(const int N, const int* X, int* Y);
+template void memcpy_gpu<int64_t>(const int N, const int64_t* X, int64_t* Y);
 template void memcpy_gpu<uint32>(const int N, const uint32* X, uint32* Y);
 template void memcpy_gpu<uint64>(const int N, const uint64* X, uint64* Y);
 template void memcpy_gpu<float>(const int N, const float* X, float* Y);

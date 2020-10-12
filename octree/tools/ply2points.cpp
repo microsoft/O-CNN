@@ -13,7 +13,7 @@ using cflags::Require;
 
 DEFINE_string(filenames, kRequired, "", "The input filenames");
 DEFINE_string(output_path, kOptional, ".", "The output path");
-DEFINE_bool(const_normal, kOptional, "1", "Set constant normal if there is normal");
+DEFINE_bool(const_normal, kOptional, "1", "Set constant normal if there is no normal");
 DEFINE_bool(verbose, kOptional, true, "Output logs");
 
 bool read_ply(vector<float>& pts, vector<float>& normals, vector<float>& labels,
@@ -41,6 +41,7 @@ bool read_ply(vector<float>& pts, vector<float>& normals, vector<float>& labels,
   if (has_label) {
     labels = plyIn.getElement("vertex").getProperty<float>("label");
   }
+  infile.close();
   return true;
 }
 

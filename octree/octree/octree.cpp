@@ -582,7 +582,7 @@ void Octree::calc_signal(const bool calc_normal_err, const bool calc_dist_err) {
 
       uintk ptu_base[3];
       compute_pt(ptu_base, key_d[i], d);
-      float pt_base[3] = { ptu_base[0], ptu_base[1], ptu_base[2] };
+      float pt_base[3] = { float(ptu_base[0]), float(ptu_base[1]), float(ptu_base[2]) };
       if (has_dis) {
         float dis_avg[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         for (int c = 0; c < 3; ++c) {

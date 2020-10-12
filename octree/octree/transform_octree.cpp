@@ -62,7 +62,7 @@ void ScanOctree::bbox_xy(int depth) {
   }
 
   for (int i = 0; i < 8; ++i) {
-    float pt[3] = {i / 4, (i / 2) % 2, i % 2};
+    float pt[3] = {float(i / 4), float((i / 2) % 2), float(i % 2)};
     float x = dot_prod(pt, x_);
     if (x < bbmin_[0]) bbmin_[0] = x;
     if (x > bbmax_[0]) bbmax_[0] = x;

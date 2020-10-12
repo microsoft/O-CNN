@@ -1,7 +1,7 @@
 #ifndef _OCTREE_TYPES_
 #define _OCTREE_TYPES_
 
-// #include <cstdint>
+#include <cstdint>
 
 // typedef uint8_t uint8;
 // typedef uint16_t uint16;

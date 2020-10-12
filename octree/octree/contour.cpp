@@ -88,7 +88,7 @@ pair<float, float> Contour::fval(int x, int y, int z) {
 
 bool Contour::check_subdividion(const uintk node_key, const int depth) {
   // get cooridinates
-  uintk xyz[3] = {0};
+  int xyz[3] = {0};
   octree_->key2xyz(xyz, node_key, depth);
   int depth_ = octree_->info().depth();
   const int scale = 1 << (depth_ - depth);

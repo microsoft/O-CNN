@@ -125,8 +125,8 @@ int num_elements(const vector<int>& vec) {
   return count;
 }
 
-
-void resize_with_last_val(vector<int>& vec, const int size) {
+template<typename Dtype>
+void resize_with_last_val(vector<Dtype>& vec, const int size) {
   int len = vec.size();
   if (len == 0) return;
   if (len < size) {
@@ -593,6 +593,8 @@ void key2xyz(Dtype1* xyz, const Dtype2 key, const int depth) {
 }
 
 // Explicit instantiation
+template void resize_with_last_val<int>(vector<int>& vec, const int sz);
+template void resize_with_last_val<float>(vector<float>& vec, const int size);
 template void memset_cpu<int>(const int N, const int alpha, int* Y);
 template void memset_cpu<float>(const int N, const float alpha, float* Y);
 template void memset_cpu<double>(const int N, const double alpha, double* Y);
