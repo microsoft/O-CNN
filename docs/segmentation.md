@@ -58,17 +58,22 @@ on [3D Unsupervised Learning](https://arxiv.org/abs/2008.01068).
 
 
 1. Download [PartNet](https://github.com/daerduoCarey/partnet_dataset) according
-   the provided instructions. Then unzip the data to the folder 
+   the provided instructions (about 100G). Then unzip the data to the folder 
    `tensorflow/script/dataset/partnet_segmentation`.
    
 2. Run the following script to convert the original data to `tfrecords`. This
-   process may take several hours to complete.
+   process may take several hours to complete. For convenience, we also provide
+   the converted `tfrecords` (6.6G)
+   [here](https://www.dropbox.com/s/wrkcns19htdxb6x/partnet.zip?dl=0). Download
+   and unzip the data to the folder `tensorflow/script/dataset`.
     ```shell
     cd tensorflow
     python data/seg_partnet.py 
     ```
 
-3. Run the following script to train the network.
+3. Run the following script to train the network. The trained weights and
+   logs can also be downloaded (6.6G)
+   [here](https://www.dropbox.com/s/wrkcns19htdxb6x/partnet.zip?dl=0).
     ```shell
     cd script
     python run_seg_partnet_cmd.py

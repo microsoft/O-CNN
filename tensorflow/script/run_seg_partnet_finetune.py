@@ -2,9 +2,14 @@ import tensorflow as tf
 
 from config import parse_args
 from ocnn import get_variables_with_name, Optimizer
-from run_seg_partnet import PartNetSolver, ComputeGraphSeg
+from run_seg_partnet import PartNetSolver, ComputeGraphSeg, FLAGS
 
 
+# Add config
+FLAGS.SOLVER.mode = 'finetune'
+
+
+# define the optimizer
 class FinetuneOptimizer:
   def __init__(self, flags):
     self.flags = flags.SOLVER
@@ -27,9 +32,22 @@ class FinetuneOptimizer:
     return solver, lr2
 
 
+class FC2Optimizer:
+  def __init__(self, flags):
+    self.flags = flags.SOLVER
+
+  # build the solver: only optimize the segmentation header
+  def __call__(self, total_loss, learning_rate):
+    flags_solver = self.flags
+    var_list = get_variables_with_name(
+        name='seg_header', verbose=flags_solver.verbose)
+    optim_header = Optimizer(var_list=var_list, mul=1.0)
+    solver2, lr2 = optim_header(total_loss, learning_rate)
+    return solver2, lr2
+
+
 # define the solver
 class PartNetFinetune(PartNetSolver):
-  
   def restore(self, sess, ckpt):
     # !!! Restore the trainable/untrainable variables under the name scope `ocnn`
     # Note the variables added by solvers are filtered out since they are not
@@ -45,6 +63,7 @@ class PartNetFinetune(PartNetSolver):
 if __name__ == '__main__':
   FLAGS = parse_args()
   compute_graph = ComputeGraphSeg(FLAGS)
-  build_solver = FinetuneOptimizer(FLAGS)
+  optimizer = FinetuneOptimizer if FLAGS.SOLVER.mode == 'finetune' else FC2Optimizer
+  build_solver = optimizer(FLAGS)
   solver = PartNetFinetune(FLAGS, compute_graph, build_solver)
   solver.run()

@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--alias', type=str, required=False,
                     default='0811_partnet_randinit')
 parser.add_argument('--gpu', type=int, required=False, default=0)
-parser.add_argument('--finetune', action='store_true')
+parser.add_argument('--mode', type=str, required=False, default='randinit')
 parser.add_argument('--ckpt', type=str, required=False,
                     default='dataset/midnet_data/mid_d6_o6/model/iter_800000.ckpt')
 
@@ -16,14 +16,15 @@ parser.add_argument('--ckpt', type=str, required=False,
 args = parser.parse_args()
 alias = args.alias
 gpu = args.gpu
-finetune = args.finetune
+mode = args.mode
 
 
 factor = 2
 batch_size = 32
-ckpt = args.ckpt if finetune else '\'\''
-module = 'run_seg_partnet_finetune.py' if finetune else 'run_seg_partnet.py'
+ckpt = args.ckpt if mode != 'randinit' else '\'\''
+module = 'run_seg_partnet_finetune.py' if mode != 'randinit' else 'run_seg_partnet.py'
 script = 'python %s --config configs/seg_hrnet_partnet_pts.yaml' % module
+if mode != 'randinit': script += ' SOLVER.mode %s ' % mode
 data = 'dataset/partnet_segmentation/dataset'
 
 
@@ -92,4 +93,4 @@ for i in range(len(ratios)-1, len(ratios)-2, -1):
 with open('logs/seg/{}/summaries.csv'.format(alias), 'w') as fid:
   summ = '\n'.join(summary)
   fid.write(summ)
-  # print(summ)
+  print(summ)
