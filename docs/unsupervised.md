@@ -18,7 +18,7 @@
 ## Finetune on PartNet
 
 Follow the instructions
-[here](docs/segmentation.md#shape-segmentation-on-partnet-with-tensorflow) to
+[here](segmentation.md#shape-segmentation-on-partnet-with-tensorflow) to
 download the PartNet and preprocess the data. 
 
 Run the following script to finetune the network on PartNet with the pretrained
