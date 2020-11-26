@@ -51,6 +51,13 @@ If you want to try the original code or do some speed comparisons with our `O-CN
 feel free to drop me an email, we can share the original code with you. 
 
 
+<!-- 
+cd caffe/docker
+docker build --tag=ocnn:caffe gpu
+docker run --runtime=nvidia --name=ocnn-caffe -it --rm ocnn:caffe /bin/bash 
+docker pull wangps/ocnn:caffe
+-->
+
 ## Tensorflow
 
 The code has been tested with Ubuntu 16.04/18.04 and TensorFlow 1.14.0/1.12.0.

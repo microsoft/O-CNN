@@ -9,7 +9,7 @@ test_interval: 2000
 # The base learning rate, momentum and the weight decay of the network.
 base_lr: 0.1 
 momentum: 0.9 
-weight_decay: 0.0005
+weight_decay: 0.0008
 
 # The learning rate policy
 lr_policy: "step"

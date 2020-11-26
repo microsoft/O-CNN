@@ -6,6 +6,8 @@ caffe-official
 *.vscode
 *.zip
 caffe/experiments/dataset
+caffe/experiments/models
+caffe/experiments/*.log
 tensorflow/script/dataset
 tensorflow/script/logs
 dist
@@ -15,3 +17,5 @@ __pycache__
 .vscode/
 *.pyd
 *.so
+*.png
+*.fig

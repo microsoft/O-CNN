@@ -16,6 +16,8 @@ parser.add_argument('--octree', type=str, required=False,
                     help='The path of the octree')
 parser.add_argument('--simplify_points', type=str, required=False,
                     help='The path of the simplify_points')
+parser.add_argument('--depth', type=int, default=5,
+                    help='The octree depth')
 
 args = parser.parse_args()
 cmd  = args.run
@@ -177,7 +179,7 @@ def m40_generate_aocnn_lmdb(depth=5):
   # generate octree
   root_folder =  os.path.join(abs_path, 'dataset')
   points_folder = os.path.join(root_folder, 'ModelNet40.points')
-  m40_convert_points_to_octree(points_folder, depth, adaptive=1, node_dis=1)
+  m40_convert_points_to_octree(points_folder, depth, adaptive=1, node_dis=0)
 
   # generate lmdb
   octree_folder = os.path.join(root_folder, 'ModelNet40.octree.%d.adaptive' % depth)
@@ -243,7 +245,7 @@ if __name__ == '__main__':
   elif cmd == 'm40_generate_ocnn_lmdb':
     m40_generate_ocnn_lmdb(depth=5)
   elif cmd == 'm40_generate_aocnn_lmdb':
-    m40_generate_aocnn_lmdb(depth=5)
+    m40_generate_aocnn_lmdb(depth=args.depth)
   elif cmd == 'm40_generate_ocnn_points_tfrecords':
     m40_generate_ocnn_points_tfrecords()
   elif cmd == 'm40_generate_ocnn_octree_tfrecords':
