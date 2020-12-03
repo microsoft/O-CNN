@@ -31,11 +31,12 @@ void OctreeSetFeatureLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   }
 
   octree::set_octree_parser(oct_parser_btm_, *bottom[0]);
-
   oct_info_ = oct_parser_btm_.info();
   oct_info_.set_adaptive(is_adaptive_);
   oct_info_.set_adaptive_layer(adap_depth_);
-  oct_info_.set_node_dis(is_adaptive_);
+  // Assume that the first 3 channels store normal, and the 4th channel is displacement.
+  // TODO: add an interface in the caffe.proto in the future.
+  oct_info_.set_node_dis(channel_ > 3);
   CHECK_EQ(oct_info_.depth(), curr_depth_);
   CHECK_EQ(oct_info_.channel(OctreeInfo::kChild), 1);
   CHECK_EQ(oct_info_.locations(OctreeInfo::kChild), -1);

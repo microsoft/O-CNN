@@ -40,9 +40,7 @@ void OctreePoolingLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
     int bottom_h = bottom[0]->shape(2);
     int nnum = octree_batch_.info().node_num(curr_depth_);
     if (nnum == 0) nnum = 1;
-    CHECK_EQ(bottom_h, nnum)
-        << "Perhaps the OctreePaddingLayer should be added before "
-        << this->layer_param_.name();
+    CHECK_EQ(bottom_h, nnum) << "Error in " << this->layer_param_.name();
 
     // reshape the max-pooling index
     vector<int> idx_shape = bottom[0]->shape();

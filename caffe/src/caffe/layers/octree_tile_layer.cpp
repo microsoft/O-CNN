@@ -46,10 +46,10 @@ void OctreeTileLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   int bottom_h = bottom[0]->shape(2);
   CHECK_EQ(bottom_h, octree_batch_.info().node_num(curr_depth_))
       << "The node number is inconsistent in layer: "
-          << this->layer_param_.name();
+      << this->layer_param_.name();
   CHECK_LE(tile_depth_, octree_batch_.info().depth())
       << "Error in " << this->layer_param_.name() << ": "
-          << "The tile_depth should be smaller than octree depth.";
+      << "The tile_depth should be smaller than octree depth.";
 
   // top_shape
   int top_h = octree_batch_.info().node_num(tile_depth_);

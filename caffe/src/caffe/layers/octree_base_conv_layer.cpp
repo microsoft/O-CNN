@@ -48,11 +48,10 @@ void OctreeBaseConvLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   // current octree depth
   CHECK(this->layer_param_.octree_param().has_curr_depth())
       << "Error in " << this->layer_param_.name() << ": "
-          << "The octree depth of bottom blob should be set coreectly.";
+      << "The octree depth of bottom blob should be set coreectly.";
   curr_depth_ = this->layer_param_.octree_param().curr_depth();
   //curr_depth_ = Octree::get_curr_depth();
-  //if (stride_ == 2)
-  //{
+  //if (stride_ == 2) {
   //	if (is_deconvolution_layer()) Octree::set_curr_depth(curr_depth_ + 1);
   //	else Octree::set_curr_depth(curr_depth_ - 1);
   //}
@@ -188,7 +187,11 @@ void OctreeBaseConvLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   }
   workspace_n_ = 1;
   workspace_ha_ = workspace_h_;
-  const int MAX_SIZE = Octree::get_workspace_maxsize();
+  // In some other layers, such as octree_pooling, the workspace blob is also
+  // resized, without considering the get_workspace_maxsize(), the actual
+  // size of workspace might be larger than get_workspace_maxsize(), so 
+  // calculate the MAX_SIZE from get_workspace_maxsize() and its original count()
+  const int MAX_SIZE = std::max(Octree::get_workspace_maxsize(), workspace_->count());
   int ideal_size = workspace_h_ * kernel_dim_;
   if (ideal_size > MAX_SIZE && !is_1x1_) {
     workspace_n_ = (ideal_size + MAX_SIZE - 1) / MAX_SIZE;
