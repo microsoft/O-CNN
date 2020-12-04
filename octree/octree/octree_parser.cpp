@@ -1,5 +1,6 @@
 #include "octree_parser.h"
 #include "octree_nn.h"
+#include "math_functions.h"
 #include "logs.h"
 
 #include <cstring>
@@ -92,19 +93,23 @@ float* OctreeParser::mutable_split_cpu(const int depth) {
 
 //////////////////////////////////////
 void OctreeParser::node_pos(float* xyz, int id, int depth, float* xyz_base) const {
+  float tmp[3];
   const uintk* keyi = key_cpu(depth) + id;
-  key2xyz(xyz, *keyi, depth);
+  key2xyz(tmp, *keyi, depth);
 
   if (xyz_base != nullptr) {
+    // output the base coordinates
     for (int c = 0; c < 3; ++c) {
-      xyz_base[c] = xyz[c];
+      xyz_base[c] = tmp[c];
     }
   }
 
   for (int c = 0; c < 3; ++c) {
-    xyz[c] += 0.5f;
+    xyz[c] = tmp[c] + 0.5f;
   }
+
   if (info_->has_displace()) {
+    const float v0 = 1e-2f, v1 = 1.0 - v0;
     const float kDis = 0.8660254f; // = sqrt(3.0f) / 2.0f
     float dis = node_dis(id, depth) * kDis; // !!! Note kDis
     if (dis == 0) return;
@@ -112,6 +117,7 @@ void OctreeParser::node_pos(float* xyz, int id, int depth, float* xyz_base) cons
     node_normal(n, id, depth);
     for (int c = 0; c < 3; ++c) {
       xyz[c] += dis * n[c];
+      xyz[c] = clamp(xyz[c], tmp[c] + v0, tmp[c] + v1);
     }
   }
 }
