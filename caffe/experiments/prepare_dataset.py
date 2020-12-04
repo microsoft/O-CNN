@@ -1,5 +1,3 @@
-# The content of this file is identical to `tensorflow/script/prepare_dateset.py`
-
 import os
 import sys
 import argparse
@@ -8,11 +6,13 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--run', type=str, required=True, 
                     help='The command to run.')
-parser.add_argument('--converter', type=str,  required=False, 
-                    help='The path of the convert_octree_data/convert_tfrecords')
+parser.add_argument('--converter', type=str, required=False, default='convert_octree_data',
+                    help='The path of the convert_octree_data')
+parser.add_argument('--convert_image', type=str, required=False, default='convert_imageset',
+                    help='The path of the convert_imageset')
 parser.add_argument('--scanner', type=str,  required=False, 
                     help='The path of the virtual_scanner')
-parser.add_argument('--octree', type=str, required=False,
+parser.add_argument('--octree', type=str, required=False, default='octree',
                     help='The path of the octree')
 parser.add_argument('--simplify_points', type=str, required=False,
                     help='The path of the simplify_points')
@@ -25,7 +25,145 @@ octree = args.octree
 converter = args.converter
 virtual_scanner = args.scanner
 simplify = args.simplify_points
+convert_image = args.convert_image
 abs_path = os.path.dirname(os.path.realpath(__file__))
+
+
+def shapenet_convert_points_to_octree_ae():
+  root_folder = os.path.join(abs_path, 'dataset')
+  points_folder = os.path.join(root_folder, 'ShapeNetV1.points')
+  octree_folder = os.path.join(root_folder, 'ShapeNetV1.octree')
+  datalist_folder = os.path.join(root_folder, 'ShapeNetV1.datalist')
+  if not os.path.exists(octree_folder): os.mkdir(octree_folder)
+  if not os.path.exists(datalist_folder): os.mkdir(datalist_folder)
+  category = ['02691156', '02828884', '02933112', '02958343', '03001627',
+              '03211117', '03636649', '03691459', '04090263', '04256520',
+              '04379243', '04401088', '04530566']
+
+  for i in range(0, len(category)):
+    print('Processing ' + category[i])
+    points_category = os.path.join(points_folder, category[i])
+    octree_category = os.path.join(octree_folder, category[i])
+
+    # generate the datalist for octree.exe
+    filename_points = os.listdir(points_category)
+    filename_list = os.path.join(
+        datalist_folder, category[i] + '_points_list.txt')
+    with open(filename_list, 'w') as f:
+      for item in filename_points:
+        f.write('%s/%s\n' % (points_category, item))
+
+    # call octree
+    cmds = [octree, '--filenames', filename_list, '--output_path', octree_category,
+            '--adp_depth', '4', '--depth', '7', '--adaptive', '1',
+            '--th_distance', '2', '--th_normal', '0.1',
+            '--node_dis', '1', '--split_label', '1']
+    cmd = ' '.join(cmds)
+    print(cmd)
+    os.system(cmd)
+
+
+def shapenet_lmdb_ae():
+  root_folder = os.path.join(abs_path, 'dataset')
+  points_folder = os.path.join(root_folder, 'ShapeNetV1.points')
+  octree_folder = os.path.join(root_folder, 'ShapeNetV1.octree')
+  img_folder = os.path.join(root_folder, 'ShapeNetV1.renderings')
+  datalist_folder = os.path.join(root_folder, 'ShapeNetV1.datalist')
+  lmdb_folder = os.path.join(root_folder, 'ShapeNetV1.lmdb')
+  if not os.path.exists(lmdb_folder): os.mkdir(lmdb_folder)
+  category = ['02691156', '02828884', '02933112', '02958343', '03001627',
+              '03211117', '03636649', '03691459', '04090263', '04256520',
+              '04379243', '04401088', '04530566']
+
+  # generate datalist for octree
+  filename_octree_train = os.path.join(datalist_folder, 'octree_train.txt')
+  filename_octree_train_aug = os.path.join(datalist_folder, 'octree_train_aug.txt')
+  filename_octree_test = os.path.join(datalist_folder, 'octree_test.txt')
+  file_octree_train = open(filename_octree_train, 'w')
+  file_octree_train_aug = open(filename_octree_train_aug, 'w')
+  file_octree_test = open(filename_octree_test, 'w')
+
+  for i in range(0, len(category)):
+    path_img  = os.path.join(img_folder, category[i])
+    path_point = os.path.join(points_folder, category[i])
+    filename_img = sorted(os.listdir(path_img))
+    filename_pc = sorted(os.listdir(path_point))
+    filename = [val for val in filename_img if val + '.points' in filename_pc]
+
+    for item in filename[:int(len(filename) * 0.8)]:
+      file_octree_train.write('%s/%s_7_2_000.octree %d\n' % (category[i], item, i))
+    for item in filename[int(len(filename) * 0.8):]:
+      file_octree_test.write('%s/%s_7_2_000.octree %d\n' % (category[i], item, i))
+    for item in filename[:int(len(filename) * 0.8)]:
+      file_octree_train_aug.write('%s/%s_7_2_000.octree %d\n' % (category[i], item, i))
+      file_octree_train_aug.write('%s/%s_7_2_001.octree %d\n' % (category[i], item, i))
+      file_octree_train_aug.write('%s/%s_7_2_011.octree %d\n' % (category[i], item, i))
+
+  file_octree_train.close()
+  file_octree_test.close()
+  file_octree_train_aug.close()
+
+
+  # generate lmdb for octree
+  print('Generate octree lmdb ...')
+  cmds = [converter, octree_folder + '/', filename_octree_train, lmdb_folder + '/octree_train_lmdb']
+  cmd = ' '.join(cmds)
+  print(cmd)
+  os.system(cmd)
+
+  cmds = [converter, octree_folder + '/', filename_octree_train_aug, lmdb_folder + '/octree_train_aug_lmdb']
+  cmd = ' '.join(cmds)
+  print(cmd)
+  os.system(cmd)
+
+  cmds = [converter, octree_folder + '/', filename_octree_test, lmdb_folder + '/octree_test_lmdb']
+  cmd = ' '.join(cmds)
+  print(cmd)
+  os.system(cmd)
+
+  # generate datalist for image
+  filename_octree_train = os.path.join(datalist_folder, 'octree_train_shuffle.txt')
+  filename_img_train = os.path.join(datalist_folder, 'img_train_shuffle.txt')
+  file_img_train = open(filename_img_train, 'w')
+  file_octree_train = open(filename_octree_train, 'r')  
+  lines = file_octree_train.readlines()
+  rand_perm = []
+  view_num = 24
+  for i in range(0, len(lines)):
+    rand_perm.append(numpy.random.permutation(view_num))
+  for v in range(0, view_num):
+    for i in range(0, len(lines)):
+      line_img = lines[i].replace('/', '/') \
+                         .replace('_7_2_000.octree',
+                                  '/rendering/%02d.png' % rand_perm[i][v])
+      file_img_train.write(line_img)
+  file_octree_train.close()
+  file_img_train.close()
+
+  filename_oct_test = os.path.join(datalist_folder, 'octree_test_shuffle.txt')
+  filename_img_test = os.path.join(datalist_folder, 'img_test_shuffle.txt')
+  file_img_test = open(filename_img_test, 'w')
+  file_oct_test = open(filename_oct_test, 'r')
+  lines = file_oct_test.readlines()
+  for line in lines:
+    line_img = line.replace('/', '/').replace('_7_2_000.octree', '/rendering/00.png')
+    file_img_test.write(line_img)
+  file_img_test.close()
+  file_oct_test.close()
+
+  # generate lmdb for image2shape
+  print('Generate image lmdb ...')
+  cmds = [convert_image, img_folder+'/', filename_img_train, lmdb_folder+'/img_train_lmdb', 
+          '--noshuffle', '--check_size']
+  cmd = ' '.join(cmds)
+  print(cmd)
+  os.system(cmd)
+
+  cmds = [convert_image, img_folder+'/', filename_img_test, lmdb_folder+'/img_test_lmdb', 
+          '--noshuffle', '--check_size']
+  cmd = ' '.join(cmds)
+  print(cmd)
+  os.system(cmd)
 
 
 def clean_off_file(filename):
@@ -252,5 +390,9 @@ if __name__ == '__main__':
     m40_generate_ocnn_octree_tfrecords()
   elif cmd == 'm40_simplify_points':
     m40_simplify_points()
+  elif cmd == 'shapenet_convert_points_to_octree_ae': 
+    shapenet_convert_points_to_octree_ae()
+  elif cmd == 'shapenet_lmdb_ae':
+    shapenet_lmdb_ae()
   else:
     print('Unsupported command:' + cmd)
