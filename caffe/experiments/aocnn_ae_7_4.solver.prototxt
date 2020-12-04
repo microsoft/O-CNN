@@ -1,11 +1,12 @@
 # The train/test net protocol buffer definition
-net: "ae_7_4.train.prototxt"
+net: "aocnn_ae_7_4.train.prototxt"
 
 # test_iter specifies how many forward passes the test should carry out.
 test_iter: 248
 # Carry out testing every 1000 training iterations.
 test_interval: 2000
 test_compute_loss: true
+test_initialization: false
 
 # The base learning rate, momentum and the weight decay of the network.
 base_lr: 0.1 
@@ -35,9 +36,9 @@ max_iter: 350000
 
 # snapshot intermediate results
 snapshot: 2000
-snapshot_prefix: "0922_ae_7_4.train"
+snapshot_prefix: "models/aocnn_ae_7_4"
 
 # solver mode: CPU or GPU
-solver_mode: CPU
+solver_mode: GPU
 
 # random_seed: 3

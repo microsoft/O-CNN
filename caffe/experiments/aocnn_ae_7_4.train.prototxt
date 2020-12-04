@@ -6,7 +6,7 @@ layer {
     phase: TRAIN
   }
   data_param {
-    source: "train_7_2_adp4_aug_upgrade"
+    source: "dataset/ShapeNetV1.lmdb/octree_train_aug_lmdb"
     batch_size: 32
     backend: LMDB
   }
@@ -23,7 +23,7 @@ layer {
     phase: TEST
   }
   data_param {
-    source: "test_7_2_adpt4_upgrade"
+    source: "dataset/ShapeNetV1.lmdb/octree_test_lmdb"
     batch_size: 32
     backend: LMDB
   }
@@ -39,7 +39,7 @@ layer {
   top: "OctLData1"
   octree_param {
     curr_depth: 4
-    content_flag: 'feature'
+    content_flag: "feature"
     signal_channel: 4
   }
 }
@@ -88,7 +88,7 @@ layer {
   top: "OctLData2"
   octree_param {
     curr_depth: 5
-    content_flag: 'feature'
+    content_flag: "feature"
     signal_channel: 4
   }
 }
@@ -138,7 +138,7 @@ layer {
   top: "OctLData3"
   octree_param {
     curr_depth: 6
-    content_flag: 'feature'
+    content_flag: "feature"
     signal_channel: 4
   }
 }
@@ -549,6 +549,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -701,6 +702,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -737,6 +739,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -759,6 +762,9 @@ layer {
   bottom: "OctLData5"
   top: "Loss1"
   loss_weight: 1
+  softmax_param {
+    engine: CAFFE
+  }
 }
 layer {
   name: "Accu1"
@@ -855,6 +861,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -891,6 +898,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -913,6 +921,9 @@ layer {
   bottom: "OctLData6"
   top: "Loss2"
   loss_weight: 1
+  softmax_param {
+    engine: CAFFE
+  }
 }
 layer {
   name: "Accu2"
@@ -1009,6 +1020,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1045,6 +1057,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1067,6 +1080,9 @@ layer {
   bottom: "OctLData7"
   top: "Loss3"
   loss_weight: 1
+  softmax_param {
+    engine: CAFFE
+  }
 }
 layer {
   name: "Accu3"
@@ -1085,6 +1101,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1250,6 +1267,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1286,6 +1304,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1308,6 +1327,9 @@ layer {
   bottom: "OctLData8"
   top: "Loss6"
   loss_weight: 1
+  softmax_param {
+    engine: CAFFE
+  }
 }
 layer {
   name: "Accu4"
@@ -1326,6 +1348,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1491,6 +1514,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1527,6 +1551,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1549,6 +1574,9 @@ layer {
   bottom: "OctLData9"
   top: "Loss9"
   loss_weight: 1
+  softmax_param {
+    engine: CAFFE
+  }
 }
 layer {
   name: "Accu5"
@@ -1567,6 +1595,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1732,6 +1761,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1768,6 +1798,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1790,6 +1821,9 @@ layer {
   bottom: "OctLData10"
   top: "Loss12"
   loss_weight: 1
+  softmax_param {
+    engine: CAFFE
+  }
 }
 layer {
   name: "Accu6"
@@ -1808,6 +1842,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }

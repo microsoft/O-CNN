@@ -2,30 +2,13 @@ layer {
   name: "data"
   type: "OctreeDataBase"
   top: "OctLData4"
-  # top: "label"
-  include {
-    phase: TRAIN
-  }
-  data_param {
-    source: "train_7_2_adp4_aug_upgrade"
-    batch_size: 1
-    backend: LMDB
-  }
-  octree_param {
-    curr_depth: 7
-    signal_channel: 4
-  }
-}
-layer {
-  name: "data"
-  type: "OctreeDataBase"
-  top: "OctLData4"
-  # top: "label"
+  top: "label"
+  top: "input.octree"
   include {
     phase: TEST
   }
   data_param {
-    source: "test_7_2_adp4_aug_upgrade"
+    source: "dataset/ShapeNetV1.lmdb/octree_test_lmdb"
     batch_size: 1
     backend: LMDB
   }
@@ -548,6 +531,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -723,6 +707,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -759,6 +744,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -885,6 +871,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -921,6 +908,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1047,6 +1035,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1083,6 +1072,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1098,6 +1088,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1277,6 +1268,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1313,6 +1305,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1328,6 +1321,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1506,6 +1500,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1542,6 +1537,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1557,6 +1553,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1735,6 +1732,7 @@ layer {
     bias_term: false
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1771,6 +1769,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1786,6 +1785,7 @@ layer {
     bias_term: true
     kernel_size: 1
     stride: 1
+    engine: CAFFE
     weight_filler {
       type: "xavier"
     }
@@ -1860,12 +1860,14 @@ layer {
 layer {
   name: "normal_7"
   type: "Split"
-  bottom: "Concat4"
- 
+  bottom: "Concat4" 
   top: "normal_7"
 }
-
-
+layer {
+  name: "Silence1"
+  type: "Silence"
+  bottom: "label"
+}
 layer {
   name: "output.octree"
   type: "OctreeSetFeature"
