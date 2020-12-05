@@ -65,7 +65,9 @@ the data automatically.
                               --octree=<The path of the octree> ^
                               --converter=<The path of the convert_octree_data>
     ```
-2. Run [`caffe`](Installation.md#Caffe) to train the model.
+2. Run [`caffe`](Installation.md#Caffe) to train the model. The trained model
+   and log can be downloaded
+   [here](https://www.dropbox.com/s/r417fgq96wlzzj5/aocnn_m40_5.zip?dl=0).
     ```shell
     caffe train  --solver=aocnn_m40_5_solver.prototxt  --gpu=0
     ```

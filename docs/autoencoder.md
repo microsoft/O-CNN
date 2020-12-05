@@ -2,32 +2,36 @@
 
 ## Autoencoder on Caffe
 
-The experiment in our Adaptive O-CNN is based on `Caffe`, and the 
-instructions are on our working list.
+The experiment in our Adaptive O-CNN is based on `Caffe`. Before starting the
+experiment please add the relavent executive files of `caffe` and `octree` to
+the system path, since the following command will invoke them directly.
 
-1. Download points with normals from this [link](https://cloud.enpc.fr/s/j2ECcKleA1IKNzk), 
-  and download the rendered views from this [link](https://cloud.enpc.fr/s/S6TCx1QJzviNHq0). 
-  Unzip them after downloading.
+1. Download points with normals and rendered views from this
+   [link](https://www.dropbox.com/s/3j4lnpmmplq61ue/aocnndata.zip?dl=0). Unzip
+   them to the folder `caffe/dataset`.
 
-2. Run the script `caffe/experiments/dataset.py` to generate the lmdbs: 
-   `oct_test_lmdb`, `oct_train_aug_lmdb`, `oct_train_lmdb`, `img_test_lmdb` and 
-   `img_train_lmdb`, of which `oct_train_aug_lmdb` and `oct_test_lmdb` are used 
-   in the autoencoder task.
+2. Run the following command to generate the lmdbs:
+   ```shell
+   cd caffe/experiments
+   python prepare_dataset.py --run=shapenet_lmdb_ae 
+   ```
 
-3. Download the protocol  buffer files `caffe/experiments/ae_7_4.train.prototxt` 
-   and `caffe/experiments/ae_7_4.solver.prototxt`. 
-   Configure the training and testing lmdb files and training the network.
+3. Run the following command to train the network:
+   ```shell
+   caffe train --solver=aocnn_m40_5_solver.prototxt --gpu=0
+   ```
 
-4. After training, suppose the trained model is `autoencoder.caffemodel`, 
-   download the protocol buffer file `caffe/experiments/ae_7_4.test.prototxt` 
-   to test the network with the following command. 
-   And the output octrees are dumped into the folder `ae_output`. 
-   Then use the tools such as `octree2mesh`, `octree2points` and `points2ply` 
-   to convert the octree into `obj` files or `ply` files, which can be visualized
-   via some 3D viewers such as `MeshLab`. 
-
-      caffe.exe test --model=ae_7_4.test.prototxt --weights=autoencoder.caffemodel ^
-          --blob_prefix=ae_output/ae_test_ --gpu=0 --blob_header=false --iterations=[...]
+4. After training, run the following command to generate the results and
+   calculate the chamder distances. The trained weights, log and chamder distances
+   can be download from this [link](https://www.dropbox.com/s/nta8tnior85j6zn/aocnn_ae.zip?dl=0): 
+   ``` shell
+   mkdir dataset/ShapeNetV1.ae_output
+   caffe test --model=aocnn_ae_7_4.test.prototxt \
+              --weights=models/aocnn_ae_7_4_iter_350000.caffemodel \
+              --blob_prefix=dataset/ShapeNetV1.ae_output/ae_test \
+              --gpu=0 --blob_header=false --iterations=7943 
+   python prepare_dataset.py --run=aocnn_ae_compute_chamfer
+   ```
 
 
 ## Autoencoder on TensorFlow

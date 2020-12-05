@@ -8,8 +8,6 @@ parser.add_argument('--run', type=str, required=True,
                     help='The command to run.')
 parser.add_argument('--converter', type=str, required=False, default='convert_octree_data',
                     help='The path of the convert_octree_data')
-parser.add_argument('--convert_image', type=str, required=False, default='convert_imageset',
-                    help='The path of the convert_imageset')
 parser.add_argument('--scanner', type=str,  required=False, 
                     help='The path of the virtual_scanner')
 parser.add_argument('--octree', type=str, required=False, default='octree',
@@ -25,8 +23,85 @@ octree = args.octree
 converter = args.converter
 virtual_scanner = args.scanner
 simplify = args.simplify_points
-convert_image = args.convert_image
+convert_image = 'convert_imageset'
+octree_bbox = 'octree_bbox'
+octree2mesh = 'octree2mesh'
+mesh2points = 'mesh2points'
+chamfer_distance = 'chamfer_distance'
 abs_path = os.path.dirname(os.path.realpath(__file__))
+
+
+def aocnn_ae_compute_chamfer():
+  octree_folder = os.path.join(abs_path, 'dataset', 'ShapeNetV1.ae_output')
+  datalist_folder = os.path.join(abs_path, 'dataset', 'ShapeNetV1.datalist')
+  mesh_folder = os.path.join(abs_path, 'dataset', 'ShapeNetV1.ae_output.mesh')
+  points_folder = os.path.join(abs_path, 'dataset', 'ShapeNetV1.ae_output.points')
+  points_gt_folder = os.path.join(abs_path, 'dataset', 'ShapeNetV1.points')
+  if not os.path.exists(mesh_folder): os.makedirs(mesh_folder)
+  if not os.path.exists(points_folder): os.makedirs(points_folder)
+
+  # update octree_bbox
+  datalist_name = os.path.join(datalist_folder, 'ae_input_output_octree_list.txt')
+  filenames = os.listdir(octree_folder)
+  with open(datalist_name, 'w') as fid:
+    for filename in filenames:
+      fid.write(os.path.join(octree_folder, filename) + '\n')
+  
+  cmds = [octree_bbox, '--filenames', datalist_name]
+  cmd = ' '.join(cmds)
+  print(cmd)
+  os.system(cmd)
+
+  # octree2mesh
+  datalist_name = os.path.join(datalist_folder, 'ae_output_octree_list.txt')
+  filenames = os.listdir(octree_folder)
+  with open(datalist_name, 'w') as fid:
+    for filename in filenames:
+      if filename.endswith('_output.octree'):
+        fid.write(os.path.join(octree_folder, filename) + '\n')
+  
+  cmds = [octree2mesh, '--filenames', datalist_name, '--output_path', mesh_folder]
+  cmd = ' '.join(cmds)
+  print(cmd)
+  os.system(cmd)
+
+  # mesh2points
+  datalist_name = os.path.join(datalist_folder, 'ae_output_mesh_list.txt')
+  filenames = os.listdir(mesh_folder)
+  with open(datalist_name, 'w') as fid:
+    for filename in filenames:
+      if filename.endswith('_output.obj'):
+        fid.write(os.path.join(mesh_folder, filename) + '\n')
+  
+  cmds = [mesh2points, '--filenames', datalist_name,
+          '--output_path', points_folder, '--area_unit', '1e-4']
+  cmd = ' '.join(cmds)
+  print(cmd)
+  os.system(cmd)
+
+  # chamferdistance
+  octreelist_a = os.path.join(datalist_folder, 'octree_test_shuffle.txt')
+  with open(octreelist_a, 'r') as fid:
+    octree_names = fid.readlines()
+  datalist_a = os.path.join(datalist_folder, 'ae_output_points_a.txt')
+  with open(datalist_a, 'w') as fid:
+    for line in octree_names:
+      pos = line.find('_7_2_000.octree')
+      fid.write(os.path.join(points_gt_folder, line[:pos] + '.points\n'))
+
+  datalist_b = os.path.join(datalist_folder, 'ae_output_points_b.txt')
+  points_names = sorted(os.listdir(points_folder))
+  with open(datalist_b, 'w') as fid:
+    for line in points_names:
+      fid.write(os.path.join(points_folder, line) + '\n')
+  
+  chamfer_results = os.path.join(abs_path, 'dataset', 'ShapeNetV1.chamfer.csv')
+  cmds = [chamfer_distance,
+          '--filenames_a', datalist_a, '--filenames_b', datalist_b,
+          '--filename_out', chamfer_results]
+  cmd = ' '.join(cmds)
+  print(cmd)
+  os.system(cmd)
 
 
 def shapenet_convert_points_to_octree_ae():
@@ -74,6 +149,8 @@ def shapenet_lmdb_ae():
   category = ['02691156', '02828884', '02933112', '02958343', '03001627',
               '03211117', '03636649', '03691459', '04090263', '04256520',
               '04379243', '04401088', '04530566']
+  
+  shapenet_convert_points_to_octree_ae()
 
   # generate datalist for octree
   filename_octree_train = os.path.join(datalist_folder, 'octree_train.txt')
@@ -394,5 +471,7 @@ if __name__ == '__main__':
     shapenet_convert_points_to_octree_ae()
   elif cmd == 'shapenet_lmdb_ae':
     shapenet_lmdb_ae()
+  elif cmd == 'aocnn_ae_compute_chamfer':
+    aocnn_ae_compute_chamfer()
   else:
     print('Unsupported command:' + cmd)
