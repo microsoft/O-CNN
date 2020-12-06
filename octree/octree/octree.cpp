@@ -1250,7 +1250,7 @@ void Octree::octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
       node_normal(n, i, d);
       float len = fabsf(n[0]) + fabsf(n[1]) + fabsf(n[2]);
       if (len == 0) continue;
-      node_pos(pt, i, d, pt_ref);
+      node_pos(pt, i, d, pt_ref, true); // !!! set clp as true in node_pos()
 
       for (int c = 0; c < 3; ++c) {
         normals.push_back(n[c]);

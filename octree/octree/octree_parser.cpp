@@ -92,7 +92,8 @@ float* OctreeParser::mutable_split_cpu(const int depth) {
 
 
 //////////////////////////////////////
-void OctreeParser::node_pos(float* xyz, int id, int depth, float* xyz_base) const {
+void OctreeParser::node_pos(float* xyz, int id, int depth, 
+                            float* xyz_base, bool clp) const {
   float tmp[3];
   const uintk* keyi = key_cpu(depth) + id;
   key2xyz(tmp, *keyi, depth);
@@ -117,7 +118,7 @@ void OctreeParser::node_pos(float* xyz, int id, int depth, float* xyz_base) cons
     node_normal(n, id, depth);
     for (int c = 0; c < 3; ++c) {
       xyz[c] += dis * n[c];
-      xyz[c] = clamp(xyz[c], tmp[c] + v0, tmp[c] + v1);
+      if (clp) { xyz[c] = clamp(xyz[c], tmp[c] + v0, tmp[c] + v1); }
     }
   }
 }

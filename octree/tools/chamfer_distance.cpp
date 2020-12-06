@@ -4,6 +4,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <ctime>
 
 #include "cmd_flags.h"
 #include "filenames.h"
