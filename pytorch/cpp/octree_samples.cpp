@@ -1,4 +1,4 @@
-#include <octree_samples.h>
+#include <octree/octree_samples.h>
 
 #include "ocnn.h"
 

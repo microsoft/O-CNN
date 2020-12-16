@@ -7,7 +7,7 @@ from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 # build octree
 curr_dir = os.path.dirname(os.path.realpath(__file__))
 octree_dir = os.path.join(os.path.dirname(curr_dir), 'octree')
-include_dirs = [os.path.join(octree_dir, 'octree')]
+include_dirs = [octree_dir]
 library_dirs = [os.path.join(octree_dir, 'build')]
 libraries = ['octree_lib', 'cublas']
 if sys.platform == 'win32':

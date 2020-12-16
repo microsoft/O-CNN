@@ -1,6 +1,6 @@
-#include <math_functions.h>
-#include <octree_nn.h>
-#include <points.h>
+#include <octree/math_functions.h>
+#include <octree/octree_nn.h>
+#include <octree/points.h>
 
 #include "ocnn.h"
 

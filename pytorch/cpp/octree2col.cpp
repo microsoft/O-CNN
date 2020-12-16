@@ -1,5 +1,5 @@
-#include <octree_nn.h>
-#include <octree_parser.h>
+#include <octree/octree_nn.h>
+#include <octree/octree_parser.h>
 
 #include "ocnn.h"
 

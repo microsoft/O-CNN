@@ -1,6 +1,6 @@
 #include <ATen/cuda/CUDAContext.h>
-#include <octree_conv.h>
-#include <octree_nn.h>
+#include <octree/octree_conv.h>
+#include <octree/octree_nn.h>
 
 #include "ocnn.h"
 

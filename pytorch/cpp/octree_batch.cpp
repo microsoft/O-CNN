@@ -1,4 +1,4 @@
-#include <merge_octrees.h>
+#include <octree/merge_octrees.h>
 
 #include "ocnn.h"
 
