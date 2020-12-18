@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8.2)
+cmake_minimum_required(VERSION 3.10.3)
 
 # options
 option(USE_MINIBALL "Use the Miniball.hpp" ON)
@@ -18,6 +18,7 @@ if(USE_CUDA)
   message(STATUS "octree: USE_CUDA")
   project(Octree LANGUAGES CUDA CXX C)
   add_definitions(-DUSE_CUDA)
+  set (CMAKE_CUDA_STANDARD 11 CACHE STRING "CUDA CXX STANDARD")
 else()
   project(Octree LANGUAGES C CXX)
 endif()

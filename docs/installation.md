@@ -76,6 +76,9 @@ The code has been tested with Ubuntu 16.04/18.04 and TensorFlow 1.14.0/1.12.0.
     ```shell
     cd octree/build
     cmake .. -DUSE_CUDA=ON && make
+
+    # optionally, specify the CUDA/C++ standard when building
+    cmake .. -DUSE_CUDA=ON -DCMAKE_CUDA_STANDARD=14 && make
     ```
 
 4. Build the code under `tensorflow`.
@@ -104,6 +107,9 @@ The code has been tested with Ubuntu 16.04 and PyTorch 1.6.0.
    ```shell
    cd pytorch
    python setup.py install --build_octree
+
+   # optionally, specify the CUDA/C++ standard when building with --cuda11 (default) or --cuda14
+   python setup.py install --build_octree --cuda14
    ```
 
 3. Run the test cases.
