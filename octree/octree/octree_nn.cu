@@ -1,6 +1,7 @@
 #include "octree_nn.h"
 #include "device_alternate.h"
 
+#include <climits>
 #include <thrust/transform_scan.h>
 #include <thrust/binary_search.h>
 #include <thrust/execution_policy.h>
@@ -42,17 +43,18 @@ __global__ void memset_kernel(const int n, const Dtype alpha, Dtype* y) {
 }
 
 template <typename Dtype>
-void memset_gpu(const int N, const Dtype alpha, Dtype* Y) {
+void memset_gpu(const size_t N, const Dtype alpha, Dtype* Y) {
   if (alpha == 0) {
     CUDA_CHECK(cudaMemset(Y, 0, sizeof(Dtype) * N));
     return;
   }
+  CHECK(N < INT_MAX) << "Overflow in memset_gpu";
   memset_kernel<Dtype> <<< CudaGetBlocks(N), kCudaThreadsNum >>> (
       N, alpha, Y);
 }
 
 template <typename Dtype>
-void memcpy_gpu(const int N, const Dtype* X, Dtype* Y) {
+void memcpy_gpu(const size_t N, const Dtype* X, Dtype* Y) {
   if (X != Y && N > 0) {
     CUDA_CHECK(cudaMemcpy(Y, X, sizeof(Dtype) * N, cudaMemcpyDefault));
   }
@@ -280,8 +282,9 @@ void calc_neigh_gpu(int* neigh_split, const int* neigh,  const int* children,
 __global__ void calc_full_neigh_kernel(int* neigh, const int depth,
     const int batch_size, const int thread_num) {
   CUDA_KERNEL_LOOP(id, thread_num) {
+    const uintk bit = 1;
     const uintk  bound = 1 << depth;
-    uintk node_num = 1 << 3 * depth;
+    uintk node_num = bit << 3 * depth;
     uintk num = node_num >> 3;
 
     uintk tm = id;
@@ -294,9 +297,9 @@ __global__ void calc_full_neigh_kernel(int* neigh, const int depth,
     uintk x0 = 0, y0 = 0, z0 = 0;
 #pragma unroll 4
     for (uintk d = 0; d < depth; d++) {
-      x0 |= (i & (1 << 3 * d + 2)) >> (2 * d + 2);
-      y0 |= (i & (1 << 3 * d + 1)) >> (2 * d + 1);
-      z0 |= (i & (1 << 3 * d + 0)) >> (2 * d + 0);
+      x0 |= (i & (bit << 3 * d + 2)) >> (2 * d + 2);
+      y0 |= (i & (bit << 3 * d + 1)) >> (2 * d + 1);
+      z0 |= (i & (bit << 3 * d + 0)) >> (2 * d + 0);
     }
 
     uintk x1 = x0 + x - 1;
@@ -364,16 +367,17 @@ template<typename Dtype>
 __global__ void gen_full_key_kernel(Dtype* key, const int depth,
     const int batch_size, const int thread_num) {
   typedef typename KeyTrait<Dtype>::uints T;
+  const Dtype bit = 1;
   CUDA_KERNEL_LOOP(i, thread_num) {
-    Dtype node_num = 1 << 3 * depth;
+    Dtype node_num = bit << 3 * depth;
     Dtype k = i % node_num;
     Dtype xyz = 0;
     T* ptr = (T*)(&xyz);
 #pragma unroll 8
     for (int d = 0; d < depth; d++) {
-      ptr[0] |= (k & (1 << 3 * d + 2)) >> (2 * d + 2);
-      ptr[1] |= (k & (1 << 3 * d + 1)) >> (2 * d + 1);
-      ptr[2] |= (k & (1 << 3 * d + 0)) >> (2 * d + 0);
+      ptr[0] |= (k & (bit << (3 * d + 2))) >> (2 * d + 2);
+      ptr[1] |= (k & (bit << (3 * d + 1))) >> (2 * d + 1);
+      ptr[2] |= (k & (bit << (3 * d + 0))) >> (2 * d + 0);
     }
     ptr[3] = i / node_num;
     key[i] = xyz;
@@ -519,9 +523,9 @@ __global__ void xyz2key_kernel(Dtype* key, const Dtype* xyz,
 #pragma unroll 8
     for (int d = 0; d < depth; ++d) {
       T mask = 1 << d;
-      key_out |= (ptr[0] & mask) << (2 * d + 2) |
-          (ptr[1] & mask) << (2 * d + 1) |
-          (ptr[2] & mask) << (2 * d + 0);
+      key_out |= Dtype(ptr[0] & mask) << (2 * d + 2) |
+                 Dtype(ptr[1] & mask) << (2 * d + 1) |
+                 Dtype(ptr[2] & mask) << (2 * d + 0);
     }
     ptr_out[3] = ptr[3];
     key[i] = key_out;
@@ -539,6 +543,7 @@ template <typename Dtype>
 __global__ void key2xyz_kernel(Dtype* xyz, const Dtype* key,
     const int num, const int depth) {
   typedef typename KeyTrait<Dtype>::uints T;
+  const Dtype bit = 1;
 
   CUDA_KERNEL_LOOP(i, num) {
     Dtype key_in = key[i], xyz_out = 0;
@@ -547,9 +552,9 @@ __global__ void key2xyz_kernel(Dtype* xyz, const Dtype* key,
     pt[3] = ptr[3];
 #pragma unroll 8
     for (int d = 0; d < depth; d++) {
-      pt[0] |= (key_in & (1u << (3 * d + 2))) >> (2 * d + 2);
-      pt[1] |= (key_in & (1u << (3 * d + 1))) >> (2 * d + 1);
-      pt[2] |= (key_in & (1u << (3 * d))) >> (2 * d);
+      pt[0] |= (key_in & (bit << (3 * d + 2))) >> (2 * d + 2);
+      pt[1] |= (key_in & (bit << (3 * d + 1))) >> (2 * d + 1);
+      pt[2] |= (key_in & (bit << (3 * d))) >> (2 * d);
     }
 
     xyz[i] = xyz_out;
@@ -734,18 +739,19 @@ void octree_mask_gpu(float* out_data, const float* in_data, const int* label,
 
 
 // Explicit instantiation
-template void memset_gpu<int>(const int N, const int alpha, int* Y);
-template void memset_gpu<float>(const int N, const float alpha, float* Y);
-template void memset_gpu<double>(const int N, const double alpha, double* Y);
-template void memset_gpu<char>(const int N, const char alpha, char* Y);
-template void memset_gpu<int8_t>(const int N, const int8_t alpha, int8_t* Y);
-template void memset_gpu<uint8_t>(const int N, const uint8_t alpha, uint8_t* Y);
-template void memcpy_gpu<int>(const int N, const int* X, int* Y);
-template void memcpy_gpu<int64_t>(const int N, const int64_t* X, int64_t* Y);
-template void memcpy_gpu<uint32>(const int N, const uint32* X, uint32* Y);
-template void memcpy_gpu<uint64>(const int N, const uint64* X, uint64* Y);
-template void memcpy_gpu<float>(const int N, const float* X, float* Y);
-template void memcpy_gpu<double>(const int N, const double* X, double* Y);
+template void memset_gpu<int>(const size_t N, const int alpha, int* Y);
+template void memset_gpu<float>(const size_t N, const float alpha, float* Y);
+template void memset_gpu<double>(const size_t N, const double alpha, double* Y);
+template void memset_gpu<char>(const size_t N, const char alpha, char* Y);
+template void memset_gpu<int8_t>(const size_t N, const int8_t alpha, int8_t* Y);
+template void memset_gpu<uint8_t>(const size_t N, const uint8_t alpha, uint8_t* Y);
+template void memcpy_gpu<int>(const size_t N, const int* X, int* Y);
+template void memcpy_gpu<int64_t>(const size_t N, const int64_t* X, int64_t* Y);
+template void memcpy_gpu<int16_t>(const size_t N, const int16_t* X, int16_t* Y);
+template void memcpy_gpu<uint32>(const size_t N, const uint32* X, uint32* Y);
+template void memcpy_gpu<uint64>(const size_t N, const uint64* X, uint64* Y);
+template void memcpy_gpu<float>(const size_t N, const float* X, float* Y);
+template void memcpy_gpu<double>(const size_t N, const double* X, double* Y);
 template void sequence_gpu<int>(int* ptr, const int num);
 template void sequence_gpu<uintk>(uintk* ptr, const int num);
 template void pad_forward_gpu<float>(float* Y, const int Hy, const int Cy,

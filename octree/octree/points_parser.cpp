@@ -73,7 +73,8 @@ void PointsParser::uniform_scale(const float s) {
 }
 
 void PointsParser::scale(const float* s) {
-  if (s[0] == 1.0f && s[1] == 1.0f && s[2] == 1.0f) { return; }
+  if ((s[0] == 1.0f && s[1] == 1.0f && s[2] == 1.0f) || 
+       s[0] == 0.0f || s[1] == 0.0f || s[2] == 0.0f) { return; }
 
   int npt = info_->pt_num();
   float* pt = this->mutable_points();
@@ -85,13 +86,14 @@ void PointsParser::scale(const float* s) {
   }
 
   if (s[0] == s[1] && s[0] == s[2]) { return; } // uniform scale
+  const float t[3] = {1.0f / s[0], 1.0f / s[1], 1.0f / s[2]};
 
   if (this->info().has_property(PointsInfo::kNormal)) {
     float* nm = this->mutable_normal();
     for (int i = 0; i < npt; ++i) {
       int ix3 = i * 3;
       for (int j = 0; j < 3; ++j) {
-        nm[ix3 + j] *= s[j];
+        nm[ix3 + j] *= t[j];
       }
     }
     normalize_nx3(nm, npt);

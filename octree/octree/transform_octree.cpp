@@ -136,7 +136,7 @@ void ScanOctree::generate_flags(vector<vector<int>>& drop_flags,
   int depth_full = octree_in.info().full_layer();
   for (int d = 0; d < depth_full; ++d) {
     // keep all the nodes whose depth are smaller than depth_full
-    drop_flags[d].assign(1 << (3 * d), 0);
+    drop_flags[d].assign(1ull << (3 * d), 0);
   }
   for (int d = depth - 1; d >= depth_full; --d) {
     int num = octree_in.info().node_num(d);

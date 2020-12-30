@@ -141,19 +141,19 @@ void resize_with_last_val(vector<Dtype>& vec, const int size) {
 
 
 template <typename Dtype>
-void memset_cpu(const int N, const Dtype alpha, Dtype* Y) {
+void memset_cpu(const size_t N, const Dtype alpha, Dtype* Y) {
   if (alpha == 0) {
     memset(Y, 0, sizeof(Dtype) * N);
     return;
   }
-  for (int i = 0; i < N; ++i) {
+  for (size_t i = 0; i < N; ++i) {
     Y[i] = alpha;
   }
 }
 
 
 template <typename Dtype>
-void memcpy_cpu(const int N, const Dtype* X, Dtype* Y) {
+void memcpy_cpu(const size_t N, const Dtype* X, Dtype* Y) {
   if (X != Y && N > 0) {
     memcpy(Y, X, sizeof(Dtype) * N);
   }
@@ -322,16 +322,17 @@ void calc_neigh_cpu(int* neigh_split, const int* neigh,
 }
 
 void calc_neigh_cpu(int* neigh, const int depth, const int batch_size) {
-  uintk node_num = 1 << 3 * depth;
+  const uintk bit = 1;
+  uintk node_num = bit << 3 * depth;
   const uintk  bound = 1 << depth;
   for (uintk n = 0; n < batch_size; ++n) {
     for (uintk i = 0; i < node_num; i += 8) {
       // key to xyz
       uintk x0 = 0, y0 = 0, z0 = 0;
       for (uintk d = 0; d < depth; d++) {
-        x0 |= (i & (1 << (3 * d + 2))) >> (2 * d + 2);
-        y0 |= (i & (1 << (3 * d + 1))) >> (2 * d + 1);
-        z0 |= (i & (1 << (3 * d + 0))) >> (2 * d + 0);
+        x0 |= (i & (bit << (3 * d + 2))) >> (2 * d + 2);
+        y0 |= (i & (bit << (3 * d + 1))) >> (2 * d + 1);
+        z0 |= (i & (bit << (3 * d + 0))) >> (2 * d + 0);
       }
 
       for (uintk x = 0; x < 4; ++x) {
@@ -386,15 +387,16 @@ void generate_key_cpu(Dtype* key_child, const Dtype* key, const int* child,
 template <typename Dtype>
 void generate_key_cpu(Dtype* key, const int depth, const int batch_size) {
   typedef typename KeyTrait<Dtype>::uints T;
-  int node_num = 1 << 3 * depth;
+  const Dtype bit = 1;
+  int node_num = bit << 3 * depth;
   for (int n = 0; n < batch_size; ++n) {
     for (int k = 0; k < node_num; ++k) {
       Dtype xyz = 0;
       T* ptr = reinterpret_cast<T*>(&xyz);
       for (int d = 0; d < depth; d++) {
-        ptr[0] |= (k & (1 << (3 * d + 2))) >> (2 * d + 2);
-        ptr[1] |= (k & (1 << (3 * d + 1))) >> (2 * d + 1);
-        ptr[2] |= (k & (1 << (3 * d + 0))) >> (2 * d + 0);
+        ptr[0] |= (k & (bit << (3 * d + 2))) >> (2 * d + 2);
+        ptr[1] |= (k & (bit << (3 * d + 1))) >> (2 * d + 1);
+        ptr[2] |= (k & (bit << (3 * d + 0))) >> (2 * d + 0);
       }
       ptr[3] = n;
       key[n * node_num + k] = xyz;
@@ -503,11 +505,11 @@ void compute_key(Dtype& key, const Dtype* pt, const int depth) {
 template<typename Dtype>
 void compute_pt(Dtype* pt, const Dtype& key, const int depth) {
   for (int i = 0; i < 3; pt[i++] = 0u);
-
+  const Dtype bit = 1;
   for (int i = 0; i < depth; i++) {
     for (int j = 0; j < 3; j++) {
       // bit mask
-      Dtype mask = 1u << (3 * i + 2 - j);
+      Dtype mask = bit << (3 * i + 2 - j);
       // put the bit to position i
       pt[j] |= (key & mask) >> (2 * i + 2 - j);
     }
@@ -595,16 +597,16 @@ void key2xyz(Dtype1* xyz, const Dtype2 key, const int depth) {
 // Explicit instantiation
 template void resize_with_last_val<int>(vector<int>& vec, const int sz);
 template void resize_with_last_val<float>(vector<float>& vec, const int size);
-template void memset_cpu<int>(const int N, const int alpha, int* Y);
-template void memset_cpu<float>(const int N, const float alpha, float* Y);
-template void memset_cpu<double>(const int N, const double alpha, double* Y);
-template void memset_cpu<char>(const int N, const char alpha, char* Y);
-template void memset_cpu<int8_t>(const int N, const int8_t alpha, int8_t* Y);
-template void memset_cpu<uint8_t>(const int N, const uint8_t alpha, uint8_t* Y);
-template void memcpy_cpu<int>(const int N, const int* X, int* Y);
-template void memcpy_cpu<unsigned>(const int N, const unsigned* X, unsigned* Y);
-template void memcpy_cpu<float>(const int N, const float* X, float* Y);
-template void memcpy_cpu<double>(const int N, const double* X, double* Y);
+template void memset_cpu<int>(const size_t N, const int alpha, int* Y);
+template void memset_cpu<float>(const size_t N, const float alpha, float* Y);
+template void memset_cpu<double>(const size_t N, const double alpha, double* Y);
+template void memset_cpu<char>(const size_t N, const char alpha, char* Y);
+template void memset_cpu<int8_t>(const size_t N, const int8_t alpha, int8_t* Y);
+template void memset_cpu<uint8_t>(const size_t N, const uint8_t alpha, uint8_t* Y);
+template void memcpy_cpu<int>(const size_t N, const int* X, int* Y);
+template void memcpy_cpu<unsigned>(const size_t N, const unsigned* X, unsigned* Y);
+template void memcpy_cpu<float>(const size_t N, const float* X, float* Y);
+template void memcpy_cpu<double>(const size_t N, const double* X, double* Y);
 template void sequence_cpu<int>(int* ptr, const int num);
 template void sequence_cpu<uintk>(uintk* ptr, const int num);
 template void pad_forward_cpu<float>(float* Y, const int Hy, const int Cy,

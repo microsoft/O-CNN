@@ -54,13 +54,13 @@ template <typename Dtype>
 void resize_with_last_val(vector<Dtype>& vec, const int size);
 
 template <typename Dtype>
-void memset_cpu(const int N, const Dtype alpha, Dtype *X);
+void memset_cpu(const size_t, const Dtype alpha, Dtype *X);
 template <typename Dtype>
-void memset_gpu(const int N, const Dtype alpha, Dtype *X);
+void memset_gpu(const size_t, const Dtype alpha, Dtype *X);
 template <typename Dtype>
-void memcpy_cpu(const int N, const Dtype* X, Dtype* Y);
+void memcpy_cpu(const size_t N, const Dtype* X, Dtype* Y);
 template <typename Dtype>
-void memcpy_gpu(const int N, const Dtype* X, Dtype* Y);
+void memcpy_gpu(const size_t N, const Dtype* X, Dtype* Y);
 
 
 template<typename Dtype>
