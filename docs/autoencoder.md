@@ -18,7 +18,7 @@ the system path, since the following command will invoke them directly.
 
 3. Run the following command to train the network:
    ```shell
-   caffe train --solver=aocnn_m40_5_solver.prototxt --gpu=0
+   caffe train --solver=aocnn_ae_7_4.solver.prototxt --gpu=0
    ```
 
 4. After training, run the following command to generate the results and
