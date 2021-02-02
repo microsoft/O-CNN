@@ -14,20 +14,42 @@
    python run_mid.py --config configs/mid_hrnet_d6.yaml
    ```
    
+## Finetune on ModelNet40
+
+Follow the instructions [here](classification.md#train-a-deep-o-cnn-based-hrnet)
+to download the ModelNet40 and preprocess the data. Make sure you can train the
+HRNet with random initialization.  
+
+Then run the following script to finetune the network with the pretrained
+weights we provided.  If you would like to finetune the network with your own
+pretrained weights, you can simply provide the checkpoint via the command
+parameter `--ckpt`.
+
+```shell
+python run_cls_cmd.py --alias m40_finetune --mode finetune
+```
+
+In our paper, we also do experiments MidNet(Fix) in which the backbone network
+is fixed and only one linear classifier is trained. Run the following command.
+
+```shell
+python run_linear_cls_cmd.py --alias m40_linear
+```
+
 
 ## Finetune on PartNet
 
 Follow the instructions
 [here](segmentation.md#shape-segmentation-on-partnet-with-tensorflow) to
-download the PartNet and preprocess the data. 
+download the PartNet and preprocess the data.  
 
-Run the following script to finetune the network on PartNet with the pretrained
-weights we provided. Compared with a random initialization, the IoU increases from
-58.4 to 60.8. If you would like to finetune the network with your own pretrained
-weights, you can simply provide the checkpoint via the command parameter `--ckpt`.
+Change the working directory to `tensorflow/script`. Run the following script to
+finetune the network on PartNet with the pretrained weights we provided.
+Compared with a random initialization, the IoU increases from 58.4 to 60.8. If
+you would like to finetune the network with your own pretrained weights, you can
+simply provide the checkpoint via the command parameter `--ckpt`.
 
 ```shell
-cd script
 python run_seg_partnet_cmd.py --alias partnet_finetune --mode=finetune
 ```
 
@@ -36,7 +58,6 @@ is fixed and only the last two FC layers are trained. Run the following command
 to reproduce the results.
 
 ```shell
-cd script
 python run_seg_partnet_cmd.py --alias partnet_fix --mode=fix
 ```
 
