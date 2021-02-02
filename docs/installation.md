@@ -72,13 +72,7 @@ The code has been tested with Ubuntu 16.04/18.04 and TensorFlow 1.14.0/1.12.0.
     conda activate tf-1.14.0
     ```
 
-3. Build the code under `octree` with CUDA enabled.
-    ```shell
-    cd octree/build
-    cmake .. -DUSE_CUDA=ON && make
-    ```
-
-4. Build the code under `tensorflow`.
+3. Build the code under `tensorflow`.
     ```shell
     cd tensorflow/libs
     python build.py
