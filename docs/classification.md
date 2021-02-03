@@ -139,8 +139,9 @@ the data automatically.
 
 ### Train a deep O-CNN-based HRNet
 1. Change the working directory to `tensorflow/data`. Run the following command
-   to store the `points` into one `TFRecords` database. Here we also rotate the
-   upright axis of shapes from `z` axis to `y` axis.
+   to store the `points` into `TFRecords` databases with different ratios of
+   training data. Here we also rotate the upright axis of shapes from `z` axis
+   to `y` axis.
     ```shell
     python cls_modelnet.py --run m40_generate_points_tfrecords_ratios
     ```

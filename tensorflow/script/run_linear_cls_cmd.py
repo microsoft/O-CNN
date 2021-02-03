@@ -89,7 +89,7 @@ for i in range(len(ratios)):
   # train the linear classifier
   step_size1 = int(200000 * ratio * muls[i])
   step_size2 = int(100000 * ratio * muls[i])
-  max_iter = int(400000 * ratio * muls[i])
+  max_iter = int(300000 * ratio * muls[i])
   prefix = 'logs/m40/{}/feature_cls/m40_y'.format(alias)
   train_data = '{}_{:.2f}_train_points.tfrecords'.format(prefix, ratio)
   test_data  = '{}_1.00_test_points.tfrecords'.format(prefix)

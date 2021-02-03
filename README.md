@@ -32,7 +32,7 @@ If you use our code or models, please [cite](docs/citation.md) our paper.
 
 
 ### What's New?
-
+- 2021.02.03: Release the code for ModelNet40 classification with HRNet.
 - 2020.10.12: Release the initial version of our O-CNN under PyTorch. The code
   has been tested with the [classification task](docs/classification.md#o-cnn-on-pytorch).
 - 2020.08.16: We released our code for [3D unsupervised learning](docs/unsupervised.md).

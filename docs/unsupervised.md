@@ -4,21 +4,21 @@
 
 1. Download the data and pretrained weights with the following command. 
    ```shell
-   cd  tensorflow
-   python data/midnet_data.py
+   cd  tensorflow/data
+   python midnet_data.py
    ```
 
 2. Run the following command to train the network. 
    ```shell
-   cd  script
+   cd  tensorflow/script
    python run_mid.py --config configs/mid_hrnet_d6.yaml
    ```
    
 ## Finetune on ModelNet40
 
-Follow the instructions [here](classification.md#train-a-deep-o-cnn-based-hrnet)
+Follow the instructions [here](classification.md#prepare-the-point-cloud-for-modelnet40) 
 to download the ModelNet40 and preprocess the data. Make sure you can train the
-HRNet with random initialization.  
+HRNet with random initialization [here](classification.md#train-a-deep-o-cnn-based-hrnet).  
 
 Then run the following script to finetune the network with the pretrained
 weights we provided.  If you would like to finetune the network with your own
