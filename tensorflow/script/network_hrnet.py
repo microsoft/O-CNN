@@ -145,8 +145,15 @@ class HRNet:
     feature = self.points_feat(inputs, octree)
 
     depth_out, factor = self.flags.depth_out, self.flags.factor
+    if depth_out == 7:
+      feature = OctreeUpsample()(feature, octree, 5, mask)
+      conv6 = self.tensors['front/conv6']  # (1, C, H, 1)
+      feature = tf.concat([feature, conv6], axis=1)  
+      feature = OctreeUpsample()(feature, octree, 6, mask)
+      conv7 = self.tensors['front/conv7']  # (1, C, H, 1)
+      feature = tf.concat([feature, conv7], axis=1)      
     if depth_out == 6:
-      feature = OctreeUpsample('linear')(feature, octree, 5, mask)
+      feature = OctreeUpsample()(feature, octree, 5, mask) # rp 'linear'
       conv6 = self.tensors['front/conv6']  # (1, C, H, 1)
       if mask is not None:
         conv6 = tf.boolean_mask(conv6, mask, axis=2)
@@ -255,9 +262,9 @@ class HRNet:
     with tf.variable_scope('front'):
       for d in range(d0, d1, -1):
         with tf.variable_scope('depth_%d' % d):
-          channeld = channel / 2 ** (d - d1 + 1)
+          channeld = channel / (2 ** (d - d1 + 1))
           conv = octree_conv_bn_relu(conv, octree, d, channeld, training)
-          self.tensors['front/conv6'] = conv # TODO: add a resblock here?
+          self.tensors['front/conv'+str(d)] = conv # TODO: add a resblock here?
           conv, _ = octree_max_pool(conv, octree, d)
       with tf.variable_scope('depth_%d' % d1):
         conv = octree_conv_bn_relu(conv, octree, d1, channel, training)

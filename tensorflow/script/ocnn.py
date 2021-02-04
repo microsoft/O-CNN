@@ -373,13 +373,14 @@ def loss_functions(logit, label_gt, num_class, weight_decay, var_name, label_smo
 
 def loss_functions_seg(logit, label_gt, num_class, weight_decay, var_name, mask=-1):
   with tf.name_scope('loss_seg'):
-    label_mask = label_gt > mask  # filter label -1
+    label_mask = tf.greater(label_gt,-1)  # filter label -1
     masked_logit = tf.boolean_mask(logit, label_mask)
     masked_label = tf.boolean_mask(label_gt, label_mask)
     loss = softmax_loss(masked_logit, masked_label, num_class)
 
     accu = softmax_accuracy(masked_logit, masked_label)
     regularizer = l2_regularizer(var_name, weight_decay)
+  #return [loss, accu, regularizer],masked_logit,masked_label #rp??
   return [loss, accu, regularizer]
 
 

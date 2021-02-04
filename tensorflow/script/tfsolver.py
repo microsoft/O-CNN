@@ -7,6 +7,8 @@ from tensorflow.python.client import timeline
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
+global glblab
+
 
 class TFSolver:
   def __init__(self, flags, compute_graph=None, build_solver=build_solver):
@@ -99,6 +101,7 @@ class TFSolver:
     # session
     config = tf.ConfigProto(allow_soft_placement=True)
     config.gpu_options.allow_growth = True
+
     with tf.Session(config=config) as sess:
       summary_writer = tf.summary.FileWriter(self.flags.logdir, sess.graph)
 
@@ -109,6 +112,7 @@ class TFSolver:
       print('Start training ...')
       for i in tqdm(range(start_iter, self.flags.max_iter + 1), ncols=80):
         # training
+        #summary, _,pntLab,seqNo,logit = sess.run([self.summ_train, self.train_op] + TFSolver.glblab)
         summary, _ = sess.run([self.summ_train, self.train_op])
         summary_writer.add_summary(summary, i)
 
@@ -201,7 +205,10 @@ class TFSolver:
       tf_saver.restore(sess, self.flags.ckpt)
 
       print('Start testing ...')
-      for i in range(0, self.flags.test_iter):
+      itCnt=self.flags.test_iter #rp**
+      if itCnt==0:
+               itCnt=sum(1 for _ in tf.python_io.tf_record_iterator(FLAGS.DATA.test.location))
+      for i in range(0, itCnt):
         iter_test_result = sess.run(self.test_tensors)
         iter_test_result = self.result_callback(iter_test_result)
         # run testing average
