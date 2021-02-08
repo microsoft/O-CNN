@@ -37,6 +37,30 @@ python run_linear_cls_cmd.py --alias m40_linear
 ```
 
 
+## Finetune on ShapeNetPart
+
+Follow the instructions
+[here](segmentation.md#shape-segmentation-on-shapeNet-with-tensorflow) to train
+the HRNet with random initialization.  
+
+Then run the following script to finetune the network with the pretrained
+weights we provided.  If you would like to finetune the network with your own
+pretrained weights, you can simply provide the checkpoint via the command
+parameter `--ckpt`.
+
+```shell
+python run_seg_shapenet_cmd.py --alias shapenet_finetune --mode finetune
+```
+
+In our paper, we also do experiments MidNet(Fix) in which the backbone network
+is fixed and only 2 FC layers are trained. Run the following command.
+
+```shell
+python run_seg_shapenet_cmd.py --alias shapenet_2fc --mode 2fc
+```
+
+
+
 ## Finetune on PartNet
 
 Follow the instructions
@@ -50,7 +74,7 @@ you would like to finetune the network with your own pretrained weights, you can
 simply provide the checkpoint via the command parameter `--ckpt`.
 
 ```shell
-python run_seg_partnet_cmd.py --alias partnet_finetune --mode=finetune
+python run_seg_partnet_cmd.py --alias partnet_finetune --mode finetune
 ```
 
 In our paper, we also do experiments MidNet(Fix) in which the backbone network
@@ -58,8 +82,11 @@ is fixed and only the last two FC layers are trained. Run the following command
 to reproduce the results.
 
 ```shell
-python run_seg_partnet_cmd.py --alias partnet_fix --mode=fix
+python run_seg_partnet_cmd.py --alias partnet_fix --mode fix
 ```
 
 The trained weights and logs can also be downloaded (6.6G)
 [here](https://www.dropbox.com/s/wrkcns19htdxb6x/partnet.zip?dl=0).
+
+
+

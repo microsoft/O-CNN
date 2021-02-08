@@ -151,6 +151,7 @@ the data automatically.
     ```shell
     python run_cls_cmd.py
     ```
+    <!-- https://www.dropbox.com/s/lmqv1n1yyja5z1j/m40_weights_and_logs.zip?dl=0 -->
 
 ## O-CNN on PyTorch
 
