@@ -14,7 +14,7 @@ class OctreeUpsample:
 
 
 def branch(data, octree, depth, channel, block_num, training):
-  if depth > 5: block_num = block_num // 2 # !!! whether should we add this !!!
+  #rpXX if depth > 5: block_num = block_num // 2 # !!! whether should we add this !!!
   for i in range(block_num):
     with tf.variable_scope('resblock_d%d_%d' % (depth, i)):
       # data = octree_resblock2(data, octree, depth, channel, training)
@@ -145,19 +145,17 @@ class HRNet:
     feature = self.points_feat(inputs, octree)
 
     depth_out, factor = self.flags.depth_out, self.flags.factor
+    # if depth_out == 7:
+    #   feature = OctreeUpsample()(feature, octree, 5, mask)
+    #   conv6 = self.tensors['front/conv6']  # (1, C, H, 1)
+    #   feature = tf.concat([feature, conv6], axis=1)  
+    #   feature = OctreeUpsample()(feature, octree, 6, mask)
+    #   conv7 = self.tensors['front/conv7']  # (1, C, H, 1)
+    #   feature = tf.concat([feature, conv7], axis=1)      
     if depth_out == 7:
-      feature = OctreeUpsample()(feature, octree, 5, mask)
-      conv6 = self.tensors['front/conv6']  # (1, C, H, 1)
-      feature = tf.concat([feature, conv6], axis=1)  
-      feature = OctreeUpsample()(feature, octree, 6, mask)
+      feature = OctreeUpsample()(feature, octree, 6, mask) # rp 'linear'
       conv7 = self.tensors['front/conv7']  # (1, C, H, 1)
-      feature = tf.concat([feature, conv7], axis=1)      
-    if depth_out == 6:
-      feature = OctreeUpsample()(feature, octree, 5, mask) # rp 'linear'
-      conv6 = self.tensors['front/conv6']  # (1, C, H, 1)
-      if mask is not None:
-        conv6 = tf.boolean_mask(conv6, mask, axis=2)
-      feature = tf.concat([feature, conv6], axis=1)
+      feature = tf.concat([feature, conv7], axis=1)
     else:
       if mask is not None:
         feature = tf.boolean_mask(feature, mask, axis=2)
@@ -245,7 +243,7 @@ class HRNet:
 
     # front
     convs = [None]
-    channel, d1 = 64 * flags.factor, 5
+    channel, d1 = 64 * flags.factor, 6 #rpXX
     convs[0] = self.front_layer(data, octree, depth, d1, channel, training)
 
     # stages
@@ -264,12 +262,9 @@ class HRNet:
         with tf.variable_scope('depth_%d' % d):
           channeld = channel / (2 ** (d - d1 + 1))
           conv = octree_conv_bn_relu(conv, octree, d, channeld, training)
-          for n in range(0, self.flags.resblock_num):
-            with tf.variable_scope('resblock_%d' % n):
-              conv = octree_resblock(conv, octree, d, channeld, 1, training)
           self.tensors['front/conv'+str(d)] = conv # TODO: add a resblock here?
           conv, _ = octree_max_pool(conv, octree, d)
       with tf.variable_scope('depth_%d' % d1):
         conv = octree_conv_bn_relu(conv, octree, d1, channel, training)
-        self.tensors['front/conv5'] = conv
+        self.tensors['front/conv'+str(d1)] = conv
     return conv

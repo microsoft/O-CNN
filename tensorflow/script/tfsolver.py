@@ -13,6 +13,7 @@ global glblab
 class TFSolver:
   def __init__(self, flags, compute_graph=None, build_solver=build_solver):
     self.flags = flags.SOLVER
+    self.flagsD=flags.DATA
     self.graph = compute_graph
     self.build_solver = build_solver
 
@@ -194,7 +195,7 @@ class TFSolver:
     num_tensors = len(self.test_tensors)
     avg_test = [0] * num_tensors
     config = tf.ConfigProto(allow_soft_placement=True)
-    config.gpu_options.allow_growth = True
+    config.gpu_options.allow_growth = True 
     with tf.Session(config=config) as sess:
       summary_writer = tf.summary.FileWriter(self.flags.logdir, sess.graph)
       self.summ2txt(self.test_names, 'batch')
@@ -207,7 +208,7 @@ class TFSolver:
       print('Start testing ...')
       itCnt=self.flags.test_iter #rp**
       if itCnt==0:
-               itCnt=sum(1 for _ in tf.python_io.tf_record_iterator(FLAGS.DATA.test.location))
+               itCnt=sum(1 for _ in tf.python_io.tf_record_iterator(self.flagsD.test.location))
       for i in range(0, itCnt):
         iter_test_result = sess.run(self.test_tensors)
         iter_test_result = self.result_callback(iter_test_result)
@@ -223,7 +224,7 @@ class TFSolver:
 
     # Final testing results
     for j in range(num_tensors):
-      avg_test[j] /= self.flags.test_iter
+      avg_test[j] /= itCnt
     avg_test = self.result_callback(avg_test)
     # print the results
     print('Testing done!\n')
