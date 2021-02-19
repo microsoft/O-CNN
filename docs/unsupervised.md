@@ -2,13 +2,21 @@
 
 ## Unsupervised pretraining
 
-1. Download the data and pretrained weights with the following command. 
+1. Download the `ShapeNetCore.v1.zip` from [here](https://shapenet.org/) and
+   place it in the folder `tensorflow/script/dataset/midnet_data`. Then run the
+   following command to preprocess the data and make the tfrecords:
    ```shell
    cd  tensorflow/data
-   python midnet_data.py
+   python midnet_data.py --run shapenet_create_tfrecords \
+                         --scanner <The path of the virtual_scanner>
+   ```
+2. For convenience, we also provide the tfrecords we made. Download the data and
+   pretrained weights with the following command. 
+   ```shell
+   python midnet_data.py --run download_data
    ```
 
-2. Run the following command to train the network. 
+3. Run the following command to train the network. 
    ```shell
    cd  tensorflow/script
    python run_mid.py --config configs/mid_hrnet_d6.yaml

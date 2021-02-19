@@ -114,7 +114,7 @@ def m40_convert_mesh_to_points():
   # Delete the following 3 files since the virtualscanner can not deal with them
   filelist = ['cone/train/cone_0117.off',
               'curtain/train/curtain_0066.off',
-              'car/train/car_0021.off.off']
+              'car/train/car_0021.off']
   for filename in filelist:
     filename = os.path.join(mesh_folder, filename)
     if os.path.exists(filename):
