@@ -61,6 +61,8 @@ If you use our code or models, please [cite](docs/citation.md) our paper.
 - [Shape Autoencoder](docs/autoencoder.md)
 - [Shape Completion](docs/completion.md)
 - [Image2Shape](docs/image2shape.md)
+- [Unsupverised Pretraining](docs/unsupervised.md)
+
 
 
 
