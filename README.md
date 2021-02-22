@@ -26,13 +26,14 @@ By [Peng-Shuai Wang](https://wang-ps.github.io/), Yu-Qi Yang, Qian-Fang Zou,
 [Zhirong Wu](https://www.microsoft.com/en-us/research/people/wuzhiron/), 
 [Yang Liu](https://xueyuhanlang.github.io/) 
 and [Xin Tong](https://www.microsoft.com/en-us/research/people/xtong/)<br/>
-Arxiv preprint, 2020<br/>
+AAAI Conference on Artificial Intelligence (AAAI), 2021. [Arxiv, 2020.08]<br/>
 
 If you use our code or models, please [cite](docs/citation.md) our paper.
 
 
 ### What's New?
-
+- 2021.02.08: Release the code for ShapeNet segmentation with HRNet
+- 2021.02.03: Release the code for ModelNet40 classification with HRNet.
 - 2020.10.12: Release the initial version of our O-CNN under PyTorch. The code
   has been tested with the [classification task](docs/classification.md#o-cnn-on-pytorch).
 - 2020.08.16: We released our code for [3D unsupervised learning](docs/unsupervised.md).
@@ -48,9 +49,6 @@ If you use our code or models, please [cite](docs/citation.md) our paper.
   We proposed a simple yet efficient network and output-guided skip connections
   for 3D completion, which achieved state-of-the-art performances on several 
   benchmarks.
-- 2020.03.16: We released ResNet-based O-CNN architecture for 
-  [shape classification](docs/classification.md#o-cnn-on-tensorflow).
-  We achieved a testing accuracy of **92.5** on ModelNet40 (without voting).
 
 
 
@@ -63,6 +61,8 @@ If you use our code or models, please [cite](docs/citation.md) our paper.
 - [Shape Autoencoder](docs/autoencoder.md)
 - [Shape Completion](docs/completion.md)
 - [Image2Shape](docs/image2shape.md)
+- [Unsupverised Pretraining](docs/unsupervised.md)
+
 
 
 
