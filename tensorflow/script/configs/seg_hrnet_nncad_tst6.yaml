@@ -1,0 +1,51 @@
+# Parameters for the airplane
+
+SOLVER:
+  ckpt: 'logs/seg/hrnett1/model/iter_150000.ckpt'
+  gpu: 0,
+  logdir: logs/seg/hrnett1
+  max_iter: 150000
+  test_iter: 15876
+  #test_iter: 200
+  test_every_iter: 2000
+  step_size: (15000, )
+  learning_rate: 0.1
+  gamma: 0.316
+  run: test
+  #run: train
+DATA:
+  train:
+    dtype: octree
+    distort: False
+    depth: 6
+    axis: y 
+    uniform: True
+    node_dis: True
+    location: /mnt/d/bb/tfTrain.tfrecords
+    batch_size: 12
+    x_alias: data
+    mask_ratio: 0.5
+
+  test: 
+    dtype: octree
+    distort: False  # no data augmentation
+    depth: 6
+    axis: y 
+    node_dis: True
+    location: /mnt/d/bb/tfTest.tfrecords
+    shuffle: 0
+    batch_size: 1
+    x_alias: data
+
+MODEL:
+  name: hrnet
+  channel: 4
+  nout: 14
+  depth: 6
+  factor: 2
+  signal_abs: True
+  depth_out: 6
+
+LOSS:
+  num_class: 14
+  weight_decay: 0.0005
