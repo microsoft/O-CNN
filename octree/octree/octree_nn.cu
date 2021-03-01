@@ -151,10 +151,10 @@ void octree2col_gpu(Dtype* data_col, const Dtype* data_octree,
     const int channel, const int height, const int kernel_sdim,
     const int stride, const int* neigh, const int* ni,
     const int height_col, const int n) {
-  const int kernel = kernel_sdim;
-  const int thread_num = channel * kernel * height_col;
+  const int thread_num = channel * kernel_sdim * height_col;
   octree2col_kernel<Dtype> <<< CudaGetBlocks(thread_num), kCudaThreadsNum >>> (
-      data_col, data_octree, height, kernel, stride, neigh, ni, height_col, n, thread_num);
+      data_col, data_octree, height, kernel_sdim, stride, neigh, ni, height_col,
+      n, thread_num);
   CUDA_POST_KERNEL_CHECK;
 }
 
@@ -163,15 +163,95 @@ void col2octree_gpu(const Dtype* data_col, Dtype* data_octree,
     const int channel, const int height, const int kernel_sdim,
     const int stride, const int* neigh, const int* ni,
     const int height_col, const int n) {
-  const int kernel = kernel_sdim; // kernel size: 3*3*3
-  const int thread_num = channel * kernel * height_col;
+  const int thread_num = channel * kernel_sdim * height_col;
   int octree_h = height << 3 * (stride - 1);
   // set data_octree to zero ONCE when n ==0
   if (n == 0) memset_gpu(channel * octree_h, Dtype(0), data_octree);
   col2octree_kernel<Dtype> <<< CudaGetBlocks(thread_num), kCudaThreadsNum >>> (
-      data_col, data_octree, height, kernel, stride, neigh, ni, height_col, n, thread_num);
+      data_col, data_octree, height, kernel_sdim, stride, neigh, ni, height_col,
+      n, thread_num);
   CUDA_POST_KERNEL_CHECK;
 }
+
+
+
+template <typename Dtype>
+__global__ void octree2colP_kernel(Dtype* data_col, const Dtype* data_octree,
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild,
+    const int height_col, const int n, const int thread_num) {
+  CUDA_KERNEL_LOOP(i, thread_num) {
+    int h = i % height_col;
+    int h1 = h + n * height_col;
+    if (h1 >= height) { data_col[i] = 0; continue; }
+    int t = i / height_col;
+    int k = t % kernel_sdim;
+    int c = t / kernel_sdim;
+    
+    // neighborhood searching
+    const int hp = ichild[h];
+    const int index = stride == 2 ? (h << 6) + ni[k] :
+        (hp >> 3 << 6) + ni[(hp % 8) * kernel_sdim + k];
+    int p = neigh[index];
+    if (p >= 0) { p = child[p]; }
+
+    data_col[i] = p < 0 ? Dtype(0) : data_octree[c * octree_h + p];
+  }
+}
+
+template <typename Dtype>
+__global__ void col2octreeP_kernel(const Dtype* data_col, Dtype* data_octree,
+    const int height, const int octree_h, const int kernel_sdim, const int stride,
+    const int* neigh, const int* ni, const int* child, const int* ichild,
+    const int height_col, const int n, const int thread_num) {
+  CUDA_KERNEL_LOOP(i, thread_num) {
+    int h = i % height_col;
+    int h1 = h + n * height_col;
+    if (h1 >= height) continue;
+    int t = i / height_col;
+    int k = t % kernel_sdim;
+    int c = t / kernel_sdim;
+
+    // neighborhood searching
+    const int hp = ichild[h];
+    const int index = stride == 2 ? (h << 6) + ni[k] :
+        (hp >> 3 << 6) + ni[(hp % 8) * kernel_sdim + k];
+    int p = neigh[index];
+    if (p >= 0) { p = child[p]; }
+
+    // assign values
+    if (p >= 0) {
+      caffe_gpu_atomic_add(data_col[i], data_octree + c * octree_h + p);
+    }
+  }
+}
+
+template <typename Dtype>
+void octree2colP_gpu(Dtype* data_col, const Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n) {
+  const int thread_num = channel * kernel_sdim * height_col;
+  octree2colP_kernel<Dtype> <<< CudaGetBlocks(thread_num), kCudaThreadsNum >>> (
+      data_col, data_octree, height, octree_h, kernel_sdim, stride, neigh, ni,
+      child, ichild, height_col, n, thread_num);
+  CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename Dtype>
+void col2octreeP_gpu(const Dtype* data_col, Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n) {
+  const int thread_num = channel * kernel_sdim * height_col;
+  // set data_octree to zero ONCE when n ==0
+  if (n == 0) { memset_gpu(channel * octree_h, Dtype(0), data_octree); }
+  col2octreeP_kernel<Dtype> <<< CudaGetBlocks(thread_num), kCudaThreadsNum >>> (
+      data_col, data_octree, height, octree_h, kernel_sdim, stride, neigh, ni,
+      child, ichild, height_col, n, thread_num);
+  CUDA_POST_KERNEL_CHECK;
+}
+
 
 
 template <typename Dtype>
@@ -762,6 +842,8 @@ template void pad_backward_gpu<float>(float* X, const int Hx, const int Cx,
     const float* Y, const int Hy, const int* label);
 template void pad_backward_gpu<double>(double* X, const int Hx, const int Cx,
     const double* Y, const int Hy, const int* label);
+template void pad_backward_gpu<int>(int* X, const int Hx, const int Cx,
+    const int* Y, const int Hy, const int* label);
 template void octree2col_gpu<float>(float* data_col, const float* data_octree,
     const int channel, const int height,  const int kernel_sdim, const int stride,
     const int* neigh, const int* ni, const int height_col, const int n);
@@ -774,6 +856,22 @@ template void col2octree_gpu<float>(const float* data_col, float* data_octree,
 template void col2octree_gpu<double>(const double* data_col, double* data_octree,
     const int channel, const int height, const int kernel_sdim, const int stride,
     const int* neigh, const int* ni, const int height_col, const int n);
+template void octree2colP_gpu<float>(float* data_col, const float* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
+template void col2octreeP_gpu<float>(const float* data_col, float* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
+template void octree2colP_gpu<double>(double* data_col, const double* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
+template void col2octreeP_gpu<double>(const double* data_col, double* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
 template void generate_label_gpu<float>(int* label_data, int& top_h,
     const float* bottom_data, const int bottom_h, const int mask);
 template void generate_label_gpu<double>(int* label_data, int& top_h,

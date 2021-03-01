@@ -98,6 +98,26 @@ void col2octree_gpu(const Dtype* data_col, Dtype* data_octree,
     const int stride, const int* neigh, const int* ni,
     const int height_col, const int n);
 
+template <typename Dtype>
+void octree2colP_cpu(Dtype* data_col, const Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n);
+template <typename Dtype>
+void octree2colP_gpu(Dtype* data_col, const Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n);
+template <typename Dtype>
+void col2octreeP_cpu(const Dtype* data_col, Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n);
+template <typename Dtype>
+void col2octreeP_gpu(const Dtype* data_col, Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n);
 
 template <typename Dtype>
 void octree_max_pool_cpu(Dtype* top_data, int top_h, int* mask,

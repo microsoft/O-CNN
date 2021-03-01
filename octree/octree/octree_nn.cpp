@@ -240,6 +240,64 @@ void col2octree_cpu(const Dtype* data_col, Dtype* data_octree,
   }
 }
 
+
+template <typename Dtype>
+void octree2colP_cpu(Dtype* data_col, const Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n) {
+  for (int c = 0; c < channel; ++c) {
+    for (int k = 0; k < kernel_sdim; ++k) {
+      int h_start = n * height_col;
+      int i_start = (c * kernel_sdim + k) * height_col - h_start;
+      for (int h = h_start; h < h_start + height_col; ++h) {
+        // boundary condition
+        if (h >= height) {
+          data_col[i_start + h] = Dtype(0);
+          continue;
+        }
+        // neighborhood searching
+        const int hp = ichild[h];
+        const int index = stride == 2 ? (h << 6) + ni[k] :
+            (hp >> 3 << 6) + ni[(hp % 8) * kernel_sdim + k];
+        int p = neigh[index];
+        if (p >= 0) { p = child[p]; }
+        // assign values
+        data_col[i_start + h] =
+            p < 0 ? Dtype(0) : data_octree[c * octree_h + p];
+      }
+    }
+  }
+}
+
+template <typename Dtype>
+void col2octreeP_cpu(const Dtype* data_col, Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n) {
+  // set data_octree to zero ONCE when n ==0
+  if (n == 0) { memset_cpu(channel * octree_h, Dtype(0), data_octree); }
+  for (int c = 0; c < channel; ++c) {
+    for (int k = 0; k < kernel_sdim; ++k) {
+      int h_start = n * height_col;
+      int i_start = (c * kernel_sdim + k) * height_col - h_start;
+      for (int h = h_start; h < h_start + height_col; ++h) {
+        // boundary condition
+        if (h >= height) continue;
+        // neighborhood searching
+        const int hp = ichild[h];
+        const int index = stride == 2 ? (h << 6) + ni[k] :
+            (hp >> 3 << 6) + ni[(hp % 8) * kernel_sdim + k];
+        int p = neigh[index];
+        if (p >= 0) { p = child[p]; }
+        // assign values
+        if (p >= 0) { data_octree[c * octree_h + p] += data_col[i_start + h]; }          
+      }
+    }
+  }
+}
+
+
 template<typename Dtype>
 void octree_max_pool_cpu(Dtype* top_data, int top_h, int* mask,
     const Dtype* btm_data, int btm_h, int channel) {
@@ -604,7 +662,8 @@ template void memset_cpu<char>(const size_t N, const char alpha, char* Y);
 template void memset_cpu<int8_t>(const size_t N, const int8_t alpha, int8_t* Y);
 template void memset_cpu<uint8_t>(const size_t N, const uint8_t alpha, uint8_t* Y);
 template void memcpy_cpu<int>(const size_t N, const int* X, int* Y);
-template void memcpy_cpu<unsigned>(const size_t N, const unsigned* X, unsigned* Y);
+template void memcpy_cpu<uint32>(const size_t N, const uint32* X, uint32* Y);
+template void memcpy_cpu<uint64>(const size_t N, const uint64* X, uint64* Y);
 template void memcpy_cpu<float>(const size_t N, const float* X, float* Y);
 template void memcpy_cpu<double>(const size_t N, const double* X, double* Y);
 template void sequence_cpu<int>(int* ptr, const int num);
@@ -629,6 +688,22 @@ template void col2octree_cpu<float>(const float* data_col, float* data_octree,
 template void col2octree_cpu<double>(const double* data_col, double* data_octree,
     const int channel, const int height, const int kernel_sdim, const int stride,
     const int* neigh, const int* ni, const int height_col, const int n);
+template void octree2colP_cpu<float>(float* data_col, const float* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
+template void col2octreeP_cpu<float>(const float* data_col, float* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
+template void octree2colP_cpu<double>(double* data_col, const double* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
+template void col2octreeP_cpu<double>(const double* data_col, double* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
 template void generate_label_cpu<float>(int* label_data, int& top_h,
     const float* bottom_data, const int bottom_h, const int mask);
 template void generate_label_cpu<double>(int* label_data, int& top_h,
