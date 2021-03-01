@@ -26,11 +26,19 @@
     year      = {2020},
 }
 
-@article{Wang-2020-Unsupervised,
-  title      = {Unsupervised {3D} Learning for Shape Analysis via Multiresolution Instance Discrimination},
-  author     = {Wang, Peng-Shuai and Yang, Yu-Qi and Zou, Qian-Fang and Wu, Zhirong and Liu, Yang and Tong, Xin},
-  journal    = {arXiv preprint arXiv:2008.01068},
-  year       = {2020},
+@inprocessing {Wang2020unsupervised,
+    title     = {Unsupervised {3D} Learning for Shape Analysis via Multiresolution Instance Discrimination},
+    author    = {Wang, Peng-Shuai and Yang, Yu-Qi and Zou, Qian-Fang and Wu, Zhirong and Liu, Yang and Tong, Xin},
+    booktitle = {AAAI Conference on Artificial Intelligence (AAAI)},
+    year      = {2021},
+}
+
+
+@article{Wang2020arxiv,
+    title    = {Unsupervised {3D} Learning for Shape Analysis via Multiresolution Instance Discrimination},
+    author   = {Wang, Peng-Shuai and Yang, Yu-Qi and Zou, Qian-Fang and Wu, Zhirong and Liu, Yang and Tong, Xin},
+    journal  = {arXiv preprint arXiv:2008.01068},
+    year     = {2020}
 }
 
 

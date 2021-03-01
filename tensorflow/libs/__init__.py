@@ -10,7 +10,7 @@ if 'OCTREE_KEY' in os.environ and os.environ['OCTREE_KEY'] == '64':
   tf_intk = tf.int64
 else:
   print('INFO from ocnn: The octree key is 32 bits, '
-        'the octree depth should be smaller than 8.')
+        'the octree depth should be smaller than 8. ')
   octree_key64 = False
   tf_uintk = tf.uint32
   tf_uints = tf.uint8

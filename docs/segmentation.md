@@ -45,7 +45,6 @@ instructions are on our working list.
   [here](https://github.com/wang-ps/O-CNN/tree/master/densecrf).  
 
 
-
 ## Shape Segmentation on PartNet with Tensorflow
 
 We implement the [HRNet](https://github.com/HRNet) within our O-CNN framework,
@@ -78,3 +77,23 @@ on [3D Unsupervised Learning](https://arxiv.org/abs/2008.01068).
     cd script
     python run_seg_partnet_cmd.py
     ```
+
+
+## Shape Segmentation on ShapeNet with Tensorflow
+
+Follow the instructions below to train the HRNet based on our O-CNN framework 
+and conduct the shape segmentation on ShapeNet Part. 
+
+1. Change the working directory to `tensorflow/data`. Run the following script
+   to download the data and convert the data to `tfrecords`. 
+    ```shell
+    python seg_shapenet.py 
+    ```
+
+3. Change the working directory to `tensorflow/script`. Run the following script
+   to train the network. 
+    ```shell
+    python run_seg_shapenet_cmd.py
+    ```
+
+

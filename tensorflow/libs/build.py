@@ -19,11 +19,48 @@ OCTREE_DIR = args.octree
 CUDA_DIR = args.cuda
 CC = args.cc
 KEY64 = '-DKEY64' if args.key64.lower() == 'true' else ''
+LIBS_DIR = os.path.dirname(os.path.realpath(__file__))
 
-
-lines = []
 TF_CFLAGS = " ".join(tf.sysconfig.get_compile_flags())
 TF_LFLAGS = " ".join(tf.sysconfig.get_link_flags())
+
+## g++-4.8
+env_gcc = 'echo using g++ '
+if CC == 'g++-4.8':
+  cmds = [
+    'sudo apt-get update',
+    'sudo apt-get install gcc-4.8 --yes',
+    'sudo apt-get install g++-4.8 --yes',]
+  cmd = ' && '.join(cmds)
+  print(cmd)
+  os.system(cmd)
+  env_gcc = 'echo using g++-4.8 && export CC=gcc-4.8 && export CXX=g++-4.8 '
+
+
+## build octree
+octree_ext = os.path.join(OCTREE_DIR, 'external/octree-ext')
+if not os.path.exists(octree_ext):
+  cmd = 'git clone --recursive https://github.com/wang-ps/octree-ext.git ' + octree_ext
+  print(cmd)
+  os.system(cmd)
+
+octree_build = os.path.join(OCTREE_DIR, 'build')
+if os.path.exists(octree_build):
+  os.system('rm -r %s' % octree_build)
+
+os.makedirs(octree_build)
+os.chdir(octree_build)
+abi = 'OFF' if '-D_GLIBCXX_USE_CXX11_ABI=1' in TF_CFLAGS else 'ON'
+k64 = 'OFF' if KEY64 != '-DKEY64' else 'ON'
+cmd = env_gcc + '&& cmake .. -DABI=%s -DKEY64=%s && make -j all' % (abi, k64)
+print(cmd)
+os.system(cmd)
+os.system('./octree_test')  # run the test
+os.chdir(LIBS_DIR)
+
+
+## build ocnn-tf
+lines = []
 lines.append("TF_CFLAGS := %s" % TF_CFLAGS)
 lines.append("TF_LFLAGS := %s" % TF_LFLAGS)
 lines.append("OCT_CFLAGS := -I%s/octree" % OCTREE_DIR)
@@ -113,10 +150,17 @@ lines.append("\t rm %s" % os.path.join("object", "*.o"))
 lines.append("")
 
 lines = [line + "\n" for line in lines]
-
 with open("Makefile", "w") as f:
   f.writelines(lines)
 
-if not os.path.exists("object"):
+# make
+if os.path.exists("object"):
+  os.system("rm -r object")
   os.mkdir("object")
 os.system("make -j all")
+
+# test
+os.chdir(LIBS_DIR + "/../test")
+# env variable
+cmd = 'export OCTREE_KEY=' + ('64' if KEY64 == '-DKEY64' else '32')
+os.system(cmd + " && python test_all.py")

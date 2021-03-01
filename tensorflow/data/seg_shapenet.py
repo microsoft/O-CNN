@@ -1,10 +1,10 @@
 import os
 import json
 
-current_path   = os.path.dirname(os.path.realpath(__file__))
-root_folder = os.path.join(current_path, '../script/dataset/shapenet_segmentation')
+current_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+root_folder = os.path.join(current_path, 'script/dataset/shapenet_segmentation')
 ply2points = 'ply2points'
-convert_tfrecords = os.path.join(current_path, '../util/convert_tfrecords.py')
+convert_tfrecords = os.path.join(current_path, 'util/convert_tfrecords.py')
 zip_name = 'shapenetcore_partanno_segmentation_benchmark_v0_normal'
 
 txt_folder = os.path.join(root_folder, zip_name)
@@ -26,9 +26,11 @@ dis       = [0, 4, 6, 8, 12, 16, 19, 22, 24, 28, 30, 36, 38, 41, 44, 47]
 def download_and_unzip():
   print('Downloading and unzipping ...')
   if not os.path.exists(root_folder): os.makedirs(root_folder)
-  url = 'https://shapenet.cs.stanford.edu/media/%s.zip' % zip_name
-  os.system('wget %s -P %s' % (url, root_folder))
-  os.system('unzip %s.zip -d %s' % (os.path.join(root_folder, zip_name), root_folder))
+  # url = 'https://shapenet.cs.stanford.edu/media/%s.zip' % zip_name
+  url = 'https://www.dropbox.com/s/guy440yysyo0vrr/%s.zip?dl=0' % zip_name
+  filename = os.path.join(root_folder, zip_name + '.zip')
+  os.system('wget %s -O %s --no-check-certificate' % (url, filename))
+  os.system('unzip %s.zip -d %s' % (filename, root_folder))
 
 def txt_to_ply():
   print('Convert txt files to ply files ...')
