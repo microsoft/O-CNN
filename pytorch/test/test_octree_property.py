@@ -6,9 +6,10 @@ import numpy as np
 
 
 class OctreePropertyTest(unittest.TestCase):
-
-  def test_octree_property(self):
-    octree = ocnn.octree_batch(ocnn.octree_samples(['octree_1'] * 2)).cuda()
+  def octree_property(self, on_cuda=True):
+    octree = ocnn.octree_batch(ocnn.octree_samples(['octree_1'] * 2))
+    if on_cuda:
+      octree = octree.cuda()
 
     # test index
     out = ocnn.octree_property(octree, 'index', 5)
@@ -32,6 +33,10 @@ class OctreePropertyTest(unittest.TestCase):
 
     # TODO: test key, xyz, and label
     # out = ocnn.octree_property(octree, 'key', 5)
+
+  def test_octree_property(self):
+    self.octree_property(on_cuda=True)
+    self.octree_property(on_cuda=False)
 
 
 if __name__ == "__main__":

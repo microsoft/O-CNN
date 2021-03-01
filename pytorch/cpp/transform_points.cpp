@@ -36,7 +36,7 @@ vector<float> bounding_sphere(Tensor data_in, string method) {
 namespace {
 void setup_transform(Tensor data_in, Tensor& data_out, Points& pts) {
   data_out = torch::zeros_like(data_in);
-  uint8_t* out_ptr = data_out.data<uint8_t>();
+  uint8_t* out_ptr = data_out.data_ptr<uint8_t>();
   memcpy(out_ptr, data_in.data_ptr<uint8_t>(), data_out.numel());
 
   // init and checkthe points

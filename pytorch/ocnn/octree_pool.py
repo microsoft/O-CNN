@@ -77,10 +77,14 @@ class OctreePoolBase(nn.Module):
 
 
 class OctreeMaxPool(OctreePoolBase):
+  def __init__(self, depth, return_indices=False):
+    super(OctreeMaxPool, self).__init__(depth)
+    self.return_indices = return_indices
+
   def forward(self, data, octree):
     pool, mask = octree_max_pool(data, octree, self.depth)
     output = ocnn.octree_pad(pool, octree, self.depth-1)  # !!! depth-1
-    return output, mask
+    return output if not self.return_indices else (output, mask)
 
 
 class OctreeMaxUnpool(OctreePoolBase):
@@ -102,7 +106,7 @@ class OctreeAvgPool(OctreePoolBase):
 class FullOctreeGlobalPool(OctreePoolBase):
   def __init__(self, depth):
     super(FullOctreeGlobalPool, self).__init__(depth)
-    self.octree2voxel = ocnn.Fulloctree2Voxel(depth)
+    self.octree2voxel = ocnn.FullOctree2Voxel(depth)
 
   # for full layer only
   def forward(self, data):

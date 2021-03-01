@@ -162,6 +162,12 @@ the data automatically.
 
 2. Run the following command to train the network.
    ```
-   python classification.py --config configs/cls_lenet.yaml
+   python classification.py --config configs/m40_cls.yaml
    ```
-   
+
+3. To train a deep Resnet, run the following command.
+   ```
+   python classification.py --config configs/m40_cls.yaml \
+                            SOLVER.logdir logs/m40/0301_resnet \
+                            MODEL.name resnet
+   ```

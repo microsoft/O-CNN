@@ -21,3 +21,4 @@ __pycache__
 *.fig
 log
 ae_output
+pytorch/projects/logs

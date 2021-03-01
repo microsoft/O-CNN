@@ -1,11 +1,10 @@
 SOLVER:
   gpu: 0,
-  logdir: logs/m40/1011_lenet
+  logdir: logs/m40/0301_lenet
   run: train
-  max_iter: 160000
-  test_iter: 77
-  test_every_iter: 2000
-  step_size: (40000,)
+  max_iter: 300
+  test_every_epoch: 5
+  step_size: (120,180,240)
   ckpt_num: 20
 
 DATA:

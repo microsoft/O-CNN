@@ -58,8 +58,8 @@ class Octree2ColTest(unittest.TestCase):
       for j in range(len(vi)):
         out_gt = self.forward(kernel_size[j], stride[i], self.idx_maps[vi[j]])
 
-        octree = self.octree.to("cuda")
-        data_in = torch.from_numpy(self.data_in).to("cuda")
+        octree = self.octree.cuda()
+        data_in = torch.from_numpy(self.data_in).cuda()
         data_out = ocnn.octree2col(data_in, octree,
                                    self.depth, kernel_size[j], stride[i])
 
@@ -73,14 +73,65 @@ class Octree2ColTest(unittest.TestCase):
 
     for i in range(len(stride)):
       for j in range(len(vi)):
-        octree = self.octree.to("cuda")
-        data_in = torch.from_numpy(self.data_in).to("cuda").requires_grad_()
+        octree = self.octree.cuda()
+        data_in = torch.from_numpy(self.data_in).cuda().requires_grad_()
 
         params = [data_in, octree, self.depth, kernel_size[j], stride[i]]
         succ = gradcheck(ocnn.octree2col, params, eps=1.0)
         self.assertTrue(succ)
 
+  def test_forwardP1(self):
+    # depth = 1, this layer is all non-empty
+    stride = [1, 2]
+    vi = [0, 2, 3, 6, 1]
+    kernel_size = [[3, 3, 3], [2, 2, 2], [3, 1, 1], [3, 3, 1], [1, 1, 1]]
+    for i in range(len(stride)):
+      for j in range(len(vi)):
+        octree = self.octree.cuda()
+        data_in = torch.from_numpy(self.data_in).cuda()
+        data_out = ocnn.nn.octree2colP(data_in, octree,
+                                      self.depth, kernel_size[j], stride[i])
+        data_out = data_out.cpu().detach().numpy()
 
-if __name__ == "__main__":
+        out_gt = self.forward(kernel_size[j], stride[i], self.idx_maps[vi[j]])
+        self.assertTrue(np.array_equal(data_out, out_gt))
+
+  def test_octree2colP(self):
+    depth = 4
+    channel = 5
+    stride = [1, 2]
+    kernel_size = [[3, 3, 3], [2, 2, 2], [3, 1, 1], [3, 3, 1], [1, 1, 1]]
+    samples = ocnn.octree_samples(['octree_1', 'octree_2', 'octree_2', 'octree_1'])
+    octree = ocnn.octree_batch(samples).cuda()
+    node_num = ocnn.octree_property(octree, 'node_num', depth)
+    data_in = torch.rand(1, channel, node_num.item(), 1).cuda()
+    data_in = ocnn.octree_depad(data_in, octree, depth)
+    data_in1 = data_in.clone().requires_grad_()
+    data1 = ocnn.octree_pad(data_in1, octree, depth, 0)
+    data_in2 = data_in.clone().requires_grad_()
+
+    # octree2colP = octree2col + depad
+    for i in range(len(stride)):
+      for j in range(len(kernel_size)):
+        out1 = ocnn.octree2col(data1, octree, depth, kernel_size[j], stride[i])
+        if stride[i] == 1:
+          ks, height = out1.size(1), out1.size(2)
+          out1 = out1.view(1, -1, height, 1)
+          out1 = ocnn.octree_depad(out1, octree, depth)
+          out1 = out1.view(channel, ks, -1)
+        out2 = ocnn.octree2colP(data_in2, octree, depth, kernel_size[j], stride[i])
+        
+        pesudo_grad = torch.rand(out1.shape, dtype=out1.dtype, device=out1.device)
+        out1.backward(pesudo_grad, retain_graph=True)
+        out2.backward(pesudo_grad, retain_graph=True)
+
+        # check
+        self.assertTrue(np.array_equal(out1.detach().cpu().numpy(), 
+                                       out2.detach().cpu().numpy()))
+        self.assertTrue(np.allclose(data_in1.grad.cpu().numpy(), 
+                                    data_in2.grad.cpu().numpy()))
+
+
+if __name__ == '__main__':
   os.environ['CUDA_VISIBLE_DEVICES'] = '0'
   unittest.main()

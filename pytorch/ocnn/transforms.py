@@ -91,22 +91,34 @@ class TransformPoints:
 
 
 class TransformCompose:
-  def __init__(self, flags):
+  def __init__(self, flags, return_pts=False):
     self.flags = flags
+    self.return_pts = return_pts
   
   def __call__(self, points):
     points = NormalizePoints('sphere')(points)
     points = TransformPoints(**self.flags)(points)
     octree = Points2Octree(**self.flags)(points)
-    return octree
+    return octree if not self.return_pts else (octree, points)
+    
+
+class CollateOctrees:
+  def __init__(self, return_pts=False):
+    self.return_pts = return_pts
+
+  def __call__(self, batch):
+    ''' Merge a batch of octrees into one super octree
+    '''
+    assert type(batch) == list 
+    octrees = [b[0] for b in batch]
+    octree = ocnn.octree_batch(octrees)
+    labels = torch.tensor([b[1] for b in batch])
+
+    outputs = [octree, labels]
+    if self.return_pts:
+      points = [b[2] for b in batch]
+      outputs.append(points)
+    return outputs
 
 
-def collate_octrees(batch):
-  ''' Merge a batch of octrees into one super octree
-  '''
-  assert type(batch) == list
-  octrees = [b[0] for b in batch]
-  octree = ocnn.octree_batch(octrees)
-  
-  labels = torch.tensor([b[1] for b in batch])
-  return octree, labels
+collate_octrees = CollateOctrees(return_pts=False)

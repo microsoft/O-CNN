@@ -26,7 +26,7 @@ class LeNet(torch.nn.Module):
     assert data.size(1) == self.channel_in
     for i in range(len(self.convs)):
       data = self.convs[i](data, octree)
-      data, _ = self.pools[i](data, octree)
+      data = self.pools[i](data, octree)
     data = self.octree2voxel(data)
     data = self.header(data)
     return data

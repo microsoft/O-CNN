@@ -217,9 +217,22 @@ Tensor octree_conv(Tensor data_in, Tensor weights, Tensor octree, int depth,
   return conv_op.compute(data_in, weights, octree);
 }
 
+Tensor octree_deconv(Tensor data_in, Tensor weights, Tensor octree, int depth,
+                     int num_output, vector<int> kernel_size, int stride) {
+  OctreeDeconvOp deconv_op(depth, num_output, kernel_size, stride);
+  return deconv_op.compute(data_in, weights, octree);
+}
+
 vector<Tensor> octree_conv_grad(Tensor data_in, Tensor weights, Tensor octree,
                                 Tensor grad_in, int depth, int num_output,
                                 vector<int> kernel_size, int stride) {
   OctreeConvGradOp grad_op(depth, num_output, kernel_size, stride);
+  return grad_op.compute(data_in, weights, octree, grad_in);
+}
+
+vector<Tensor> octree_deconv_grad(Tensor data_in, Tensor weights, Tensor octree,
+                                Tensor grad_in, int depth, int num_output,
+                                vector<int> kernel_size, int stride) {
+  OctreeDeconvGradOp grad_op(depth, num_output, kernel_size, stride);
   return grad_op.compute(data_in, weights, octree, grad_in);
 }
