@@ -156,7 +156,7 @@ with open("Makefile", "w") as f:
 # make
 if os.path.exists("object"):
   os.system("rm -r object")
-  os.mkdir("object")
+os.mkdir("object")
 os.system("make -j all")
 
 # test
