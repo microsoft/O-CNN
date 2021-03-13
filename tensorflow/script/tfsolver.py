@@ -85,6 +85,9 @@ class TFSolver:
   def result_callback(self, avg_results):
     return avg_results # calc some metrics, such as IoU, based on the graph output
 
+  def len_callback(self):
+    return 0 #rp added to calc output length
+
   def train(self):
     # build the computation graph
     self.build_train_graph()
@@ -208,7 +211,8 @@ class TFSolver:
       print('Start testing ...')
       itCnt=self.flags.test_iter #rp**
       if itCnt==0:
-               itCnt=sum(1 for _ in tf.python_io.tf_record_iterator(self.flagsD.test.location))
+        itCnt=self.len_callback()
+ 
       for i in range(0, itCnt):
         iter_test_result = sess.run(self.test_tensors)
         iter_test_result = self.result_callback(iter_test_result)
