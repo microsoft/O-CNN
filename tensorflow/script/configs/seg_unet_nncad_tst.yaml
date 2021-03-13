@@ -1,18 +1,17 @@
 # Parameters for the airplane
 
 SOLVER:
-  #ckpt: 'logs/seg/hrnett1/model/iter_150000.ckpt'
+  ckpt: 'logs/seg/unetT2/model/iter_150000.ckpt'
   gpu: 0,
-  logdir: logs/seg/hrnett1
+  logdir: logs/seg/unetT2
   max_iter: 150000
-  #test_iter: 15070
-  test_iter: 200
+  test_iter: 17000
   test_every_iter: 2000
   step_size: (15000, )
   learning_rate: 0.1
   gamma: 0.316
-  #run: test
-  run: train
+  run: test
+  #run: train
 DATA:
   train:
     dtype: octree
@@ -38,7 +37,7 @@ DATA:
     x_alias: data
 
 MODEL:
-  name: hrnet
+  name: unet
   channel: 4
   nout: 14
   depth: 6

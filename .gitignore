@@ -30,3 +30,4 @@ tensorflow/script/configs/seg_hrnet_nncad_tst7.yaml
 tensorflow/script/configs/seg_unet_nncad.yaml
 tensorflow/script/configs/seg_unet_nncad_trn7.yaml
 tensorflow/script/configs/seg_unet_nncad_tst7.yaml
+*.bak

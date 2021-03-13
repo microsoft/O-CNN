@@ -4,7 +4,9 @@ from ocnn import *
 
 def network_unet(octree, flags, training, reuse=False):  
   depth = flags.depth
-  nout = [512, 256, 256, 256, 256, 128, 64, 32, 16, 16, 16]
+  #nout = [512, 256, 256, 256, 256, 128, 64, 32, 16, 16, 16]
+  #nout = [512, 256, 512, 256, 256, 128, 64, 32, 16, 16, 16]
+  nout = [512, 256, 256, 256, 128, 128, 64, 32, 16, 16, 16]
   with tf.variable_scope('ocnn_unet', reuse=reuse):    
     with tf.variable_scope('signal'):
       data = octree_property(octree, property_name='feature', dtype=tf.float32,
@@ -27,6 +29,7 @@ def network_unet(octree, flags, training, reuse=False):
           with tf.variable_scope('resblock_%d' % n):
             convd[d] = octree_resblock(convd[d], octree, d, nout[d], 1, training)
 
+    convd[2] = tf.layers.dropout(convd[2], rate=0.5, training=training)
     ## decoder
     deconv = convd[2]
     for d in range(3, depth + 1):
