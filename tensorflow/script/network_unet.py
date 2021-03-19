@@ -6,7 +6,12 @@ def network_unet(octree, flags, training, reuse=False):
   depth = flags.depth
   #nout = [512, 256, 256, 256, 256, 128, 64, 32, 16, 16, 16]
   #nout = [512, 256, 512, 256, 256, 128, 64, 32, 16, 16, 16]
-  nout = [512, 256, 256, 256, 128, 128, 64, 32, 16, 16, 16]
+  if depth==7:
+    nout = [0,0, 512, 256, 128, 128, 64, 32, 0, 0, 0] 
+  else:
+    #nout = [  0,   0, 512, 256, 128, 64, 16, 0, 0, 0, 0]
+    nout = [  0,   0, 256, 256, 128, 128, 64, 0, 0, 0, 0]
+
   with tf.variable_scope('ocnn_unet', reuse=reuse):    
     with tf.variable_scope('signal'):
       data = octree_property(octree, property_name='feature', dtype=tf.float32,
@@ -34,13 +39,18 @@ def network_unet(octree, flags, training, reuse=False):
     deconv = convd[2]
     for d in range(3, depth + 1):
       with tf.variable_scope('decoder_d%d' % d):
-        # upsampling
+        # upsampling 
         # deconv = octree_tile(deconv, d-1, d, octree=octree1)
         # deconv = octree_upsample(deconv, octree, d-1, nout[d], training)
         deconv = octree_deconv_bn_relu(deconv, octree, d-1, nout[d], training, 
                                        kernel_size=[2], stride=2, fast_mode=False)
-        deconv = convd[d] + deconv # skip connections
+        if depth!=7:
+          deconv = convd[d] + deconv # skip connections
+        elif d % 2==0:
+         deconv = convd[d] + deconv # skip connections
 
+        # if d==6:
+        #    deconv = tf.layers.dropout(deconv, rate=0.5, training=training)
         # resblock
         for n in range(0, flags.resblock_num):
           with tf.variable_scope('resblock_%d' % n):
