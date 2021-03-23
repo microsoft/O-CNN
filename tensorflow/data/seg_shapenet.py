@@ -1,4 +1,5 @@
 import os
+import shutil
 import json
 
 current_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -30,7 +31,7 @@ def download_and_unzip():
   url = 'https://www.dropbox.com/s/guy440yysyo0vrr/%s.zip?dl=0' % zip_name
   filename = os.path.join(root_folder, zip_name + '.zip')
   os.system('wget %s -O %s --no-check-certificate' % (url, filename))
-  os.system('unzip %s.zip -d %s' % (filename, root_folder))
+  os.system('unzip %s -d %s' % (filename, root_folder))
 
 def txt_to_ply():
   print('Convert txt files to ply files ...')
@@ -53,7 +54,7 @@ def txt_to_ply():
         for line in fid:
           if line == '\n': continue
           nums = line.split()
-          nums[-1] = str(float(nums[-1]) - dis[i])
+          nums[-1] = str(float(nums[-1]) - dis[i]) # !!! Label Displacement
           lines.append(' '.join(nums))
 
       ply_header = header % len(lines)
@@ -122,6 +123,9 @@ def points_to_tfrecords():
     cmd = ' '.join(cmds)
     print(cmd + '\n')
     os.system(cmd)
+  des_folder = os.path.join(root_folder, 'train_test_split')
+  if not os.path.exists(des_folder): 
+    shutil.copytree(list_folder, )
 
 if __name__ == '__main__':
   download_and_unzip()

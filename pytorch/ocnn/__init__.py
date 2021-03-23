@@ -25,11 +25,12 @@ from .octree_pool import octree_max_pool, OctreeMaxPool, octree_max_unpool,    \
 
 # octree-base modules
 from .modules import OctreeConvBnRelu, OctreeDeConvBnRelu,                     \
-                     FcBnRelu, OctreeConv1x1BnRelu,                            \
+                     FcBnRelu, OctreeConv1x1, OctreeConv1x1BnRelu,             \
                      OctreeResBlock, OctreeResBlock2,                          \
                      OctreeResBlocks, OctreeResBlocks2,                        \
-                    OctreeTile, octree_trilinear_pts, octree_trilinear
+                     OctreeTile, octree_trilinear_pts, octree_trilinear
 
 # networks
 from .lenet import LeNet
 from .resnet import ResNet
+from .segnet import SegNet

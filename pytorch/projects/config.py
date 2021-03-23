@@ -13,7 +13,7 @@ _C.SOLVER.logdir          = 'logs'     # Directory where to write event logs
 _C.SOLVER.ckpt            = ''         # Restore weights from checkpoint file
 _C.SOLVER.run             = 'train'    # Choose from train or test
 _C.SOLVER.type            = 'sgd'      # Choose from sgd or adam
-_C.SOLVER.max_iter        = 160000     # Maximum training iterations
+_C.SOLVER.max_epoch       = 300        # Maximum training iterations
 _C.SOLVER.test_iter       = 100        # Test steps in testing phase
 _C.SOLVER.test_every_epoch= 10         # Test model every n training epochs
 _C.SOLVER.lr_type         = 'step'     # Learning rate type: step or cos
@@ -21,8 +21,6 @@ _C.SOLVER.learning_rate   = 0.1        # Initial learning rate
 _C.SOLVER.gamma           = 0.1        # Learning rate step-wise decay
 _C.SOLVER.step_size       = (40000,)   # Learning rate step size.
 _C.SOLVER.ckpt_num        = 100        # The number of checkpoint kept
-_C.SOLVER.var_name        = ('_name',) # Variable names used for finetuning
-_C.SOLVER.ignore_var_name = ('_name',) # Ignore variable names when loading ckpt
 _C.SOLVER.verbose         = False      # Whether to output some messages
 
 
@@ -47,6 +45,7 @@ _C.DATA.train.interval   = (1, 1, 1)   # Use interval&angle to generate random a
 _C.DATA.train.angle      = (180, 180, 180)
 
 _C.DATA.train.location   = ''          # The data location
+_C.DATA.train.filelist   = ''          # The data filelist
 _C.DATA.train.batch_size = 32          # Training data batch size
 _C.DATA.train.num_workers= 8           # Number of workers to load the data
 

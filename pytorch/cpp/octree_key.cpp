@@ -21,7 +21,7 @@ Tensor octree_encode_key(Tensor xyz) {
   if (xyz.is_cuda()) {
     memcpy_gpu(num, (uintk*)ptr_in, (uintk*)ptr_out);
   } else {
-    memcpy_gpu(num, (uintk*)ptr_in, (uintk*)ptr_out);
+    memcpy_cpu(num, (uintk*)ptr_in, (uintk*)ptr_out);
   }
   return data_out;
 }
@@ -37,7 +37,7 @@ Tensor octree_decode_key(Tensor key) {
   if (key.is_cuda()) {
     memcpy_gpu(num, (uintk*)ptr_in, (uintk*)ptr_out);
   } else {
-    memcpy_gpu(num, (uintk*)ptr_in, (uintk*)ptr_out);
+    memcpy_cpu(num, (uintk*)ptr_in, (uintk*)ptr_out);
   }
   return data_out;
 }

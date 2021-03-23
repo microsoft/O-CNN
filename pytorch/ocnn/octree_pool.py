@@ -90,7 +90,7 @@ class OctreeMaxPool(OctreePoolBase):
 class OctreeMaxUnpool(OctreePoolBase):
   def forward(self, data, mask, octree):
     pool = ocnn.octree_depad(data, octree, self.depth)  # !!! depth
-    output = octree_max_unpool(pool, mask, octree, self.depth)
+    output = octree_max_unpool(pool, mask, octree, self.depth + 1)
     return output
 
 

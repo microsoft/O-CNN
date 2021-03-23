@@ -16,14 +16,11 @@ class ModelNet40(torch.utils.data.Dataset):
     return len(self.points)
 
   def __getitem__(self, idx):
-    if self.in_memory:
-      points = self.points[idx]
-    else:
-      points = np.fromfile(self.points[idx], np.uint8)
-    points = torch.from_numpy(points) # convert it to torch.tensor
+    points = self.points[idx] if self.in_memory else \
+             np.fromfile(self.points[idx], dtype=np.uint8)
+    points = torch.from_numpy(points)  # convert it to torch.tensor
     if self.transform:
       octree = self.transform(points)
-      
     return octree, self.labels[idx]
 
   def load_modelnet40(self, suffix='points'):
