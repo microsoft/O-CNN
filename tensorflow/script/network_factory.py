@@ -3,7 +3,7 @@ from network_cls import network_ocnn, network_resnet
 from network_unet import network_unet
 from network_segnet import network_segnet
 from network_hrnet import HRNet
-from network_unet_scannet import network_unet34
+
 
 def cls_network(octree, flags, training, reuse=False):
   if flags.name.lower() == 'ocnn':
