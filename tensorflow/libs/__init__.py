@@ -178,8 +178,8 @@ def octree_max_pool(data, octree, depth):
 
 def octree_max_unpool(data, mask, octree, depth):
   with tf.variable_scope('octree_max_unpool'):
-    data = octree_depad(data, octree, depth)             # !!! depth
-    data = _octree_max_unpool(data, mask, octree, depth) # the bottom data depth
+    data = octree_depad(data, octree, depth)                 # !!! depth
+    data = _octree_max_unpool(data, mask, octree, depth + 1) # the bottom data depth
   return data
 
 

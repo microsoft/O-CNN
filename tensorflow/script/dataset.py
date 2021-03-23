@@ -51,7 +51,7 @@ class NormalizePoints:
 
 class TransformPoints:
   def __init__(self, distort, depth, offset=0.55, axis='xyz', scale=0.25, 
-               jitter=8, drop_dim=[8, 32], angle=[20, 180, 20], dropout=[0, 0],
+               jitter=0.25, drop_dim=[8, 32], angle=[20, 180, 20], dropout=[0, 0],
                stddev=[0, 0, 0], uniform=False, interval=[1, 1, 1], **kwargs):
     self.distort = distort
     self.axis = axis
@@ -160,7 +160,7 @@ class DatasetFactory:
     self.flags = flags
     if flags.dtype == 'points':
       self.dataset = point_dataset(ParseExample(**flags), normalize_points(),
-          transform_points(**flags), Points2Octree(**flags))
+                                   transform_points(**flags), Points2Octree(**flags))
     elif flags.dtype == 'octree':
       self.dataset = OctreeDataset(ParseExample(**flags))
     else:

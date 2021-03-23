@@ -1,11 +1,14 @@
 import tensorflow as tf
 
-from config import parse_args
+from config import parse_args, FLAGS
 from tfsolver import TFSolver
 from network_factory import seg_network
 from dataset import DatasetFactory
-from ocnn import loss_functions, tf_IoU_per_shape
+from ocnn import loss_functions_seg, tf_IoU_per_shape, get_seg_label
 from libs import points_property
+
+# Add config
+FLAGS.LOSS.point_wise = True
 
 
 # get the label and pts
@@ -30,11 +33,15 @@ class ComputeGraphSeg:
   def __call__(self, dataset='train', training=True, reuse=False):
     FLAGS = self.flags
     flags_data = FLAGS.DATA.train if dataset == 'train' else FLAGS.DATA.test
-    octree, _, points = DatasetFactory(flags_data)()
-    pts, label = get_point_info(points, flags_data.mask_ratio) 
-    logit = seg_network(octree, FLAGS.MODEL, training, reuse, pts=pts)
-    losses = loss_functions(logit, label, FLAGS.LOSS.num_class,
-        FLAGS.LOSS.weight_decay, 'ocnn', FLAGS.LOSS.label_smoothing)
+    batch = DatasetFactory(flags_data)()
+    octree = batch[0]
+    if FLAGS.LOSS.point_wise:
+      pts, label = get_point_info(batch[2], flags_data.mask_ratio)
+    else:
+      pts, label = None, get_seg_label(octree, FLAGS.MODEL.depth_out)
+    logit = seg_network(octree, FLAGS.MODEL, training, reuse, pts=pts)    
+    losses = loss_functions_seg(logit, label, FLAGS.LOSS.num_class,
+                                FLAGS.LOSS.weight_decay, 'ocnn', mask=-1)
     tensors = losses + [losses[0] + losses[2]] # total loss
     names = ['loss', 'accu', 'regularizer', 'total_loss']
     
