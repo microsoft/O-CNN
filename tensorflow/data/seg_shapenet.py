@@ -125,7 +125,7 @@ def points_to_tfrecords():
     os.system(cmd)
   des_folder = os.path.join(root_folder, 'train_test_split')
   if not os.path.exists(des_folder): 
-    shutil.copytree(list_folder, )
+    shutil.copytree(list_folder, des_folder)
 
 if __name__ == '__main__':
   download_and_unzip()
