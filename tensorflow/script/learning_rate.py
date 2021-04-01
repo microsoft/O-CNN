@@ -26,13 +26,13 @@ class StepLR:
   def __call__(self, global_step):
     with tf.variable_scope('step_lr'):
       step_size = list(self.flags.step_size)
-      for i in range(len(step_size), 5): 
+      for i in range(len(step_size), 8): 
         step_size.append(step_size[-1])
 
       steps = step_size
-      for i in range(1, 5):
+      for i in range(1, 8):
         steps[i] = steps[i-1] + steps[i]
-      lr_values = [self.flags.gamma**i * self.flags.learning_rate for i in range(0, 6)]
+      lr_values = [self.flags.gamma**i * self.flags.learning_rate for i in range(0, 9)]
 
       lr = tf.train.piecewise_constant(global_step, steps, lr_values)
     return lr

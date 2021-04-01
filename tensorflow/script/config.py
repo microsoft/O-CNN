@@ -91,7 +91,7 @@ _C.LOSS.inst_num         = 57449      # The object number in MID training
 _C.LOSS.seg_num          = 100        # The clustering number in MID training
 _C.LOSS.weights          = (1.0, 1.0) # The weight factors for different losses
 _C.LOSS.label_smoothing  = 0.0        # The factor of label smoothing
-
+_C.LOSS.infoGain         = False      # Use feq distribution
 
 # backup the commands
 _C.SYS = CN()

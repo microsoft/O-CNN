@@ -1,11 +1,12 @@
 # Parameters for the airplane
 
 SOLVER:
-  ckpt: 'logs/seg/unetT2/model/iter_150000.ckpt'
+  ckpt: 'logs/seg/unetNTgn1/model/iter_090000.ckpt'
   gpu: 0,
-  logdir: logs/seg/unetT2
-  max_iter: 150000
-  test_iter: 17000
+  logdir: logs/seg/unetNTgn1
+  max_iter: 90000
+  test_iter: 0
+  #test_iter: 200
   test_every_iter: 2000
   step_size: (15000, )
   learning_rate: 0.1
@@ -21,7 +22,7 @@ DATA:
     uniform: True
     node_dis: True
     location: /mnt/d/bb/tfTrain.tfrecords
-    batch_size: 12
+    batch_size: 24
     x_alias: data
     mask_ratio: 0.5
 

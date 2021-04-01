@@ -238,12 +238,21 @@ def predict_signal(data, num_output, num_hidden, training):
   return tf.nn.tanh(predict_module(data, num_output, num_hidden, training))
 
 
-def softmax_loss(logit, label_gt, num_class, label_smoothing=0.0):
+def softmax_loss(logit, label_gt, num_class, label_smoothing=0.0,infoGain=False):
   with tf.name_scope('softmax_loss'):
     label_gt = tf.cast(label_gt, tf.int32)
-    onehot = tf.one_hot(label_gt, depth=num_class)
-    loss = tf.losses.softmax_cross_entropy(
-        onehot, logit, label_smoothing=label_smoothing)
+
+    if infoGain :
+      # specify some class weightings
+      # specify the weights for each sample in the batch (without having to compute the onehot label matrix)
+      class_weights = tf.constant([0.012,0.084,0.047,0.000,0.038,0.095,0.017,0.019,0.205,0.247,0.102,0.067,0.069,0.000])
+      weights = tf.gather(class_weights, label_gt)
+      # compute the loss
+      #weights=tf.Print(weights,[tf.shape(weights)],"step 2",summarize=100,first_n=10)
+      loss = tf.losses.sparse_softmax_cross_entropy(label_gt, logit, weights)
+    else:  
+      onehot = tf.one_hot(label_gt, depth=num_class)
+      loss = tf.losses.softmax_cross_entropy( onehot, logit, label_smoothing=label_smoothing)
   return loss
 
 
@@ -371,12 +380,12 @@ def loss_functions(logit, label_gt, num_class, weight_decay, var_name, label_smo
   return [loss, accu, regularizer]
 
 
-def loss_functions_seg(logit, label_gt, num_class, weight_decay, var_name, mask=-1):
+def loss_functions_seg(logit, label_gt, num_class, weight_decay, var_name, mask=-1,infoGain=False):
   with tf.name_scope('loss_seg'):
     label_mask = tf.greater(label_gt,-1)  # filter label -1
     masked_logit = tf.boolean_mask(logit, label_mask)
     masked_label = tf.boolean_mask(label_gt, label_mask)
-    loss = softmax_loss(masked_logit, masked_label, num_class)
+    loss = softmax_loss(masked_logit, masked_label, num_class,infoGain=infoGain)
 
     accu = softmax_accuracy(masked_logit, masked_label)
     regularizer = l2_regularizer(var_name, weight_decay)
