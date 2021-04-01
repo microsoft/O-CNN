@@ -10,7 +10,7 @@ if 'OCTREE_KEY' in os.environ and os.environ['OCTREE_KEY'] == '64':
   tf_intk = tf.int64
 else:
   print('INFO from ocnn: The octree key is 32 bits, '
-        'the octree depth should be smaller than 8. ')
+        'the octree depth should be smaller than 8.')
   octree_key64 = False
   tf_uintk = tf.uint32
   tf_uints = tf.uint8
@@ -179,7 +179,7 @@ def octree_max_pool(data, octree, depth):
 def octree_max_unpool(data, mask, octree, depth):
   with tf.variable_scope('octree_max_unpool'):
     data = octree_depad(data, octree, depth)             # !!! depth
-    data = _octree_max_unpool(data, mask, octree, depth) # the bottom data depth
+    data = _octree_max_unpool(data, mask, octree, depth+1) # the bottom data depth rp** fix problem
   return data
 
 

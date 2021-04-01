@@ -21,11 +21,12 @@ def network_aenet(octree, flags, training, reuse=False):
       with tf.variable_scope('encoder_d%d' % d):
           # data=tf.Print(data,[tf.shape(data)],"step a",summarize=10) 
           data = octree_conv_bn_relu(data, octree, d, channel[d], training)
+          if d==5:
+             data = tf.layers.dropout(data, rate=0.5, training=training)
           # data=tf.Print(data,[tf.shape(data)],"step b",summarize=10) 
           data,mask[d] = octree_max_pool(data, octree, d)
           # data=tf.Print(data,[tf.shape(data)],"step c",summarize=10) 
-          if d==4:
-            data = tf.layers.dropout(data, rate=0.5, training=training)
+
 
     ## decoder
     assert d != 2 ,print("trouble 1")
@@ -40,9 +41,10 @@ def network_aenet(octree, flags, training, reuse=False):
         data=  octree_max_unpool(data, mask[d], octree, d-1)
         #data=tf.Print(data,[tf.shape(data)],"step 2",summarize=10)
         data = octree_conv_bn_relu(data, octree, d, cout[d], training) 
-        #data=tf.Print(data,[tf.shape(data)],"step 3",summarize=10)  
-        if d==3:
+        if d==5:
             data = tf.layers.dropout(data, rate=0.5, training=training)
+        #data=tf.Print(data,[tf.shape(data)],"step 3",summarize=10)  
+
         # segmentation
         if d == depth:
           with tf.variable_scope('predict_label'):
