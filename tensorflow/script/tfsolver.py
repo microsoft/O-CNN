@@ -212,6 +212,8 @@ class TFSolver:
       itCnt=self.flags.test_iter #rp**
       if itCnt==0:
         itCnt=self.len_callback()
+        if itCnt==0:
+          itCnt=sum(1 for _ in tf.python_io.tf_record_iterator(self.flagsD.test.location))
  
       for i in range(0, itCnt):
         iter_test_result = sess.run(self.test_tensors)

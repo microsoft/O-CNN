@@ -153,7 +153,7 @@ class HRNet:
       conv7 = self.tensors['front/conv7']  # (1, C, H, 1)
       feature = tf.concat([feature, conv7], axis=1)      
     if depth_out == 6:
-      feature = OctreeUpsample()(feature, octree, 5, mask) # rp 'linear'
+      feature = OctreeUpsample()(feature, octree, 5, mask) # rp 'upsample='linear''
       conv6 = self.tensors['front/conv6']  # (1, C, H, 1)
       if mask is not None:
         conv6 = tf.boolean_mask(conv6, mask, axis=2)
@@ -264,6 +264,8 @@ class HRNet:
         with tf.variable_scope('depth_%d' % d):
           channeld = channel / (2 ** (d - d1 + 1))
           conv = octree_conv_bn_relu(conv, octree, d, channeld, training)
+          # conv = octree_conv_bn_relu(conv, octree, d, 48, training)
+          # conv = tf.layers.dropout(conv, rate=0.5, training=training) 
           for n in range(0, self.flags.resblock_num):
             with tf.variable_scope('resblock_%d' % n):
               conv = octree_resblock(conv, octree, d, channeld, 1, training)
