@@ -53,6 +53,7 @@ _C.DATA.train.interval   = (1, 1, 1)  # Use interval&angle to generate random an
 _C.DATA.train.angle      = (180, 180, 180)
 
 _C.DATA.train.location   = ''         # The data location
+_C.DATA.train.xlocation   = ''         # The data location
 _C.DATA.train.shuffle    = 1000       # The shuffle size
 _C.DATA.train.take       = -1         # Use at most `take` elements from this dataset
 _C.DATA.train.batch_size = 32         # Training data batch size

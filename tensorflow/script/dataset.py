@@ -9,12 +9,25 @@ class ParseExample:
   def __init__(self, x_alias='data', y_alias='label', **kwargs):
     self.x_alias = x_alias
     self.y_alias = y_alias
-    self.features = { x_alias : tf.FixedLenFeature([], tf.string),
-                      y_alias : tf.FixedLenFeature([], tf.int64) }
+    self.features = { self.x_alias : tf.FixedLenFeature([], tf.string),
+                      self.y_alias : tf.FixedLenFeature([], tf.int64) }
 
   def __call__(self, record):
     parsed = tf.parse_single_example(record, self.features)
     return parsed[self.x_alias], parsed[self.y_alias]
+
+class ParseExample2:
+  def __init__(self, x_alias='data', y_alias='label', **kwargs):
+    self.x_alias1 = 'data1'
+    self.x_alias2 = 'data2'
+    self.y_alias = y_alias
+    self.features = { self.x_alias1 : tf.FixedLenFeature([], tf.string),
+                      self.x_alias2 : tf.FixedLenFeature([], tf.string),
+                      y_alias : tf.FixedLenFeature([], tf.int64) }
+
+  def __call__(self, record):
+    parsed = tf.parse_single_example(record, self.features)
+    return parsed[self.x_alias1],parsed[self.x_alias2], parsed[self.y_alias]
 
 
 class Points2Octree:
@@ -135,7 +148,6 @@ class PointDataset:
                    .prefetch(8).make_one_shot_iterator() 
     return itr if return_iter else itr.get_next()
 
-
 class OctreeDataset:
   def __init__(self, parse_example):
     self.parse_example = parse_example
@@ -153,6 +165,26 @@ class OctreeDataset:
                    .prefetch(8).make_one_shot_iterator() 
     return itr if return_iter else itr.get_next()
 
+class OctreeDataset2:
+  def __init__(self, parse_example2):
+    self.parse_example2 = parse_example2
+
+  def __call__(self, record_names, batch_size, shuffle_size=1000,
+               return_iter=False, take=-1, **kwargs):
+    with tf.name_scope('octree_dataset'):
+      def merge_octrees(octrees1,octrees2, labels):
+        bo1=octree_batch(octrees1)
+        bo2=octree_batch(octrees2)
+        #tf.print(tf.shape(labels),tf.shape(bo1),tf.shape(bo2),"taking labels")
+        return bo1,bo2, labels
+
+      dataset = tf.data.TFRecordDataset(record_names).take(take).repeat()
+      #if shuffle_size > 1: dataset = dataset.shuffle(shuffle_size)
+      itr = dataset.map(self.parse_example2, num_parallel_calls=8) \
+                   .batch(batch_size).map(merge_octrees, num_parallel_calls=8) \
+                   .prefetch(8).make_one_shot_iterator() 
+    return itr if return_iter else itr.get_next()
+
 
 class DatasetFactory:
   def __init__(self, flags, normalize_points=NormalizePoints,
@@ -163,6 +195,8 @@ class DatasetFactory:
           transform_points(**flags), Points2Octree(**flags))
     elif flags.dtype == 'octree':
       self.dataset = OctreeDataset(ParseExample(**flags))
+    elif flags.dtype == 'octree2':
+      self.dataset = OctreeDataset2(ParseExample2(**flags))
     else:
       print('Error: unsupported datatype ' + flags.dtype)
 

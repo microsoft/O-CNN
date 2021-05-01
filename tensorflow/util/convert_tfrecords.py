@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import tensorflow as tf
 from random import shuffle
@@ -48,6 +49,39 @@ def write_data_to_tfrecords(file_dir, list_file, records_name, file_type):
     writer.write(example.SerializeToString())
   writer.close()
 
+def write_data_to_tfrecords2octree(file_dir, list_file, records_name, file_type):
+  [data, label, index] = get_data_label_pair(list_file)
+  
+  writer = tf.python_io.TFRecordWriter(records_name)
+  xDirectory=file_dir.replace('octree','xoctree')
+
+  xMapper={}
+  xfilenames = sorted(os.listdir(xDirectory))
+  for xfilename in xfilenames:
+    xMapper[xfilename[2:11]] =xfilename
+
+  for i in range(len(data)):
+    if not i % 1000:
+      print('data loaded: {}/{}'.format(i, len(data)))
+
+    fname=data[i].split('/')[-1]
+
+    if  fname[1:10] not in xMapper:
+      continue
+    #P032040000_055356_36_RL_75.octree
+    octree_file1 = load_octree(os.path.join(file_dir, fname)) 
+    #CM032040005_054132_63_RL_75.octree
+    octree_file2 = load_octree(os.path.join(xDirectory,xMapper[fname[1:10]]))
+
+    feature = {'data1': _bytes_feature(octree_file1),
+               'data2': _bytes_feature(octree_file2),
+               'label': _int64_feature(label[i]), 
+               'index': _int64_feature(index[i]),
+               'filename': _bytes_feature(('%06d_%s' % (i, data[i])).encode('utf8'))}
+    example = tf.train.Example(features=tf.train.Features(feature=feature))
+    writer.write(example.SerializeToString())
+  writer.close()
+
 
 def get_data_label_pair(list_file):
   file_list = []
@@ -71,9 +105,16 @@ def get_data_label_pair(list_file):
 
 
 if __name__ == '__main__':
+  print(sys.argv)
   args = parser.parse_args()
   shuffle_data = args.shuffle
-  write_data_to_tfrecords(args.file_dir, 
+  if args.file_type=="2data" :
+    write_data_to_tfrecords2octree(args.file_dir, 
+                          args.list_file, 
+                          args.records_name, 
+                          args.file_type)
+  else:
+    write_data_to_tfrecords(args.file_dir, 
                           args.list_file, 
                           args.records_name, 
                           args.file_type)
