@@ -55,7 +55,7 @@ class PartNetFinetune(PartNetSolver):
     print('Restore from: ' + ckpt)
     var_restore = get_variables_with_name(
         'ocnn', without='predict_6/conv2', verbose=self.flags.verbose, train_only=False)
-    tf_saver = tf.train.Saver(var_list=var_restore)
+    tf_saver = tf.compat.v1.train.Saver(var_list=var_restore)
     tf_saver.restore(sess, ckpt)
 
 

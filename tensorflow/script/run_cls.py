@@ -21,7 +21,7 @@ class ComputeGraph:
     tower_tensors = []
     for i in range(gpu_num):
       with tf.device('/gpu:%d' % i):
-        with tf.name_scope('device_%d' % i):
+        with tf.compat.v1.name_scope('device_%d' % i):
           octree, label = data_iter.get_next()
           logit = cls_network(octree, FLAGS.MODEL, training, reuse)
           losses = loss_functions(logit, label, FLAGS.LOSS.num_class,

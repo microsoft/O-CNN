@@ -84,7 +84,7 @@ class Octree2ColTest(tf.test.TestCase):
           out_nn = data_out.eval()
           shape_in = self.data_in.shape
           shape_out = out_nn.shape
-          grad_nn, grad_nm = tf.test.compute_gradient(data_in, shape_in, 
+          grad_nn, grad_nm = tf.compat.v1.test.compute_gradient(data_in, shape_in, 
               data_out, shape_out, delta=0.1)
           self.assertAllClose(grad_nn, grad_nm, msg='backward: i=%d, j=%d' % (i, j))  
 

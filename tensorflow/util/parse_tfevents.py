@@ -14,7 +14,7 @@ parser.add_argument('--tag', type=str, required=True,
 args = parser.parse_args()
 
 
-for e in tf.train.summary_iterator(args.event):
+for e in tf.compat.v1.train.summary_iterator(args.event):
   has_value = False
   msg = '{}'.format(e.step)
   for v in e.summary.value:

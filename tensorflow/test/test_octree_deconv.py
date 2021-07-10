@@ -24,20 +24,20 @@ class OctreeDeconvTest(tf.test.TestCase):
     deconv_fast = octree_deconv_fast(data, octree, depth, num_outputs, kernel_size, stride)
 
     # reference
-    kernel = tf.trainable_variables()[0]
+    kernel = tf.compat.v1.trainable_variables()[0]
     kernel_deconv = tf.reshape(kernel, [channel, num_outputs, 1, -1])
-    kernel_deconv = tf.transpose(kernel_deconv, [3, 2, 1, 0])
+    kernel_deconv = tf.transpose(a=kernel_deconv, perm=[3, 2, 1, 0])
     depad = octree_depad(data, octree, depth)
     deconv_gt = tf.nn.conv2d_transpose(depad, kernel_deconv, strides=[1, 1, 8, 1],
         output_shape=[1, num_outputs, 320, 1], data_format='NCHW')
 
     # backward
-    grad_fast, kernel_fast = tf.gradients(deconv_fast, [data, kernel])
-    grad_gt,   kernel_gt   = tf.gradients(deconv_gt, [data, kernel])   
+    grad_fast, kernel_fast = tf.gradients(ys=deconv_fast, xs=[data, kernel])
+    grad_gt,   kernel_gt   = tf.gradients(ys=deconv_gt, xs=[data, kernel])   
 
     # test
     with self.cached_session() as sess:
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
 
       self.assertAllClose(deconv_fast, deconv_gt)
       self.assertAllClose(grad_fast, grad_gt)
@@ -53,24 +53,24 @@ class OctreeDeconvTest(tf.test.TestCase):
     data = tf.constant(np.random.uniform(-1.0, 1.0, [1, channel, height, 1]).astype('float32'))
 
     # forward
-    with tf.variable_scope('deconv_%d' % idx) as scope:
+    with tf.compat.v1.variable_scope('deconv_%d' % idx) as scope:
       conv_fast = octree_deconv_fast(data, octree, depth, num_outputs, kernel_size, stride)
       scope.reuse_variables()
       conv_mem = octree_deconv_memory(data, octree, depth, num_outputs, kernel_size, stride)
     
     # get kernel
-    t_vars = tf.trainable_variables()
+    t_vars = tf.compat.v1.trainable_variables()
     for var in t_vars:
       if ('deconv_%d' % idx) in var.name:
         kernel = var
 
     # backward
-    grad_fast, kernel_fast = tf.gradients(conv_fast, [data, kernel])
-    grad_mem,  kernel_mem  = tf.gradients(conv_mem,  [data, kernel])   
+    grad_fast, kernel_fast = tf.gradients(ys=conv_fast, xs=[data, kernel])
+    grad_mem,  kernel_mem  = tf.gradients(ys=conv_mem,  xs=[data, kernel])   
 
     # test
     with self.cached_session() as sess:
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
       # print('stride: ', stride, ', kernel_size: ', kernel_size)
 
       self.assertAllClose(conv_fast, conv_mem)

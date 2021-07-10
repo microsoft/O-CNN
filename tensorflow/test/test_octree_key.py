@@ -5,7 +5,7 @@ import sys
 sys.path.append("..")
 from libs import *
 
-tf.enable_eager_execution()
+tf.compat.v1.enable_eager_execution()
 
 
 class OctreeKeyTest(tf.test.TestCase):

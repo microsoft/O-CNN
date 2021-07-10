@@ -4,7 +4,7 @@ import tensorflow as tf
 sys.path.append("..")
 from libs import octree_samples
 
-tf.enable_eager_execution()
+tf.compat.v1.enable_eager_execution()
 
 # dump the octree samples
 for i in range(1, 7):

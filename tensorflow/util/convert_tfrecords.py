@@ -35,7 +35,7 @@ def load_octree(file):
 def write_data_to_tfrecords(file_dir, list_file, records_name, file_type):
   [data, label, index] = get_data_label_pair(list_file)
   
-  writer = tf.python_io.TFRecordWriter(records_name)
+  writer = tf.io.TFRecordWriter(records_name)
   for i in range(len(data)):
     if not i % 1000:
       print('data loaded: {}/{}'.format(i, len(data)))
@@ -52,7 +52,7 @@ def write_data_to_tfrecords(file_dir, list_file, records_name, file_type):
 def write_data_to_tfrecords2octree(file_dir, list_file, records_name, file_type):
   [data, label, index] = get_data_label_pair(list_file)
   
-  writer = tf.python_io.TFRecordWriter(records_name)
+  writer = tf.io.TFRecordWriter(records_name)
   xDirectory=file_dir.replace('octree','xoctree')
 
   xMapper={}

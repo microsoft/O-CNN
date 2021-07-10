@@ -24,4 +24,3 @@ def seg_network(octree, flags, training, reuse=False, pts=None, mask=None):
   else:
     print('Error, no network: ' + flags.name)
 
-    

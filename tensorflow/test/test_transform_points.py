@@ -5,7 +5,7 @@ import tensorflow as tf
 sys.path.append('..')
 from libs import *
 
-tf.enable_eager_execution()
+tf.compat.v1.enable_eager_execution()
 
 
 filename = 'scene0000_00_000.points'

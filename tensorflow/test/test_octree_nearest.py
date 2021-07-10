@@ -29,7 +29,7 @@ class OctreeNearestTest(tf.test.TestCase):
       self.assertAllClose(b1, b2)
 
       # backward
-      grad_nn, grad_nm = tf.test.compute_gradient(
+      grad_nn, grad_nm = tf.compat.v1.test.compute_gradient(
           data, data_shape, nearest2, b2.shape, delta=0.1)
       self.assertAllClose(grad_nn, grad_nm)  
 

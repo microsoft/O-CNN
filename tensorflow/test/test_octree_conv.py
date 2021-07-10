@@ -19,24 +19,24 @@ class OctreeConvTest(tf.test.TestCase):
     data = tf.constant(np.random.uniform(-1.0, 1.0, [1, channel, height, 1]).astype('float32'))
 
     # forward
-    with tf.variable_scope('conv_%d' % idx) as scope:
+    with tf.compat.v1.variable_scope('conv_%d' % idx) as scope:
       conv_fast = octree_conv_fast(data, octree, depth, num_outputs, kernel_size, stride)
       scope.reuse_variables()
       conv_mem = octree_conv_memory(data, octree, depth, num_outputs, kernel_size, stride)
     
     # get kernel
-    t_vars = tf.trainable_variables()
+    t_vars = tf.compat.v1.trainable_variables()
     for var in t_vars:
       if ('conv_%d' % idx) in var.name:
         kernel = var
 
     # backward
-    grad_fast, kernel_fast = tf.gradients(conv_fast, [data, kernel])
-    grad_mem,  kernel_mem  = tf.gradients(conv_mem,  [data, kernel])   
+    grad_fast, kernel_fast = tf.gradients(ys=conv_fast, xs=[data, kernel])
+    grad_mem,  kernel_mem  = tf.gradients(ys=conv_mem,  xs=[data, kernel])   
 
     # test
     with self.cached_session() as sess:
-      sess.run(tf.global_variables_initializer())
+      sess.run(tf.compat.v1.global_variables_initializer())
       # print('stride: ', stride, ', kernel_size: ', kernel_size)
 
       self.assertAllEqual(conv_fast, conv_mem)

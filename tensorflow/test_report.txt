@@ -1,0 +1,148 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 15 files
+Detected 0 issues that require attention
+--------------------------------------------------------------------------------
+================================================================================
+Detailed log follows:
+
+================================================================================
+================================================================================
+Input tree: 'test_14/'
+================================================================================
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_all.py'
+ outputting to 'test/test_all.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree2col.py'
+ outputting to 'test/test_octree2col.py'
+--------------------------------------------------------------------------------
+
+87:29: INFO: Renamed 'tf.test.compute_gradient' to 'tf.compat.v1.test.compute_gradient'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree2points.py'
+ outputting to 'test/test_octree2points.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_align.py'
+ outputting to 'test/test_octree_align.py'
+--------------------------------------------------------------------------------
+
+17:11: INFO: Added keywords to args of function 'tf.gradients'
+34:11: INFO: Added keywords to args of function 'tf.gradients'
+51:11: INFO: Added keywords to args of function 'tf.gradients'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_conv.py'
+ outputting to 'test/test_octree_conv.py'
+--------------------------------------------------------------------------------
+
+22:9: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+28:13: INFO: Renamed 'tf.trainable_variables' to 'tf.compat.v1.trainable_variables'
+34:29: INFO: Added keywords to args of function 'tf.gradients'
+35:29: INFO: Added keywords to args of function 'tf.gradients'
+39:15: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_deconv.py'
+ outputting to 'test/test_octree_deconv.py'
+--------------------------------------------------------------------------------
+
+27:13: INFO: Renamed 'tf.trainable_variables' to 'tf.compat.v1.trainable_variables'
+29:20: INFO: Added keywords to args of function 'tf.transpose'
+35:29: INFO: Added keywords to args of function 'tf.gradients'
+36:29: INFO: Added keywords to args of function 'tf.gradients'
+40:15: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+56:9: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+62:13: INFO: Renamed 'tf.trainable_variables' to 'tf.compat.v1.trainable_variables'
+68:29: INFO: Added keywords to args of function 'tf.gradients'
+69:29: INFO: Added keywords to args of function 'tf.gradients'
+73:15: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_gather.py'
+ outputting to 'test/test_octree_gather.py'
+--------------------------------------------------------------------------------
+
+17:12: INFO: Added keywords to args of function 'tf.gradients'
+18:12: INFO: Added keywords to args of function 'tf.gradients'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_grow.py'
+ outputting to 'test/test_octree_grow.py'
+--------------------------------------------------------------------------------
+
+17:12: INFO: Renamed 'tf.decode_raw' to 'tf.io.decode_raw'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_key.py'
+ outputting to 'test/test_octree_key.py'
+--------------------------------------------------------------------------------
+
+8:0: INFO: Renamed 'tf.enable_eager_execution' to 'tf.compat.v1.enable_eager_execution'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_linear.py'
+ outputting to 'test/test_octree_linear.py'
+--------------------------------------------------------------------------------
+
+39:25: INFO: Renamed 'tf.test.compute_gradient' to 'tf.compat.v1.test.compute_gradient'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_nearest.py'
+ outputting to 'test/test_octree_nearest.py'
+--------------------------------------------------------------------------------
+
+32:25: INFO: Renamed 'tf.test.compute_gradient' to 'tf.compat.v1.test.compute_gradient'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_property.py'
+ outputting to 'test/test_octree_property.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_octree_search.py'
+ outputting to 'test/test_octree_search.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_points_property.py'
+ outputting to 'test/test_points_property.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'test_14/test_transform_points.py'
+ outputting to 'test/test_transform_points.py'
+--------------------------------------------------------------------------------
+
+8:0: INFO: Renamed 'tf.enable_eager_execution' to 'tf.compat.v1.enable_eager_execution'
+--------------------------------------------------------------------------------
+

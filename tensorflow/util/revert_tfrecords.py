@@ -16,7 +16,7 @@ parser.add_argument('--file_type', type=str, required=False, default='data',
 
 
 def read_data_from_tfrecords(records_name, output_path, list_file, file_type, count):
-  records_iterator = tf.python_io.tf_record_iterator(records_name)
+  records_iterator = tf.compat.v1.python_io.tf_record_iterator(records_name)
   count = count if count != 0 else float('Inf')
 
   with open(os.path.join(output_path, list_file), "w") as f:

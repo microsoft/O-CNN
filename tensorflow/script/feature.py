@@ -17,7 +17,7 @@ FLAGS = parse_args()
 octree, label = DatasetFactory(FLAGS.DATA.test)()
 hrnet = HRNet(FLAGS.MODEL)
 tensors = hrnet.network(octree, training=False)
-with tf.variable_scope('signal'):
+with tf.compat.v1.variable_scope('signal'):
   child = octree_property(octree, property_name='child', dtype=tf.int32,
                           depth=FLAGS.DATA.test.depth, channel=1)
   child = tf.reshape(child, [-1])
@@ -72,11 +72,11 @@ def seg_features(sess):
     np.save(output_prefix + '_%03d.fc2.npy' % i, f)
 
 assert(FLAGSS.ckpt)
-tf_saver = tf.train.Saver()
-config = tf.ConfigProto()
+tf_saver = tf.compat.v1.train.Saver()
+config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
-with tf.Session(config=config) as sess:
-  tf.summary.FileWriter(FLAGSS.logdir, sess.graph)
+with tf.compat.v1.Session(config=config) as sess:
+  tf.compat.v1.summary.FileWriter(FLAGSS.logdir, sess.graph)
   print('Restore from checkpoint: ', FLAGSS.ckpt)
   tf_saver.restore(sess, FLAGSS.ckpt)
 

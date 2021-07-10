@@ -14,8 +14,8 @@ class OctreeGatherTest(tf.test.TestCase):
 
     out1 = tf.gather(data, index, axis=2)
     out2 = octree_gather(data, index)
-    grad1 = tf.gradients(out1, data)
-    grad2 = tf.gradients(out2, data)
+    grad1 = tf.gradients(ys=out1, xs=data)
+    grad2 = tf.gradients(ys=out2, xs=data)
 
     with self.cached_session() as sess:
       d, o1, o2, g1, g2 = sess.run([data, out1, out2, grad1, grad2])

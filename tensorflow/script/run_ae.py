@@ -21,7 +21,7 @@ def compute_graph(dataset='train', training=True, reuse=False):
   code = autoencoder.octree_encoder(octree, training, reuse)
   loss, accu = autoencoder.octree_decoder(code, octree, training, reuse)
 
-  with tf.name_scope('total_loss'):
+  with tf.compat.v1.name_scope('total_loss'):
     reg = l2_regularizer('ocnn', FLAGS.LOSS.weight_decay)
     total_loss  = tf.add_n(loss + [reg])
   tensors = loss + [reg] + accu + [total_loss]
@@ -41,17 +41,17 @@ class AeTFSolver(TFSolver):
 
     # checkpoint
     assert(self.flags.ckpt)   # the self.flags.ckpt should be provided
-    tf_saver = tf.train.Saver(max_to_keep=20)
+    tf_saver = tf.compat.v1.train.Saver(max_to_keep=20)
 
     # start
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
-    with tf.Session(config=config) as sess:
+    with tf.compat.v1.Session(config=config) as sess:
       # restore and initialize
       self.initialize(sess)
       tf_saver.restore(sess, self.flags.ckpt)
       logdir = self.flags.logdir
-      tf.summary.FileWriter(logdir, sess.graph)
+      tf.compat.v1.summary.FileWriter(logdir, sess.graph)
 
       print('Start testing ...')
       for i in tqdm(range(0, self.flags.test_iter)):

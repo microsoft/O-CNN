@@ -6,14 +6,14 @@ class CosLR:
     self.flags = flags
 
   def __call__(self, global_step):
-    with tf.variable_scope('cos_lr'):
+    with tf.compat.v1.variable_scope('cos_lr'):
       pi, mul = 3.1415926, 0.001
       step_size = self.flags.step_size[0]
       max_iter  = self.flags.max_iter * 0.9
       max_epoch = max_iter / step_size
       lr_max = self.flags.learning_rate
       lr_min = self.flags.learning_rate * mul
-      epoch = tf.floordiv(tf.cast(global_step, tf.float32), step_size)
+      epoch = tf.math.floordiv(tf.cast(global_step, tf.float32), step_size)
       val   = tf.minimum(epoch / max_epoch, 1.0)
       lr = lr_min + 0.5 * (lr_max - lr_min) * (1.0 + tf.cos(pi * val))
     return lr
@@ -24,7 +24,7 @@ class StepLR:
     self.flags = flags
 
   def __call__(self, global_step):
-    with tf.variable_scope('step_lr'):
+    with tf.compat.v1.variable_scope('step_lr'):
       step_size = list(self.flags.step_size)
       for i in range(len(step_size), 8): 
         step_size.append(step_size[-1])
@@ -34,7 +34,7 @@ class StepLR:
         steps[i] = steps[i-1] + steps[i]
       lr_values = [self.flags.gamma**i * self.flags.learning_rate for i in range(0, 9)]
 
-      lr = tf.train.piecewise_constant(global_step, steps, lr_values)
+      lr = tf.compat.v1.train.piecewise_constant(global_step, steps, lr_values)
     return lr
 
 

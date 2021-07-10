@@ -16,21 +16,21 @@ FLAGS = parse_args()
 
 # get the label and mask
 def get_point_info(octree, depth, mask_ratio=0):
-  with tf.name_scope('points_info'):
+  with tf.compat.v1.name_scope('points_info'):
     point_id = get_seg_label(octree, depth)
     point_segment = tf.reshape(octree_property(octree, property_name='index',
                              dtype=tf.int32, depth=depth, channel=1), [-1])
     mask = point_id > -1   # Filter out label -1
     if mask_ratio > 0:
-      mask_shape = tf.shape(mask)
+      mask_shape = tf.shape(input=mask)
       mask = tf.logical_and(mask, tf.random.uniform(mask_shape) > mask_ratio)
-    point_id = tf.boolean_mask(point_id, mask)
-    point_segment = tf.boolean_mask(point_segment, mask)
+    point_id = tf.boolean_mask(tensor=point_id, mask=mask)
+    point_segment = tf.boolean_mask(tensor=point_segment, mask=mask)
   return point_id, point_segment, mask
 
 
 def compute_graph(reuse=False):
-  with tf.name_scope('dataset'):
+  with tf.compat.v1.name_scope('dataset'):
     flags_data = FLAGS.DATA.train
     batch_size = flags_data.batch_size
     octree, shape_id = DatasetFactory(flags_data)()

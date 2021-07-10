@@ -16,7 +16,7 @@ class OctreeUpsample:
 def branch(data, octree, depth, channel, block_num, training):
   if depth > 5: block_num = block_num // 2 # !!! whether should we add this !!!
   for i in range(block_num):
-    with tf.variable_scope('resblock_d%d_%d' % (depth, i)):
+    with tf.compat.v1.variable_scope('resblock_d%d_%d' % (depth, i)):
       # data = octree_resblock2(data, octree, depth, channel, training)
       bottleneck = 4 if channel < 256 else 8
       data = octree_resblock(data, octree, depth, channel, 1, training, bottleneck)
@@ -24,7 +24,7 @@ def branch(data, octree, depth, channel, block_num, training):
 
 def branches(data, octree, depth, channel, block_num, training):
   for i in range(len(data)):
-    with tf.variable_scope('branch_%d' %  (depth - i)):
+    with tf.compat.v1.variable_scope('branch_%d' %  (depth - i)):
       depth_i, channel_i = depth - i, (2 ** i) * channel
       # if channel_i > 256: channel_i = 256
       data[i] = branch(data[i], octree, depth_i, channel_i, block_num, training)
@@ -36,16 +36,16 @@ def trans_func(data_in, octree, d0, d1, training):
   channel1 = channel0 * (2 ** (d0 - d1))
   # if channel1 > 256: channel1 = 256  ## !!! clip the channel to 256
   # no relu for the last feature map
-  with tf.variable_scope('trans_%d_%d' % (d0, d1)):
+  with tf.compat.v1.variable_scope('trans_%d_%d' % (d0, d1)):
     if d0 > d1:   # downsample
       for d in range(d0, d1 + 1, -1):
-        with tf.variable_scope('down_%d' % d):
+        with tf.compat.v1.variable_scope('down_%d' % d):
           data = octree_conv_bn_relu(data, octree, d, channel0/4, training, stride=2)
-      with tf.variable_scope('down_%d' % (d1 + 1)):
+      with tf.compat.v1.variable_scope('down_%d' % (d1 + 1)):
         data = octree_conv_bn(data, octree, d1 + 1, channel1, training, stride=2)
     elif d0 < d1: # upsample
       for d in range(d0, d1, 1): 
-        with tf.variable_scope('up_%d' % d):
+        with tf.compat.v1.variable_scope('up_%d' % d):
           if d == d0:
             data = octree_conv1x1_bn(data, channel1, training)
           data = octree_tile(data, octree, d)
@@ -59,16 +59,16 @@ def trans_func(data_in, octree, d0, d1, training, upsample):
   channel1 = channel0 * (2 ** (d0 - d1))
   # if channel1 > 256: channel1 = 256  ## !!! clip the channel to 256
   # no relu for the last feature map
-  with tf.variable_scope('trans_%d_%d' % (d0, d1)):
+  with tf.compat.v1.variable_scope('trans_%d_%d' % (d0, d1)):
     if d0 > d1:   # downsample
       for d in range(d0, d1, -1):
-        with tf.variable_scope('down_%d' % d):
+        with tf.compat.v1.variable_scope('down_%d' % d):
           data, _ = octree_max_pool(data, octree, d)
-      with tf.variable_scope('conv1x1_%d' % (d1)):
+      with tf.compat.v1.variable_scope('conv1x1_%d' % (d1)):
         data = octree_conv1x1_bn(data, channel1, training)
     elif d0 < d1: # upsample
       for d in range(d0, d1, 1): 
-        with tf.variable_scope('up_%d' % d):
+        with tf.compat.v1.variable_scope('up_%d' % d):
           if d == d0:
             data = octree_conv1x1_bn(data, channel1, training)
           data = OctreeUpsample(upsample)(data, octree, d)
@@ -86,7 +86,7 @@ def transitions(data, octree, depth, training, upsample='neareast'):
 
   outputs = [None] *(num + 1)
   for j in range(num + 1):
-    with tf.variable_scope('fuse_%d' % (depth - j)):
+    with tf.compat.v1.variable_scope('fuse_%d' % (depth - j)):
       outputs[j] = tf.nn.relu(tf.add_n(features[j]))
   return outputs
 
@@ -98,42 +98,42 @@ class HRNet:
 
   def network(self, octree, training, mask=None, reuse=False):
     flags = self.flags
-    with tf.variable_scope('ocnn_hrnet', reuse=reuse):
+    with tf.compat.v1.variable_scope('ocnn_hrnet', reuse=reuse):
       # backbone
       convs = self.backbone(octree, training)
       self.tensors['convs'] = convs
 
       # header
       nout_cls, nout_seg = flags.nouts[0], flags.nouts[1]
-      with tf.variable_scope('seg_header'):
+      with tf.compat.v1.variable_scope('seg_header'):
         logit_seg = self.seg_header(convs, octree, nout_seg, mask, training)
         self.tensors['logit_seg'] = logit_seg
 
-      with tf.variable_scope('cls_header'):
+      with tf.compat.v1.variable_scope('cls_header'):
         logit_cls = self.cls_header(convs, octree, nout_cls, training)
         self.tensors['logit_cls'] = logit_cls
     return self.tensors
 
   def network_cls(self, octree, training, reuse=False):
-    with tf.variable_scope('ocnn_hrnet', reuse=reuse):
+    with tf.compat.v1.variable_scope('ocnn_hrnet', reuse=reuse):
       # backbone
       convs = self.backbone(octree, training)
       self.tensors['convs'] = convs
 
       # header
-      with tf.variable_scope('cls_header'):
+      with tf.compat.v1.variable_scope('cls_header'):
         logit = self.cls_header(convs, octree, self.flags.nout, training)
         self.tensors['logit_cls'] = logit
     return logit
 
   def network_seg(self, octree, training, reuse=False, pts=None, mask=None):
-    with tf.variable_scope('ocnn_hrnet', reuse=reuse):
+    with tf.compat.v1.variable_scope('ocnn_hrnet', reuse=reuse):
       ## backbone
       convs = self.backbone(octree, training)
       self.tensors['convs'] = convs
 
       ## header
-      with tf.variable_scope('seg_header'): 
+      with tf.compat.v1.variable_scope('seg_header'): 
         if pts is None:
           logit = self.seg_header(convs, octree, self.flags.nout, mask, training)
         else:
@@ -156,16 +156,16 @@ class HRNet:
       feature = OctreeUpsample()(feature, octree, 5, mask) # rp 'upsample='linear''
       conv6 = self.tensors['front/conv6']  # (1, C, H, 1)
       if mask is not None:
-        conv6 = tf.boolean_mask(conv6, mask, axis=2)
+        conv6 = tf.boolean_mask(tensor=conv6, mask=mask, axis=2)
       feature = tf.concat([feature, conv6], axis=1)
     else:
       if mask is not None:
-        feature = tf.boolean_mask(feature, mask, axis=2)
+        feature = tf.boolean_mask(tensor=feature, mask=mask, axis=2)
 
     # feature = octree_conv1x1_bn_relu(feature, 1024, training=training)
-    with tf.variable_scope('predict_%d' % depth_out):
+    with tf.compat.v1.variable_scope('predict_%d' % depth_out):
       logit = predict_module(feature, nout, 128 * factor, training) # 2-FC
-      logit = tf.transpose(tf.squeeze(logit, [0, 3])) # (1, C, H, 1) -> (H, C)  
+      logit = tf.transpose(a=tf.squeeze(logit, [0, 3])) # (1, C, H, 1) -> (H, C)  
     return logit
 
   def seg_header_pts(self, inputs, octree, nout, pts, training):
@@ -182,9 +182,9 @@ class HRNet:
       conv6 = octree_nearest_interp(pts6, conv6, octree, depth=6)
       feature = tf.concat([feature, conv6], axis=1)
 
-    with tf.variable_scope('predict_%d' % depth_out):
+    with tf.compat.v1.variable_scope('predict_%d' % depth_out):
       logit = predict_module(feature, nout, 128 * factor, training) # 2-FC
-      logit = tf.transpose(tf.squeeze(logit, [0, 3])) # (1, C, H, 1) -> (H, C)  
+      logit = tf.transpose(a=tf.squeeze(logit, [0, 3])) # (1, C, H, 1) -> (H, C)  
     return logit
 
 
@@ -193,7 +193,7 @@ class HRNet:
     depth, factor, num = 5, self.flags.factor, len(inputs)
     assert(self.flags.depth >= depth)
     for i in range(1, num):
-      with tf.variable_scope('up_%d' % i):
+      with tf.compat.v1.variable_scope('up_%d' % i):
         for j in range(i):
           d = depth - i + j
           data[i] = OctreeUpsample(self.flags.upsample)(data[i], octree, d)
@@ -208,9 +208,9 @@ class HRNet:
     for i in range(num):
       conv = data[i]
       d = depth - i
-      with tf.variable_scope('down_%d' % d):
+      with tf.compat.v1.variable_scope('down_%d' % d):
         for j in range(2 - i):
-          with tf.variable_scope('down_%d' % (d - j)):
+          with tf.compat.v1.variable_scope('down_%d' % (d - j)):
             conv, _ = octree_max_pool(conv, octree, d - j)
         data[i] = conv
 
@@ -219,15 +219,15 @@ class HRNet:
     #   conv = octree_conv1x1_bn_relu(features, 256, training)
     # with tf.variable_scope("fc1"):
     #   conv = octree_conv1x1_bn_relu(conv, 512 * factor, training)
-    with tf.variable_scope("fc1"):
+    with tf.compat.v1.variable_scope("fc1"):
       conv = octree_conv1x1_bn_relu(features, 512 * factor, training)
       
     fc1 = octree_global_pool(conv, octree, depth=3)
     self.tensors['fc1'] = fc1
     if self.flags.dropout[0]:
-      fc1 = tf.layers.dropout(fc1, rate=0.5, training=training)
+      fc1 = tf.compat.v1.layers.dropout(fc1, rate=0.5, training=training)
 
-    with tf.variable_scope("fc2"):
+    with tf.compat.v1.variable_scope("fc2"):
       # with tf.variable_scope('fc2_pre'):
       #   fc1 = fc_bn_relu(fc1, 512, training=training) 
       logit = dense(fc1, nout, use_bias=True)    
@@ -237,7 +237,7 @@ class HRNet:
   def backbone(self, octree, training):
     flags = self.flags
     depth, channel = flags.depth, 64 * flags.factor
-    with tf.variable_scope('signal'):
+    with tf.compat.v1.variable_scope('signal'):
       data = octree_property(octree, property_name='feature', dtype=tf.float32,
                             depth=depth, channel=flags.channel)
       data = tf.reshape(data, [1, flags.channel, -1, 1])
@@ -251,7 +251,7 @@ class HRNet:
     # stages
     stage_num = 3
     for stage in range(1, stage_num + 1):
-      with tf.variable_scope('stage_%d' % stage):
+      with tf.compat.v1.variable_scope('stage_%d' % stage):
         convs = branches(convs, octree, d1, channel, flags.resblock_num, training)
         if stage == stage_num: break
         convs = transitions(convs, octree, depth=d1, training=training, upsample=flags.upsample)
@@ -259,19 +259,19 @@ class HRNet:
 
   def front_layer(self, data, octree, d0, d1, channel, training):
     conv = data
-    with tf.variable_scope('front'):
+    with tf.compat.v1.variable_scope('front'):
       for d in range(d0, d1, -1):
-        with tf.variable_scope('depth_%d' % d):
+        with tf.compat.v1.variable_scope('depth_%d' % d):
           channeld = channel / (2 ** (d - d1 + 1))
           conv = octree_conv_bn_relu(conv, octree, d, channeld, training)
           # conv = octree_conv_bn_relu(conv, octree, d, 48, training)
           # conv = tf.layers.dropout(conv, rate=0.5, training=training) 
           for n in range(0, self.flags.resblock_num):
-            with tf.variable_scope('resblock_%d' % n):
+            with tf.compat.v1.variable_scope('resblock_%d' % n):
               conv = octree_resblock(conv, octree, d, channeld, 1, training)
           self.tensors['front/conv'+str(d)] = conv # TODO: add a resblock here?
           conv, _ = octree_max_pool(conv, octree, d)
-      with tf.variable_scope('depth_%d' % d1):
+      with tf.compat.v1.variable_scope('depth_%d' % d1):
         conv = octree_conv_bn_relu(conv, octree, d1, channel, training)
         self.tensors['front/conv5'] = conv
     return conv

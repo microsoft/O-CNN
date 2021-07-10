@@ -36,7 +36,7 @@ class OctreeLinearTest(tf.test.TestCase):
 
       # backward
       bilinear_shape = b2.shape
-      grad_nn, grad_nm = tf.test.compute_gradient(
+      grad_nn, grad_nm = tf.compat.v1.test.compute_gradient(
           data, data_shape, bilinear2, bilinear_shape, delta=0.1)
       self.assertAllClose(grad_nn, grad_nm)  
 

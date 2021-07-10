@@ -14,7 +14,7 @@ octree = octree_new(batch_size=1, channel=channel, has_displace=False)
 octree = octree_grow(octree, target_depth=1, full_octree=True)
 octree = octree_grow(octree, target_depth=2, full_octree=True)
 
-octree_gt = tf.decode_raw(octree_samples('octree_2'), out_type=tf.int8)
+octree_gt = tf.io.decode_raw(octree_samples('octree_2'), out_type=tf.int8)
 for d in range(2, depth + 1):
   child = octree_child(octree_gt, depth=d)
   label = tf.cast(child > -1, tf.int32)

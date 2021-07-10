@@ -9,11 +9,11 @@ class ParseExample:
   def __init__(self, x_alias='data', y_alias='label', **kwargs):
     self.x_alias = x_alias
     self.y_alias = y_alias
-    self.features = { self.x_alias : tf.FixedLenFeature([], tf.string),
-                      self.y_alias : tf.FixedLenFeature([], tf.int64) }
+    self.features = { self.x_alias : tf.io.FixedLenFeature([], tf.string),
+                      self.y_alias : tf.io.FixedLenFeature([], tf.int64) }
 
   def __call__(self, record):
-    parsed = tf.parse_single_example(record, self.features)
+    parsed = tf.io.parse_single_example(serialized=record, features=self.features)
     return parsed[self.x_alias], parsed[self.y_alias]
 
 class ParseExample2:
@@ -21,12 +21,12 @@ class ParseExample2:
     self.x_alias1 = 'data1'
     self.x_alias2 = 'data2'
     self.y_alias = y_alias
-    self.features = { self.x_alias1 : tf.FixedLenFeature([], tf.string),
-                      self.x_alias2 : tf.FixedLenFeature([], tf.string),
-                      y_alias : tf.FixedLenFeature([], tf.int64) }
+    self.features = { self.x_alias1 : tf.io.FixedLenFeature([], tf.string),
+                      self.x_alias2 : tf.io.FixedLenFeature([], tf.string),
+                      y_alias : tf.io.FixedLenFeature([], tf.int64) }
 
   def __call__(self, record):
-    parsed = tf.parse_single_example(record, self.features)
+    parsed = tf.io.parse_single_example(serialized=record, features=self.features)
     return parsed[self.x_alias1],parsed[self.x_alias2], parsed[self.y_alias]
 
 
@@ -127,7 +127,7 @@ class PointDataset:
 
   def __call__(self, record_names, batch_size, shuffle_size=1000,
                return_iter=False, take=-1, return_pts=False, **kwargs):
-    with tf.name_scope('points_dataset'):
+    with tf.compat.v1.name_scope('points_dataset'):
       def preprocess(record):
         points, label = self.parse_example(record)
         points = self.normalize_points(points)
@@ -143,9 +143,9 @@ class PointDataset:
 
       dataset = tf.data.TFRecordDataset(record_names).take(take).repeat()
       if shuffle_size > 1: dataset = dataset.shuffle(shuffle_size)
-      itr = dataset.map(preprocess, num_parallel_calls=16) \
+      itr = tf.compat.v1.data.make_one_shot_iterator(dataset.map(preprocess, num_parallel_calls=16) \
                    .batch(batch_size).map(merge_octrees, num_parallel_calls=8) \
-                   .prefetch(8).make_one_shot_iterator() 
+                   .prefetch(8)) 
     return itr if return_iter else itr.get_next()
 
 class OctreeDataset:
@@ -154,15 +154,15 @@ class OctreeDataset:
 
   def __call__(self, record_names, batch_size, shuffle_size=1000,
                return_iter=False, take=-1, **kwargs):
-    with tf.name_scope('octree_dataset'):
+    with tf.compat.v1.name_scope('octree_dataset'):
       def merge_octrees(octrees, labels):
         return octree_batch(octrees), labels
 
       dataset = tf.data.TFRecordDataset(record_names).take(take).repeat()
       if shuffle_size > 1: dataset = dataset.shuffle(shuffle_size)
-      itr = dataset.map(self.parse_example, num_parallel_calls=8) \
+      itr = tf.compat.v1.data.make_one_shot_iterator(dataset.map(self.parse_example, num_parallel_calls=8) \
                    .batch(batch_size).map(merge_octrees, num_parallel_calls=8) \
-                   .prefetch(8).make_one_shot_iterator() 
+                   .prefetch(8)) 
     return itr if return_iter else itr.get_next()
 
 class OctreeDataset2:
@@ -171,7 +171,7 @@ class OctreeDataset2:
 
   def __call__(self, record_names, batch_size, shuffle_size=1000,
                return_iter=False, take=-1, **kwargs):
-    with tf.name_scope('octree_dataset'):
+    with tf.compat.v1.name_scope('octree_dataset'):
       def merge_octrees(octrees1,octrees2, labels):
         bo1=octree_batch(octrees1)
         bo2=octree_batch(octrees2)
@@ -180,9 +180,9 @@ class OctreeDataset2:
 
       dataset = tf.data.TFRecordDataset(record_names).take(take).repeat()
       #if shuffle_size > 1: dataset = dataset.shuffle(shuffle_size)
-      itr = dataset.map(self.parse_example2, num_parallel_calls=8) \
+      itr = tf.compat.v1.data.make_one_shot_iterator(dataset.map(self.parse_example2, num_parallel_calls=8) \
                    .batch(batch_size).map(merge_octrees, num_parallel_calls=8) \
-                   .prefetch(8).make_one_shot_iterator() 
+                   .prefetch(8)) 
     return itr if return_iter else itr.get_next()
 
 

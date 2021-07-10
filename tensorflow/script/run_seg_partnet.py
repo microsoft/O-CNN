@@ -13,33 +13,33 @@ FLAGS.LOSS.point_wise = True
 
 # get the label and pts
 def get_point_info(points, mask_ratio=0, mask=-1):
-  with tf.name_scope('points_info'):
+  with tf.compat.v1.name_scope('points_info'):
     pts   = points_property(points, property_name='xyz', channel=4)
     label = points_property(points, property_name='label', channel=1)
     label = tf.reshape(label, [-1])
     label_mask = label > mask  # mask out invalid points, -1
     if mask_ratio > 0:         # random drop some points to speed up training
-      rnd_mask = tf.random.uniform(tf.shape(label_mask)) > mask_ratio
+      rnd_mask = tf.random.uniform(tf.shape(input=label_mask)) > mask_ratio
       label_mask = tf.logical_and(label_mask, rnd_mask)
-    pts   = tf.boolean_mask(pts, label_mask)
-    label = tf.boolean_mask(label, label_mask)
+    pts   = tf.boolean_mask(tensor=pts, mask=label_mask)
+    label = tf.boolean_mask(tensor=label, mask=label_mask)
   return pts, label
 
 
 # IoU
 def tf_IoU_per_shape(pred, label, class_num, mask=-1):
-  with tf.name_scope('IoU'):
+  with tf.compat.v1.name_scope('IoU'):
     # Set mask to 0 to filter unlabeled points, whose label is 0
     label_mask = label > mask  # mask out label
-    pred = tf.boolean_mask(pred, label_mask)
-    label = tf.boolean_mask(label, label_mask)
-    pred = tf.argmax(pred, axis=1, output_type=tf.int32)
+    pred = tf.boolean_mask(tensor=pred, mask=label_mask)
+    label = tf.boolean_mask(tensor=label, mask=label_mask)
+    pred = tf.argmax(input=pred, axis=1, output_type=tf.int32)
 
     intsc, union = [None] * class_num, [None] * class_num
     for k in range(class_num):
       pk, lk = tf.equal(pred, k), tf.equal(label, k)
-      intsc[k] = tf.reduce_sum(tf.cast(pk & lk, dtype=tf.float32))
-      union[k] = tf.reduce_sum(tf.cast(pk | lk, dtype=tf.float32))
+      intsc[k] = tf.reduce_sum(input_tensor=tf.cast(pk & lk, dtype=tf.float32))
+      union[k] = tf.reduce_sum(input_tensor=tf.cast(pk | lk, dtype=tf.float32))
   return intsc, union
 
 
@@ -60,7 +60,7 @@ class ComputeGraphSeg:
     tower_tensors = []
     for i in range(gpu_num):
       with tf.device('/gpu:%d' % i):
-        with tf.name_scope('device_%d' % i):
+        with tf.compat.v1.name_scope('device_%d' % i):
           octree, _, points = data_iter.get_next()
           pts, label = get_point_info(points, flags_data.mask_ratio)
           if not FLAGS.LOSS.point_wise:

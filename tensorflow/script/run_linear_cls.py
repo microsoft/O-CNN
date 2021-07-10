@@ -17,15 +17,15 @@ class NumpyDataset:
     self.label = np.load('%s_%s.npy' % (flags.location, flags.y_alias))
 
   def __call__(self):
-    with tf.name_scope('dataset'):
+    with tf.compat.v1.name_scope('dataset'):
       channel = self.data.shape[1]
-      self.data_ph  = tf.placeholder(dtype=tf.float32, shape=[None, channel])
-      self.label_ph = tf.placeholder(dtype=tf.int64)
+      self.data_ph  = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, channel])
+      self.label_ph = tf.compat.v1.placeholder(dtype=tf.int64)
       dataset = tf.data.Dataset.from_tensor_slices((self.data_ph, self.label_ph))
       if self.flags.shuffle > 1:
         dataset = dataset.shuffle(self.flags.shuffle)
       dataset = dataset.batch(self.flags.batch_size).repeat()
-      self.iter = dataset.make_initializable_iterator()
+      self.iter = tf.compat.v1.data.make_initializable_iterator(dataset)
     return self.iter.get_next()
 
   def feed_data(self, sess):
@@ -43,7 +43,7 @@ def compute_graph(dataset='train', training=True, reuse=False):
   numpy_dataset = train_dataset if dataset == 'train' else test_dataset
   data, label = numpy_dataset()
   # define the linear classifier
-  with tf.variable_scope('linear', reuse=reuse):
+  with tf.compat.v1.variable_scope('linear', reuse=reuse):
     # TODO: Check that whether we need a BN here
     # data  = tf.layers.batch_normalization(data, axis=1, training=training)
     logit = dense(data, FLAGS.MODEL.nout, use_bias=True)
@@ -58,7 +58,7 @@ def compute_graph(dataset='train', training=True, reuse=False):
 # define the solver
 class LTFSolver(TFSolver):
   def initialize(self, sess):
-    sess.run(tf.global_variables_initializer())
+    sess.run(tf.compat.v1.global_variables_initializer())
     train_dataset.feed_data(sess)
     test_dataset.feed_data(sess)
 

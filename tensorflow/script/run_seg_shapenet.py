@@ -10,16 +10,16 @@ from libs import points_property
 
 # get the label and pts
 def get_point_info(points, mask_ratio=0, mask=-1):
-  with tf.name_scope('points_info'):    
+  with tf.compat.v1.name_scope('points_info'):    
     pts   = points_property(points, property_name='xyz', channel=4)
     label = points_property(points, property_name='label', channel=1)
     label = tf.reshape(label, [-1])
     label_mask  = label > mask # mask out invalid points, -1
     if mask_ratio > 0:         # random drop some points to speed up training
-      rnd_mask = tf.random.uniform(tf.shape(label_mask)) > mask_ratio
+      rnd_mask = tf.random.uniform(tf.shape(input=label_mask)) > mask_ratio
       label_mask = tf.logical_and(label_mask, rnd_mask) 
-    pts   = tf.boolean_mask(pts, label_mask)
-    label = tf.boolean_mask(label, label_mask)
+    pts   = tf.boolean_mask(tensor=pts, mask=label_mask)
+    label = tf.boolean_mask(tensor=label, mask=label_mask)
   return pts, label
 
 

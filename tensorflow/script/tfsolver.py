@@ -67,7 +67,7 @@ class TFSolver:
     self.tf_saver.restore(sess, ckpt)
 
   def initialize(self, sess):
-    sess.run(tf.global_variables_initializer())
+    sess.run(tf.compat.v1.global_variables_initializer())
 
   def run_k_iterations(self, sess, k, tensors):
     num = len(tensors)
@@ -94,7 +94,7 @@ class TFSolver:
 
     # checkpoint
     start_iter = 1
-    self.tf_saver = tf.train.Saver(max_to_keep=self.flags.ckpt_num)
+    self.tf_saver = tf.compat.v1.train.Saver(max_to_keep=self.flags.ckpt_num)
     ckpt_path = os.path.join(self.flags.logdir, 'model')
     if self.flags.ckpt:        # restore from the provided checkpoint
       ckpt = self.flags.ckpt  
@@ -103,11 +103,11 @@ class TFSolver:
       if ckpt: start_iter = int(ckpt[ckpt.find("iter")+5:-5]) + 1
 
     # session
-    config = tf.ConfigProto(allow_soft_placement=True)
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
     config.gpu_options.allow_growth = True
 
-    with tf.Session(config=config) as sess:
-      summary_writer = tf.summary.FileWriter(self.flags.logdir, sess.graph)
+    with tf.compat.v1.Session(config=config) as sess:
+      summary_writer = tf.compat.v1.summary.FileWriter(self.flags.logdir, sess.graph)
 
       print('Initialize ...')
       self.initialize(sess)
@@ -142,13 +142,13 @@ class TFSolver:
     self.build_train_graph()
 
     # session
-    config = tf.ConfigProto(allow_soft_placement=True)
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
     config.gpu_options.allow_growth = True
-    options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-    run_metadata = tf.RunMetadata()
+    options = tf.compat.v1.RunOptions(trace_level=tf.compat.v1.RunOptions.FULL_TRACE)
+    run_metadata = tf.compat.v1.RunMetadata()
     timeline_skip, timeline_iter = 100, 2
-    with tf.Session(config=config) as sess:
-      summary_writer = tf.summary.FileWriter(self.flags.logdir, sess.graph)
+    with tf.compat.v1.Session(config=config) as sess:
+      summary_writer = tf.compat.v1.summary.FileWriter(self.flags.logdir, sess.graph)
       print('Initialize ...')
       self.initialize(sess)
 
@@ -174,7 +174,7 @@ class TFSolver:
     self.build_train_graph()
 
     # get variables
-    train_vars = tf.trainable_variables()
+    train_vars = tf.compat.v1.trainable_variables()
 
     # print
     total_num = 0
@@ -192,15 +192,15 @@ class TFSolver:
 
     # checkpoint
     assert(self.flags.ckpt)   # the self.flags.ckpt should be provided
-    tf_saver = tf.train.Saver(max_to_keep=10)
+    tf_saver = tf.compat.v1.train.Saver(max_to_keep=10)
 
     # start
     num_tensors = len(self.test_tensors)
     avg_test = [0] * num_tensors
-    config = tf.ConfigProto(allow_soft_placement=True)
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
     config.gpu_options.allow_growth = True 
-    with tf.Session(config=config) as sess:
-      summary_writer = tf.summary.FileWriter(self.flags.logdir, sess.graph)
+    with tf.compat.v1.Session(config=config) as sess:
+      summary_writer = tf.compat.v1.summary.FileWriter(self.flags.logdir, sess.graph)
       self.summ2txt(self.test_names, 'batch')
 
       # restore and initialize
@@ -213,7 +213,7 @@ class TFSolver:
       if itCnt==0:
         itCnt=self.len_callback()
         if itCnt==0:
-          itCnt=sum(1 for _ in tf.python_io.tf_record_iterator(self.flagsD.test.location))
+          itCnt=sum(1 for _ in tf.compat.v1.python_io.tf_record_iterator(self.flagsD.test.location))
  
       for i in range(0, itCnt):
         iter_test_result = sess.run(self.test_tensors)

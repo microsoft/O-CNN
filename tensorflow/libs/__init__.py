@@ -164,29 +164,29 @@ def _OctreeMaskGrad(op, grad):
 
 @ops.RegisterGradient('OctreeGather')
 def _OctreeGatherGrad(op, grad):
-  shape = tf.shape(op.inputs[0])
+  shape = tf.shape(input=op.inputs[0])
   grad_out = octree_gatherbk(grad, op.inputs[1], shape)
   return [grad_out, None]
 
 
 def octree_max_pool(data, octree, depth):
-  with tf.variable_scope('octree_max_pool'):
+  with tf.compat.v1.variable_scope('octree_max_pool'):
     data, mask = _octree_max_pool(data, octree, depth) # the bottom data depth
     data = octree_pad(data, octree, depth-1)           # !!! depth-1
   return data, mask
 
 
 def octree_max_unpool(data, mask, octree, depth):
-  with tf.variable_scope('octree_max_unpool'):
+  with tf.compat.v1.variable_scope('octree_max_unpool'):
     data = octree_depad(data, octree, depth)             # !!! depth
     data = _octree_max_unpool(data, mask, octree, depth+1) # the bottom data depth rp** fix problem
   return data
 
 
 def octree_avg_pool(data, octree, depth):
-  with tf.variable_scope('octree_avg_pool'):
+  with tf.compat.v1.variable_scope('octree_avg_pool'):
     data = tf.reshape(data, [1, int(data.shape[1]), -1, 8])
-    data = tf.reduce_mean(data, axis=3, keepdims=True)
+    data = tf.reduce_mean(input_tensor=data, axis=3, keepdims=True)
     data = octree_pad(data, octree, depth-1)           # !!! depth-1
   return data
 
@@ -197,10 +197,10 @@ def octree_conv_fast(data, octree, depth, channel, kernel_size=[3], stride=1):
   for i in range(len(kernel_size), 3):
     kernel_size.append(kernel_size[-1])
 
-  with tf.variable_scope('octree_conv'):
+  with tf.compat.v1.variable_scope('octree_conv'):
     dim = int(data.shape[1]) * kernel_size[0] * kernel_size[1] * kernel_size[2]
-    kernel = tf.get_variable('weights', shape=[channel, dim], dtype=tf.float32,
-                             initializer=tf.contrib.layers.xavier_initializer())
+    kernel = tf.compat.v1.get_variable('weights', shape=[channel, dim], dtype=tf.float32,
+                             initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"))
     col = octree2col(data, octree, depth, kernel_size, stride)
     col = tf.reshape(col, [dim, -1])
     conv = tf.matmul(kernel, col)
@@ -215,10 +215,10 @@ def octree_conv_memory(data, octree, depth, channel, kernel_size=[3], stride=1):
   for i in range(len(kernel_size), 3):
     kernel_size.append(kernel_size[-1])
 
-  with tf.variable_scope('octree_conv'):
+  with tf.compat.v1.variable_scope('octree_conv'):
     dim = int(data.shape[1]) * kernel_size[0] * kernel_size[1] * kernel_size[2]
-    kernel = tf.get_variable('weights', shape=[channel, dim], dtype=tf.float32,
-                             initializer=tf.contrib.layers.xavier_initializer())
+    kernel = tf.compat.v1.get_variable('weights', shape=[channel, dim], dtype=tf.float32,
+                             initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"))
     conv = _octree_conv(data, kernel, octree, depth, channel, kernel_size, stride)
     if stride == 2:
       conv = octree_pad(conv, octree, depth-1)
@@ -230,11 +230,11 @@ def octree_deconv_fast(data, octree, depth, channel, kernel_size=[3], stride=1):
   for i in range(len(kernel_size), 3):
     kernel_size.append(kernel_size[-1])
 
-  with tf.variable_scope('octree_deconv'):
+  with tf.compat.v1.variable_scope('octree_deconv'):
     kernel_sdim = kernel_size[0] * kernel_size[1] * kernel_size[2]
     dim = channel * kernel_sdim
-    kernel = tf.get_variable('weights', shape=[int(data.shape[1]), dim], dtype=tf.float32,
-                             initializer=tf.contrib.layers.xavier_initializer())
+    kernel = tf.compat.v1.get_variable('weights', shape=[int(data.shape[1]), dim], dtype=tf.float32,
+                             initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"))
     if stride == 2:
       data = octree_depad(data, octree, depth)
       depth = depth + 1
@@ -250,11 +250,11 @@ def octree_deconv_memory(data, octree, depth, channel, kernel_size=[3], stride=1
   for i in range(len(kernel_size), 3):
     kernel_size.append(kernel_size[-1])
 
-  with tf.variable_scope('octree_deconv'):
+  with tf.compat.v1.variable_scope('octree_deconv'):
     kernel_sdim = kernel_size[0] * kernel_size[1] * kernel_size[2]
     dim = channel * kernel_sdim
-    kernel = tf.get_variable('weights', shape=[int(data.shape[1]), dim], dtype=tf.float32,
-                             initializer=tf.contrib.layers.xavier_initializer())
+    kernel = tf.compat.v1.get_variable('weights', shape=[int(data.shape[1]), dim], dtype=tf.float32,
+                             initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"))
     if stride == 2:
       data = octree_depad(data, octree, depth)
     deconv = _octree_deconv(data, kernel, octree, depth, channel, kernel_size, stride)
@@ -264,14 +264,14 @@ def octree_deconv_memory(data, octree, depth, channel, kernel_size=[3], stride=1
 def octree_full_voxel(data, depth):
   height = 2 ** (3 * depth)
   channel = int(data.shape[1])
-  with tf.variable_scope('octree_full_voxel'):    
+  with tf.compat.v1.variable_scope('octree_full_voxel'):    
     data = tf.reshape(data, [channel, -1, height]) # (1, C, H, 1) -> (C, batch_size, H1)
-    data = tf.transpose(data, perm=[1, 0, 2])
+    data = tf.transpose(a=data, perm=[1, 0, 2])
   return data
 
 
 def octree_tile(data, octree, depth):
-  with tf.variable_scope('octree_tile'):
+  with tf.compat.v1.variable_scope('octree_tile'):
     data = octree_depad(data, octree, depth) # (1, C, H, 1)
     data = tf.tile(data, [1, 1, 1, 8])       # (1, C, H, 8)
     channel = int(data.shape[1])
@@ -280,39 +280,39 @@ def octree_tile(data, octree, depth):
 
 
 def octree_global_pool(data, octree, depth):
-  with tf.variable_scope('octree_global_pool'):
+  with tf.compat.v1.variable_scope('octree_global_pool'):
     segment_ids = octree_property(octree, property_name='index', dtype=tf.int32,
                                   depth=depth, channel=1)
     segment_ids = tf.reshape(segment_ids, [-1])
     data = tf.squeeze(data, axis=[0, 3])             # (1, C, H, 1) -> (C, H)
-    data = tf.transpose(data)                        # (C, H) -> (H, C)
+    data = tf.transpose(a=data)                        # (C, H) -> (H, C)
     output = tf.math.segment_mean(data, segment_ids) # (H, C) -> (batch_size, C)
   return output
 
 
 def octree_bilinear_legacy(data, octree, depth, target_depth):
-  with tf.variable_scope('octree_bilinear'):
+  with tf.compat.v1.variable_scope('octree_bilinear'):
     mask = tf.constant(
       [[0, 0, 0], [0, 0, 1], [0, 1, 0], [1, 0, 0], 
        [0, 1, 1], [1, 0, 1], [1, 1, 0], [1, 1, 1]], dtype=tf.float32)
     index, fracs = _octree_bilinear(octree, depth, target_depth)
-    feat = tf.transpose(tf.squeeze(data, [0, 3]))        # (1, C, H, 1) -> (H, C)
-    output = tf.zeros([tf.shape(index)[0], tf.shape(feat)[1]], dtype=tf.float32)
-    norm   = tf.zeros([tf.shape(index)[0], 1], dtype=tf.float32)
+    feat = tf.transpose(a=tf.squeeze(data, [0, 3]))        # (1, C, H, 1) -> (H, C)
+    output = tf.zeros([tf.shape(input=index)[0], tf.shape(input=feat)[1]], dtype=tf.float32)
+    norm   = tf.zeros([tf.shape(input=index)[0], 1], dtype=tf.float32)
     for i in range(8):
       idxi = index[:, i]
-      weight = tf.abs(tf.reduce_prod(mask[i, :] - fracs, axis=1, keepdims=True))
+      weight = tf.abs(tf.reduce_prod(input_tensor=mask[i, :] - fracs, axis=1, keepdims=True))
       output += weight * tf.gather(feat, idxi) 
       norm   += weight * tf.expand_dims(tf.cast(idxi > -1, dtype=tf.float32), -1)
-    output = tf.div(output, norm)
-    output = tf.expand_dims(tf.expand_dims(tf.transpose(output), 0), -1)
+    output = tf.compat.v1.div(output, norm)
+    output = tf.expand_dims(tf.expand_dims(tf.transpose(a=output), 0), -1)
   return output
 
 
 # pts: (N, 4), i.e. N x (x, y, z, id)
 # data: (1, C, H, 1)
 def octree_bilinear_v1(pts, data, octree, depth):
-  with tf.variable_scope('octree_bilinear'):
+  with tf.compat.v1.variable_scope('octree_bilinear'):
     mask = tf.constant(
         [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
          [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]], dtype=tf.float32)
@@ -322,9 +322,9 @@ def octree_bilinear_v1(pts, data, octree, depth):
     xyzi = tf.floor(xyzf) # the integer part
     frac = xyzf - xyzi    # the fraction part
 
-    feat = tf.transpose(tf.squeeze(data, [0, 3]))        # (1, C, H, 1) -> (H, C)
-    output = tf.zeros([tf.shape(xyzi)[0], tf.shape(feat)[1]], dtype=tf.float32)
-    norm   = tf.zeros([tf.shape(xyzi)[0], 1], dtype=tf.float32)
+    feat = tf.transpose(a=tf.squeeze(data, [0, 3]))        # (1, C, H, 1) -> (H, C)
+    output = tf.zeros([tf.shape(input=xyzi)[0], tf.shape(input=feat)[1]], dtype=tf.float32)
+    norm   = tf.zeros([tf.shape(input=xyzi)[0], 1], dtype=tf.float32)
 
     for i in range(8):
       maski = mask[i, :]
@@ -333,20 +333,20 @@ def octree_bilinear_v1(pts, data, octree, depth):
       xyzm = tf.cast(tf.concat([xyzm, ids], axis=1), dtype=tf_uints)
       idxi = octree_search_key(octree_encode_key(xyzm), octree, depth, is_xyz=True)
 
-      weight = tf.abs(tf.reduce_prod(maskc - frac, axis=1, keepdims=True))
+      weight = tf.abs(tf.reduce_prod(input_tensor=maskc - frac, axis=1, keepdims=True))
       output += weight * tf.gather(feat, idxi)
       norm += weight * tf.expand_dims(tf.cast(idxi > -1, dtype=tf.float32), -1)
-    output = tf.div(output, norm)
+    output = tf.compat.v1.div(output, norm)
 
-    output = tf.expand_dims(tf.expand_dims(tf.transpose(output), 0), -1)
-    frac = tf.expand_dims(tf.expand_dims(tf.transpose(frac), 0), -1)
+    output = tf.expand_dims(tf.expand_dims(tf.transpose(a=output), 0), -1)
+    frac = tf.expand_dims(tf.expand_dims(tf.transpose(a=frac), 0), -1)
 
   return output, frac
 
 # pts: (N, 4), i.e. N x (x, y, z, id)
 # data: (1, C, H, 1)
 def octree_bilinear_v2(pts, data, octree, depth):
-  with tf.variable_scope('octree_bilinear'):
+  with tf.compat.v1.variable_scope('octree_bilinear'):
     mask = tf.constant(
         [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
          [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]], dtype=tf.float32)
@@ -356,8 +356,8 @@ def octree_bilinear_v2(pts, data, octree, depth):
     xyzi = tf.floor(xyzf) # the integer part
     frac = xyzf - xyzi    # the fraction part
 
-    output = tf.zeros([1, tf.shape(data)[1], tf.shape(xyzi)[0], 1], dtype=tf.float32)
-    norm   = tf.zeros([tf.shape(xyzi)[0], 1], dtype=tf.float32)
+    output = tf.zeros([1, tf.shape(input=data)[1], tf.shape(input=xyzi)[0], 1], dtype=tf.float32)
+    norm   = tf.zeros([tf.shape(input=xyzi)[0], 1], dtype=tf.float32)
 
     for i in range(8):
       maski = mask[i, :]
@@ -367,11 +367,11 @@ def octree_bilinear_v2(pts, data, octree, depth):
       # !!! Note some elements of idxi may be -1
       idxi = octree_search_key(octree_encode_key(xyzm), octree, depth, is_xyz=True)
 
-      weight = tf.abs(tf.reduce_prod(maskc - frac, axis=1, keepdims=True))
+      weight = tf.abs(tf.reduce_prod(input_tensor=maskc - frac, axis=1, keepdims=True))
       # output += weight * tf.gather(data, idxi, axis=2)
       output += weight * octree_gather(data, idxi)
       norm   += weight * tf.expand_dims(tf.cast(idxi > -1, dtype=tf.float32), -1)
-    output = tf.div(output, norm)
+    output = tf.compat.v1.div(output, norm)
   return output
 
 
@@ -379,7 +379,7 @@ def octree_bilinear_v2(pts, data, octree, depth):
 # data: (1, C, H, 1)
 # !!! Note: the pts should be scaled into [0, 2^depth]
 def octree_bilinear_v3(pts, data, octree, depth):
-  with tf.variable_scope('octree_linear'):
+  with tf.compat.v1.variable_scope('octree_linear'):
     mask = tf.constant(
         [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
          [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]], dtype=tf.float32)
@@ -406,21 +406,21 @@ def octree_bilinear_v3(pts, data, octree, depth):
 
     idx = octree_search_key(key, octree, depth)  # (N*8,)
     flgs = idx > -1  # filtering flags
-    idx = tf.boolean_mask(idx, flgs)
+    idx = tf.boolean_mask(tensor=idx, mask=flgs)
 
-    npt = tf.shape(xyzi)[0]
+    npt = tf.shape(input=xyzi)[0]
     ids = tf.reshape(tf.range(npt), [-1, 1])
     ids = tf.reshape(tf.tile(ids, [1, 8]), [-1])  # (N*8,)
-    ids = tf.boolean_mask(ids, flgs)
+    ids = tf.boolean_mask(tensor=ids, mask=flgs)
 
     frac = maskc - tf.expand_dims(frac, axis=1)
-    weight = tf.abs(tf.reshape(tf.reduce_prod(frac, axis=2), [-1]))
-    weight = tf.boolean_mask(weight, flgs)
+    weight = tf.abs(tf.reshape(tf.reduce_prod(input_tensor=frac, axis=2), [-1]))
+    weight = tf.boolean_mask(tensor=weight, mask=flgs)
 
     indices = tf.concat([tf.expand_dims(ids, 1), tf.expand_dims(idx, 1)], 1)
     indices = tf.cast(indices, tf.int64)
     data = tf.squeeze(data, [0, 3])  # (C, H)
-    h = tf.shape(data)[1]
+    h = tf.shape(input=data)[1]
     mat = tf.SparseTensor(indices=indices, values=weight, dense_shape=[npt, h])
 
     # channel, max_channel = int(data.shape[0]), 512
@@ -443,18 +443,18 @@ def octree_bilinear_v3(pts, data, octree, depth):
 
     output = tf.sparse.sparse_dense_matmul(mat, data, adjoint_a=False, adjoint_b=True)
     norm = tf.sparse.sparse_dense_matmul(mat, tf.ones([h, 1]))
-    output = tf.div(output, norm + 1.0e-10) # avoid dividing by zeros
-    output = tf.expand_dims(tf.expand_dims(tf.transpose(output), 0), -1)
+    output = tf.compat.v1.div(output, norm + 1.0e-10) # avoid dividing by zeros
+    output = tf.expand_dims(tf.expand_dims(tf.transpose(a=output), 0), -1)
   return output
 
 
 def octree_bilinear(data, octree, depth, target_depth, mask=None):
-  with tf.name_scope('Octree_bilinear'):
+  with tf.compat.v1.name_scope('Octree_bilinear'):
     xyz = octree_property(octree, property_name='xyz', depth=target_depth,
                           channel=1, dtype=tf_uintk)
     xyz = tf.reshape(xyz, [-1])
     if mask is not None:
-      xyz = tf.boolean_mask(xyz, mask)
+      xyz = tf.boolean_mask(tensor=xyz, mask=mask)
     xyz = tf.cast(octree_decode_key(xyz), dtype=tf.float32)
 
     # Attention: displacement 0.5, scale
@@ -469,7 +469,7 @@ def octree_bilinear(data, octree, depth, target_depth, mask=None):
 # pts: (N, 4), i.e. N x (x, y, z, id)
 # data: (1, C, H, 1)
 def octree_nearest_interp(pts, data, octree, depth):
-  with tf.variable_scope('octree_nearest_interp'):
+  with tf.compat.v1.variable_scope('octree_nearest_interp'):
     # The value is defined on the center of each voxel,
     # so we can get the closest grid point by simply casting the value to tf_uints
     pts = tf.cast(pts, dtype=tf_uints)
@@ -488,7 +488,7 @@ def octree_nearest_interp(pts, data, octree, depth):
 
 
 def octree_signal(octree, depth, channel):
-  with tf.name_scope('octree_signal'):
+  with tf.compat.v1.name_scope('octree_signal'):
     signal = octree_property(octree, property_name='feature', dtype=tf.float32,
                              depth=depth, channel=channel)
     signal = tf.reshape(signal, [1, channel, -1, 1])
@@ -496,7 +496,7 @@ def octree_signal(octree, depth, channel):
 
 
 def octree_xyz(octree, depth, decode=True):
-  with tf.name_scope('octree_xyz'):
+  with tf.compat.v1.name_scope('octree_xyz'):
     xyz = octree_property(octree, property_name='xyz', dtype=tf_uintk,
                           depth=depth, channel=1)
     xyz = tf.reshape(xyz, [-1])  # uint32, N
@@ -506,7 +506,7 @@ def octree_xyz(octree, depth, decode=True):
 
 
 def octree_child(octree, depth):
-  with tf.name_scope('octree_child'):
+  with tf.compat.v1.name_scope('octree_child'):
     child = octree_property(octree, property_name='child', dtype=tf.int32,
                             depth=depth, channel=1)
     child = tf.reshape(child, [-1])
@@ -514,7 +514,7 @@ def octree_child(octree, depth):
 
 
 def octree_split(octree, depth):
-  with tf.name_scope('octree_split'):
+  with tf.compat.v1.name_scope('octree_split'):
     split = octree_property(octree, property_name='split', dtype=tf.float32,
                             depth=depth, channel=1)
     split = tf.reshape(split, [-1])

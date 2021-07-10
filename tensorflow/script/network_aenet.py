@@ -8,8 +8,8 @@ def network_aenet(octree, flags, training, reuse=False):
   channel = [None, None, None, 256, 128, 32, 16]
   cout=[None, None, 256, 128, 32, 16, 4]
 
-  with tf.variable_scope('ocnn_unet', reuse=reuse):    
-    with tf.variable_scope('signal'):
+  with tf.compat.v1.variable_scope('ocnn_unet', reuse=reuse):    
+    with tf.compat.v1.variable_scope('signal'):
       data = octree_property(octree, property_name='feature', dtype=tf.float32,
                              depth=depth, channel=flags.channel)
       data = tf.reshape(data, [1, flags.channel, -1, 1])
@@ -18,11 +18,11 @@ def network_aenet(octree, flags, training, reuse=False):
     mask = [None]*10
     for d in range(depth, 2, -1):
     #for d in range(depth, 5, -1):
-      with tf.variable_scope('encoder_d%d' % d):
+      with tf.compat.v1.variable_scope('encoder_d%d' % d):
           # data=tf.Print(data,[tf.shape(data)],"step a",summarize=10) 
           data = octree_conv_bn_relu(data, octree, d, channel[d], training)
           if d==5:
-             data = tf.layers.dropout(data, rate=0.5, training=training)
+             data = tf.compat.v1.layers.dropout(data, rate=0.5, training=training)
           # data=tf.Print(data,[tf.shape(data)],"step b",summarize=10) 
           data,mask[d] = octree_max_pool(data, octree, d)
           # data=tf.Print(data,[tf.shape(data)],"step c",summarize=10) 
@@ -31,25 +31,25 @@ def network_aenet(octree, flags, training, reuse=False):
     ## decoder
     assert d != 2 ,print("trouble 1")
     data = octree_conv_bn_relu(data, octree, 2, 256, training)
-    data = tf.layers.dropout(data, rate=0.5, training=training)
+    data = tf.compat.v1.layers.dropout(data, rate=0.5, training=training)
     
     for d in range(3, depth + 1):
     #for d in range(6, depth + 1):
-      with tf.variable_scope('decoder_d%d' % (d-1)):
+      with tf.compat.v1.variable_scope('decoder_d%d' % (d-1)):
         # mask[d]=tf.Print(mask[d],[tf.shape(mask[d])],"step mask",summarize=10)
         # data=tf.Print(data,[tf.shape(data)],"step 1",summarize=10)
         data=  octree_max_unpool(data, mask[d], octree, d-1)
         #data=tf.Print(data,[tf.shape(data)],"step 2",summarize=10)
         data = octree_conv_bn_relu(data, octree, d, cout[d], training) 
         if d==5:
-            data = tf.layers.dropout(data, rate=0.5, training=training)
+            data = tf.compat.v1.layers.dropout(data, rate=0.5, training=training)
         #data=tf.Print(data,[tf.shape(data)],"step 3",summarize=10)  
 
         # segmentation
         if d == depth:
-          with tf.variable_scope('predict_label'):
+          with tf.compat.v1.variable_scope('predict_label'):
             logit = predict_module(data, flags.nout, 64, training)
-            logit = tf.transpose(tf.squeeze(logit, [0, 3])) # (1, C, H, 1) -> (H, C)
+            logit = tf.transpose(a=tf.squeeze(logit, [0, 3])) # (1, C, H, 1) -> (H, C)
 
   return logit
 

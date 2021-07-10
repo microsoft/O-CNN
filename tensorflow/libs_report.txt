@@ -1,0 +1,113 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 2 files
+Detected 4 issues that require attention
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+File: libs_14/__init__.py
+--------------------------------------------------------------------------------
+libs_14/__init__.py:202:13: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+libs_14/__init__.py:220:13: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+libs_14/__init__.py:236:13: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+libs_14/__init__.py:256:13: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+================================================================================
+Detailed log follows:
+
+================================================================================
+================================================================================
+Input tree: 'libs_14/'
+================================================================================
+--------------------------------------------------------------------------------
+Processing file 'libs_14/build.py'
+ outputting to 'libs/build.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'libs_14/__init__.py'
+ outputting to 'libs/__init__.py'
+--------------------------------------------------------------------------------
+
+167:10: INFO: Added keywords to args of function 'tf.shape'
+173:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+180:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+187:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+189:11: INFO: Added keywords to args of function 'tf.reduce_mean'
+200:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+202:13: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+202:13: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+203:41: INFO: Changing tf.contrib.layers xavier initializer to a tf.compat.v1.keras.initializers.VarianceScaling and converting arguments.
+
+218:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+220:13: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+220:13: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+221:41: INFO: Changing tf.contrib.layers xavier initializer to a tf.compat.v1.keras.initializers.VarianceScaling and converting arguments.
+
+233:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+236:13: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+236:13: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+237:41: INFO: Changing tf.contrib.layers xavier initializer to a tf.compat.v1.keras.initializers.VarianceScaling and converting arguments.
+
+253:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+256:13: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+256:13: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+257:41: INFO: Changing tf.contrib.layers xavier initializer to a tf.compat.v1.keras.initializers.VarianceScaling and converting arguments.
+
+267:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+269:11: INFO: Added keywords to args of function 'tf.transpose'
+274:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+283:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+288:11: INFO: Added keywords to args of function 'tf.transpose'
+294:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+299:11: INFO: Added keywords to args of function 'tf.transpose'
+300:23: INFO: Added keywords to args of function 'tf.shape'
+300:43: INFO: Added keywords to args of function 'tf.shape'
+301:23: INFO: Added keywords to args of function 'tf.shape'
+304:22: INFO: Added keywords to args of function 'tf.reduce_prod'
+307:13: INFO: Renamed 'tf.div' to 'tf.compat.v1.div'
+308:43: INFO: Added keywords to args of function 'tf.transpose'
+315:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+325:11: INFO: Added keywords to args of function 'tf.transpose'
+326:23: INFO: Added keywords to args of function 'tf.shape'
+326:42: INFO: Added keywords to args of function 'tf.shape'
+327:23: INFO: Added keywords to args of function 'tf.shape'
+336:22: INFO: Added keywords to args of function 'tf.reduce_prod'
+339:13: INFO: Renamed 'tf.div' to 'tf.compat.v1.div'
+341:43: INFO: Added keywords to args of function 'tf.transpose'
+342:41: INFO: Added keywords to args of function 'tf.transpose'
+349:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+359:26: INFO: Added keywords to args of function 'tf.shape'
+359:45: INFO: Added keywords to args of function 'tf.shape'
+360:23: INFO: Added keywords to args of function 'tf.shape'
+370:22: INFO: Added keywords to args of function 'tf.reduce_prod'
+374:13: INFO: Renamed 'tf.div' to 'tf.compat.v1.div'
+382:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+409:10: INFO: Added keywords to args of function 'tf.boolean_mask'
+411:10: INFO: Added keywords to args of function 'tf.shape'
+414:10: INFO: Added keywords to args of function 'tf.boolean_mask'
+417:31: INFO: Added keywords to args of function 'tf.reduce_prod'
+418:13: INFO: Added keywords to args of function 'tf.boolean_mask'
+423:8: INFO: Added keywords to args of function 'tf.shape'
+446:13: INFO: Renamed 'tf.div' to 'tf.compat.v1.div'
+447:43: INFO: Added keywords to args of function 'tf.transpose'
+452:7: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+452:7: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+457:12: INFO: Added keywords to args of function 'tf.boolean_mask'
+472:7: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+491:7: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+491:7: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+499:7: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+499:7: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+509:7: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+509:7: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+517:7: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+517:7: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+--------------------------------------------------------------------------------
+

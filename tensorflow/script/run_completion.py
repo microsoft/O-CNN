@@ -52,13 +52,13 @@ class PointDataset:
 
   def __call__(self, record_names, batch_size, shuffle_size=1000,
                return_iter=False, take=-1, **kwargs):
-    with tf.name_scope('points_dataset'):
+    with tf.compat.v1.name_scope('points_dataset'):
       def preprocess(record):
         points, label = self.parse_example(record)
         points = self.normalize_points(points)
         points = self.transform_points(points)
         octree1 = self.points2octree(points)        # the complete octree
-        scan_axis = tf.py_func(self.gen_scan_axis, [label], tf.float32)
+        scan_axis = tf.compat.v1.py_func(self.gen_scan_axis, [label], tf.float32)
         octree0 = octree_scan(octree1, scan_axis)   # the transformed octree
         return octree0, octree1
 
@@ -70,9 +70,9 @@ class PointDataset:
       dataset = tf.data.TFRecordDataset(record_names).take(take).repeat()
       if shuffle_size > 1:
         dataset = dataset.shuffle(shuffle_size)
-      itr = dataset.map(preprocess, num_parallel_calls=8) \
+      itr = tf.compat.v1.data.make_one_shot_iterator(dataset.map(preprocess, num_parallel_calls=8) \
                    .batch(batch_size).map(merge_octrees, num_parallel_calls=8) \
-                   .prefetch(8).make_one_shot_iterator()
+                   .prefetch(8))
     return itr if return_iter else itr.get_next()
 
 
@@ -87,7 +87,7 @@ def compute_graph(dataset='train', training=True, reuse=False):
   convd = network.octree_encoder(octree0, training, reuse)
   loss, accu = network.octree_decoder(convd, octree0, octree1, training, reuse)
 
-  with tf.name_scope('total_loss'):
+  with tf.compat.v1.name_scope('total_loss'):
     reg = l2_regularizer('ocnn', FLAGS.LOSS.weight_decay)
     total_loss = tf.add_n(loss + [reg])
   tensors = loss + [reg] + accu + [total_loss]
@@ -110,18 +110,18 @@ class CompletionSolver(TFSolver):
 
     # checkpoint
     assert(self.flags.ckpt)
-    tf_saver = tf.train.Saver(max_to_keep=20)
+    tf_saver = tf.compat.v1.train.Saver(max_to_keep=20)
 
     # start
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
-    with tf.Session(config=config) as sess:
+    with tf.compat.v1.Session(config=config) as sess:
       # restore and initialize
       self.initialize(sess)
       print('Load check point: ' + self.flags.ckpt)
       tf_saver.restore(sess, self.flags.ckpt)
       logdir = self.flags.logdir
-      tf.summary.FileWriter(logdir, sess.graph)
+      tf.compat.v1.summary.FileWriter(logdir, sess.graph)
 
       print('Start testing ...')
       for i in tqdm(range(0, self.flags.test_iter), ncols=80):

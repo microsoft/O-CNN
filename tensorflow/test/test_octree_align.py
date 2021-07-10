@@ -14,7 +14,7 @@ class OctreeAlignTest(tf.test.TestCase):
     data_out, idx = octree_align(data_in, octree, octree, depth=5)
     idx_gt = tf.range(16, dtype=tf.int32)
 
-    grad = tf.gradients(data_out, data_in)[0]
+    grad = tf.gradients(ys=data_out, xs=data_in)[0]
     grad_gt = np.ones([1, 3, 16, 1])
 
     with self.cached_session() as sess:
@@ -31,7 +31,7 @@ class OctreeAlignTest(tf.test.TestCase):
     data_gt = tf.concat([data_in, np.zeros([1, 3, 8, 1], np.float32)], axis=2)
     idx_gt = tf.range(8, dtype=tf.int32)
 
-    grad = tf.gradients(data_out, data_in)[0]
+    grad = tf.gradients(ys=data_out, xs=data_in)[0]
     grad_gt = np.ones([1, 3, 8, 1])
 
     with self.cached_session() as sess:
@@ -48,7 +48,7 @@ class OctreeAlignTest(tf.test.TestCase):
     data_gt = data_in[:, :, :8, :]
     idx_gt = list(range(8)) + [-1] * 8
 
-    grad = tf.gradients(data_out, data_in)[0]
+    grad = tf.gradients(ys=data_out, xs=data_in)[0]
     grad_gt = tf.concat([np.ones([1, 3, 8, 1]), np.zeros([1, 3, 8, 1])], axis=2)
 
     with self.cached_session() as sess:
