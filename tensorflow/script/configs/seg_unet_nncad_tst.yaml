@@ -1,11 +1,11 @@
 # Parameters for the airplane
 
 SOLVER:
-  ckpt: 'logs/seg/unetNTgn1/model/iter_090000.ckpt'
+  ckpt: 'logs/seg/unetNTnormltst/model/iter_090000.ckpt'
   gpu: 0,
-  logdir: logs/seg/unetNTgn1
+  logdir: logs/seg/unetNTnormltst
   max_iter: 90000
-  test_iter: 0
+  test_iter: 11387
   #test_iter: 200
   test_every_iter: 2000
   step_size: (15000, )
@@ -32,7 +32,7 @@ DATA:
     depth: 6
     axis: y 
     node_dis: True
-    location: /mnt/d/bb/tfTest.tfrecords
+    location: /mnt/d/bbNynas/tfTest.tfrecords
     shuffle: 0
     batch_size: 1
     x_alias: data

@@ -56,4 +56,5 @@ class OctreeConvTest(tf.test.TestCase):
 
 if __name__ == "__main__":
   os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-  tf.test.main()
+  with tf.Graph().as_default():
+   tf.test.main()

@@ -90,7 +90,7 @@ class TransformPointsOp : public OpKernel {
     }
 
     // copy the data out of the input tensor
-    auto points_array = data_in.flat<string>();
+    auto points_array = data_in.flat<tstring>();
     vector<char> points_buf(points_array(0).begin(), points_array(0).end());
 
     // init the points
@@ -178,8 +178,8 @@ class TransformPointsOp : public OpKernel {
     Tensor* out_data = nullptr;
     const TensorShape& shape = data_in.shape();
     OP_REQUIRES_OK(context, context->allocate_output(0, shape, &out_data));
-    string& out_str = out_data->flat<string>()(0);
-    out_str.assign(points_buf.begin(), points_buf.end());
+    tstring& out_str = out_data->flat<tstring>()(0);
+    out_str.assign(&points_buf[0], points_buf.size());
   }
 
  private:
@@ -195,7 +195,7 @@ class NormalizePointsOp : public OpKernel {
 
   void Compute(OpKernelContext* context) override {
     // input
-    const string& data_in = context->input(0).flat<string>()(0);
+    const string& data_in = context->input(0).flat<tstring>()(0);
     const float radius = context->input(1).flat<float>()(0);
     const float* center = context->input(2).flat<float>().data();
 
@@ -234,8 +234,8 @@ class NormalizePointsOp : public OpKernel {
     Tensor* out_data = nullptr;
     const TensorShape& shape = context->input(0).shape();
     OP_REQUIRES_OK(context, context->allocate_output(0, shape, &out_data));
-    string& out_str = out_data->flat<string>()(0);
-    out_str.assign(points_buf.begin(), points_buf.end());
+    tstring& out_str = out_data->flat<tstring>()(0);
+    out_str.assign(&points_buf[0], points_buf.size());
   }
 };
 
@@ -251,7 +251,7 @@ class BoundingSphereOp : public OpKernel {
 
     // init the points
     Points pts;
-    pts.set(data_in.flat<string>()(0).data());
+    pts.set(data_in.flat<tstring>()(0).data());
 
     // check the points
     string msg;

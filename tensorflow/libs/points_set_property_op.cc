@@ -57,9 +57,9 @@ class PointsNewOp : public OpKernel {
     // output
     Tensor* tsr = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(0, TensorShape{1}, &tsr));
-    string& out_str = tsr->flat<string>()(0);
+    tstring& out_str = tsr->flat<tstring>()(0);
     const vector<char>& points_buf = point_cloud.get_buffer();
-    out_str.assign(points_buf.begin(), points_buf.end());
+    out_str.assign(&points_buf[0], points_buf.size());
   }
 };
 
@@ -80,7 +80,7 @@ class PointsSetPropertyOp : public OpKernel {
     int channel = data.dim_size(1);
 
     // copy the data out of the input tensor
-    auto points_array = data_in.flat<string>();
+    auto points_array = data_in.flat<tstring>();
     vector<char> points_buf(points_array(0).begin(), points_array(0).end());
 
     // init the points
@@ -117,8 +117,8 @@ class PointsSetPropertyOp : public OpKernel {
     Tensor* out_data = nullptr;
     const TensorShape& shape = data_in.shape();
     OP_REQUIRES_OK(context, context->allocate_output(0, shape, &out_data));
-    string& out_str = out_data->flat<string>()(0);
-    out_str.assign(points_buf.begin(), points_buf.end());
+    tstring& out_str = out_data->flat<tstring>()(0);
+    out_str.assign(&points_buf[0], points_buf.size());
   }
 
  private:

@@ -44,7 +44,7 @@ class OctreeDropOp : public OpKernel {
   void Compute(OpKernelContext* context) override {
     // input
     const Tensor& data_in = context->input(0);
-    const string& octree_in = data_in.flat<string>()(0);
+    const string& octree_in = data_in.flat<tstring>()(0);
     int depth = context->input(1).flat<int>()(0);
     float ratio = context->input(2).flat<float>()(0);
 
@@ -55,8 +55,8 @@ class OctreeDropOp : public OpKernel {
     Tensor* data_out = nullptr;
     OP_REQUIRES_OK(context,
                    context->allocate_output(0, data_in.shape(), &data_out));
-    string& str_out = data_out->flat<string>()(0);
-    str_out.assign(octree_out.begin(), octree_out.end());
+    tstring& str_out = data_out->flat<tstring>()(0);
+    str_out.assign(&octree_out[0], octree_out.size());
   }
 };
 
@@ -70,7 +70,7 @@ class OctreeScanOp : public OpKernel {
     // input
     OctreeParser octree_in;
     const Tensor& data_in = context->input(0);
-    octree_in.set_cpu(data_in.flat<string>()(0).data());
+    octree_in.set_cpu(data_in.flat<tstring>()(0).data());
 
     const Tensor& axis_in = context->input(1);
     auto ptr_in = axis_in.flat<float>().data();
@@ -84,8 +84,8 @@ class OctreeScanOp : public OpKernel {
     Tensor* data_out = nullptr;
     OP_REQUIRES_OK(context,
                    context->allocate_output(0, data_in.shape(), &data_out));
-    string& str_out = data_out->flat<string>()(0);
-    str_out.assign(octree_out.begin(), octree_out.end());
+    tstring& str_out = data_out->flat<tstring>()(0);
+    str_out.assign(&octree_out[0], octree_out.size());
   }
 
  protected:
@@ -104,8 +104,8 @@ class OctreeCastOp : public OpKernel {
     // output
     Tensor* data_out = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(0, {1}, &data_out));
-    string& str_out = data_out->flat<string>()(0);
-    str_out.assign(ptr_in, ptr_in + data_in.NumElements());
+    tstring& str_out = data_out->flat<tstring>()(0);
+    str_out.assign(ptr_in, data_in.NumElements());
   }
 };
 

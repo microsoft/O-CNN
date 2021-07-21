@@ -25,7 +25,7 @@ class OctreeBatchOp : public OpKernel {
   void Compute(OpKernelContext* context) override {
     // input octrees
     const Tensor& data_in = context->input(0);
-    auto octree_buffer = data_in.flat<string>();
+    auto octree_buffer = data_in.flat<tstring>();
     // int batch_size = data_in.shape().dim_size(0);
     int batch_size = data_in.shape().num_elements();
     vector<const char*> octrees_in;

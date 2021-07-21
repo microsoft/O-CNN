@@ -17,4 +17,5 @@ from test_points_property import PointsPropertyTest
 
 if __name__ == "__main__":
   os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-  tf.test.main()
+  with tf.Graph().as_default():
+   tf.test.main()

@@ -31,12 +31,16 @@ class OctreeSamplesOp : public OpKernel {
     OP_REQUIRES_OK(context, context->allocate_output(0, names.shape(), &octrees));
 
     for (int i = 0; i < num; ++i) {
-      string name = names.flat<string>()(i);
-      string& oct = octrees->flat<string>()(i);
+      string name = names.flat<tstring>()(i);
       
       size_t size = 0;
       const char* str = (const char*)octree::get_one_octree(name.c_str(), &size);
-      oct.assign(str, str + size);
+
+//      string& oct = (string&)octrees->flat<tstring>()(i);
+//      oct.assign(str, str + size);
+
+      tstring& oct = octrees->flat<tstring>()(i);
+      oct.assign(str, size);   //.assign(str, str + size);
     }
   }
 };

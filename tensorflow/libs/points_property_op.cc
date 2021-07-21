@@ -29,7 +29,7 @@ class PointsPropertyOp : public OpKernel {
   void Compute(OpKernelContext* context) override {
     // input points
     const Tensor& data_in = context->input(0);
-    auto points_buffer = data_in.flat<string>();
+    auto points_buffer = data_in.flat<tstring>();
     int batch_size = data_in.NumElements();
     vector<PointsParser> points_in(batch_size);
     for (int i = 0; i < batch_size; ++i) {

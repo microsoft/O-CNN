@@ -53,7 +53,7 @@ class PointsToOctreeOp : public OpKernel {
 
     // init the points
     Points point_cloud_;
-    point_cloud_.set(data_in.flat<string>()(0).data());
+    point_cloud_.set(data_in.flat<tstring>()(0).data());
 
     // check the points
     string msg;
@@ -75,8 +75,8 @@ class PointsToOctreeOp : public OpKernel {
     // output
     Tensor* out_data = nullptr;
     OP_REQUIRES_OK(context, context->allocate_output(0, data_in.shape(), &out_data));
-    string& out_str = out_data->flat<string>()(0);
-    out_str.assign(octree_buf.begin(), octree_buf.end());
+    tstring& out_str = out_data->flat<tstring>()(0);
+    out_str.assign(&octree_buf[0], octree_buf.size());
   }
 
  private:

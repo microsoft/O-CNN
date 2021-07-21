@@ -3,12 +3,14 @@ import sys
 import tensorflow as tf
 import subprocess
 import argparse
+print(os.getcwd())
+#os.chdir("libs")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--octree", type=str, required=False,
                     default='../../octree')
 parser.add_argument("--cuda", type=str, required=False,
-                    default='/usr/local/cuda-10.1')
+                    default='/usr/local/cuda-11.2')
 parser.add_argument('--key64', type=str, required=False,
                     default='false')
 parser.add_argument('--cc', type=str, required=False,
@@ -156,7 +158,7 @@ with open("Makefile", "w") as f:
 # make
 if os.path.exists("object"):
   os.system("rm -r object")
-  os.mkdir("object")
+os.mkdir("object")
 os.system("make -j all")
 
 # test

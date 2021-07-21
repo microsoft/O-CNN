@@ -30,8 +30,8 @@ class TFSolver:
     
     total_loss = self.train_tensors[train_names.index('total_loss')]
     solver_param = [total_loss, LRFactory(self.flags)]
-    if gpu_num > 1:
-      solver_param.append(gpu_num)
+    # if gpu_num > 1:
+    #   solver_param.append(gpu_num)
     self.train_op, lr = self.build_solver(*solver_param)
 
     if gpu_num > 1: # average the tensors from different gpus for summaries
@@ -90,6 +90,7 @@ class TFSolver:
 
   def train(self):
     # build the computation graph
+   with tf.Graph().as_default():
     self.build_train_graph()
 
     # checkpoint
