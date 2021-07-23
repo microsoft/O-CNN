@@ -1,11 +1,11 @@
 # Parameters for the airplane
 
 SOLVER:
-  ckpt: 'logs/seg/hrnett1/model/iter_150000.ckpt'
+  ckpt: 'logs/seg/hrnetDgnBx/model/iter_082000.ckpt'
   gpu: 0,
-  logdir: logs/seg/hrnett1
-  max_iter: 150000
-  test_iter: 15876
+  logdir: logs/seg/hrnetDgnBx
+  max_iter: 130000
+  test_iter: 0
   #test_iter: 200
   test_every_iter: 2000
   step_size: (15000, )
@@ -32,7 +32,7 @@ DATA:
     depth: 6
     axis: y 
     node_dis: True
-    location: /mnt/d/bb/tfTest.tfrecords
+    location: /mnt/d/aa/BASFlblbx6Fake/tfTest.tfrecords
     shuffle: 0
     batch_size: 1
     x_alias: data

@@ -55,11 +55,11 @@ def octree_conv1x1(inputs, nout, use_bias=False):
 def octree_conv1x1(inputs, nout, use_bias=False):
   with tf.compat.v1.variable_scope('conv2d_1x1'):
     inputs = tf.squeeze(inputs, axis=[0, 3])   # (1, C, H, 1) -> (C, H)
-    weights = tf.compat.v1.get_variable('weights', shape=[nout, int(inputs.shape[0])],
+    weights = tf.compat.v1.get_variable('weights', shape=[int(nout), int(inputs.shape[0])],
                               dtype=tf.float32, initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"))
     outputs = tf.matmul(weights, inputs)       # (C, H) -> (nout, H)
     if use_bias:
-      bias = tf.compat.v1.get_variable('bias', shape=[nout, 1], dtype=tf.float32,
+      bias = tf.compat.v1.get_variable('bias', shape=[int(nout), 1], dtype=tf.float32,
                              initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"))
       outputs = bias + outputs
     outputs = tf.expand_dims(tf.expand_dims(outputs, axis=0), axis=-1)

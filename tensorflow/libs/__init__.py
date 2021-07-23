@@ -199,7 +199,7 @@ def octree_conv_fast(data, octree, depth, channel, kernel_size=[3], stride=1):
 
   with tf.compat.v1.variable_scope('octree_conv'):
     dim = int(data.shape[1]) * kernel_size[0] * kernel_size[1] * kernel_size[2]
-    kernel = tf.compat.v1.get_variable('weights', shape=[channel, dim], dtype=tf.float32,
+    kernel = tf.compat.v1.get_variable('weights', shape=[int(channel), dim], dtype=tf.float32,
                              initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"))
     col = octree2col(data, octree, depth, kernel_size, stride)
     col = tf.reshape(col, [dim, -1])
@@ -217,7 +217,7 @@ def octree_conv_memory(data, octree, depth, channel, kernel_size=[3], stride=1):
 
   with tf.compat.v1.variable_scope('octree_conv'):
     dim = int(data.shape[1]) * kernel_size[0] * kernel_size[1] * kernel_size[2]
-    kernel = tf.compat.v1.get_variable('weights', shape=[channel, dim], dtype=tf.float32,
+    kernel = tf.compat.v1.get_variable('weights', shape=[int(channel), dim], dtype=tf.float32,
                              initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"))
     conv = _octree_conv(data, kernel, octree, depth, channel, kernel_size, stride)
     if stride == 2:
