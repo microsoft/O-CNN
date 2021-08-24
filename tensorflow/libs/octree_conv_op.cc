@@ -106,7 +106,7 @@ class OctreeConvTF : public OpKernel, public OctreeBaseConv<float> {
     const TensorShape& shape_in = context->input(0).shape();
     int channel_in = shape_in.dim_size(1), height_btm = shape_in.dim_size(2);
     OctreeBaseConv<float>::setup(kernel_size_, stride_, depth_,
-        channel_in, num_output_);
+        channel_in, num_output_, false);
     if (stride_ == 2 && is_deconvolution_layer()) {
       CHECK_EQ(height_btm, this->octree_.info().node_num_nempty(depth_));
     } else {
@@ -133,14 +133,14 @@ class OctreeConvTF : public OpKernel, public OctreeBaseConv<float> {
       this->result_buffer_ = nullptr;
     }
 
-    count = num_elements(this->data_buffer_shape_);
-    if (count != 0) {
-      OP_REQUIRES_OK(ctx,
-          ctx->allocate_temp(DT_FLOAT, TensorShape({ count }), data_buffer));
-      this->data_buffer_ = data_buffer->flat<float>().data();
-    } else {
-      this->data_buffer_ = nullptr;
-    }
+    // count = num_elements(this->data_buffer_shape_);
+    // if (count != 0) {
+    //   OP_REQUIRES_OK(ctx,
+    //       ctx->allocate_temp(DT_FLOAT, TensorShape({ count }), data_buffer));
+    //   this->data_buffer_ = data_buffer->flat<float>().data();
+    // } else {
+    //   this->data_buffer_ = nullptr;
+    // }
 
     vector<int>& ni_cpu = NeighHelper::get_ni(kernel_size_);
     count = ni_cpu.size();
