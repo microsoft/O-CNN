@@ -39,7 +39,7 @@ class PointsParser {
   void rotate(const float angle, const float* axis); // angle in radian
   void rotate(const float* angles); 
   void transform(const float* trans_matrix);
-  void clip(const float* bbmin, const float* bbmax);
+  vector<int> clip(const float* bbmin, const float* bbmax);
   void add_noise(const float std_pt, const float std_nm);
   void normalize(); // translate and scale the points to unit sphere
   void orient_normal(const string axis);

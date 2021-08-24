@@ -150,7 +150,7 @@ void PointsParser::transform(const float* mat) {
   }
 }
 
-void PointsParser::clip(const float* bbmin, const float* bbmax) {
+vector<int> PointsParser::clip(const float* bbmin, const float* bbmax) {
   int npt = info_->pt_num(), npt_in_bbox = 0;
   float* pts = mutable_points();
   vector<int> in_bbox(npt, 0);
@@ -162,7 +162,10 @@ void PointsParser::clip(const float* bbmin, const float* bbmax) {
     npt_in_bbox += in_bbox[i];
   }
 
-  if (npt_in_bbox == npt) return; // early stop
+  if (npt_in_bbox == npt) {       // early stop
+    return in_bbox;
+  }
+
   if (npt_in_bbox == 0) {         // no points
     // just keep one point to avoid the degenerated case
     npt_in_bbox = 1;
@@ -171,7 +174,7 @@ void PointsParser::clip(const float* bbmin, const float* bbmax) {
     for (int i = 0; i < 3; ++i) { p[i] = bbmin[i]; }
   }
 
-  // Just discard the points which are out of the bbox
+  // discard the points which are out of the bbox
   for (int t = 0; t < PointsInfo::kPTypeNum; ++t) {
     auto ptype = static_cast<PointsInfo::PropType>(1 << t);
     int channel = info_->channel(ptype);
@@ -188,6 +191,7 @@ void PointsParser::clip(const float* bbmin, const float* bbmax) {
   }
 
   info_->set_pt_num(npt_in_bbox);
+  return in_bbox;
 }
 
 void PointsParser::add_noise(const float std_pt, const float std_nm) {

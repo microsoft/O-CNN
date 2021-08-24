@@ -41,6 +41,9 @@ class OctreeInfo {
   int node_num(int d) const { return nnum_[d]; }
   int node_num_cum(int d) const { return nnum_cum_[d]; }
   int node_num_nempty(int d) const { return nnum_nempty_[d]; }
+  const int* node_num_ptr() const { return nnum_; }
+  const int* node_nempty_ptr() const { return nnum_nempty_; }
+  const int* node_num_cum_ptr() const { return nnum_cum_; }
   int total_nnum() const { return nnum_cum_[depth_ + 1]; }
   int total_nnum_capacity() const { return nnum_cum_[depth_ + 2]; }
   int content_flags() const { return content_flags_; }

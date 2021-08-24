@@ -1244,7 +1244,8 @@ void Octree::octree2mesh(vector<float>& V, vector<int>& F, int depth_start,
 
     vector<float> pts, normals, pts_ref;
     for (int i = 0; i < num; ++i) {
-      if (node_type(child_d[i]) == kInternelNode && d != depth) continue;
+      if ((node_type(child_d[i]) == kInternelNode && d != depth) ||
+          (node_type(child_d[i]) == kLeaf && d == depth)) continue;
 
       float n[3], pt[3], pt_ref[3];
       node_normal(n, i, d);

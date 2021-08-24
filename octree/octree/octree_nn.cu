@@ -825,6 +825,7 @@ template void memset_gpu<double>(const size_t N, const double alpha, double* Y);
 template void memset_gpu<char>(const size_t N, const char alpha, char* Y);
 template void memset_gpu<int8_t>(const size_t N, const int8_t alpha, int8_t* Y);
 template void memset_gpu<uint8_t>(const size_t N, const uint8_t alpha, uint8_t* Y);
+template void memcpy_gpu<char>(const size_t N, const char* X, char* Y);
 template void memcpy_gpu<int>(const size_t N, const int* X, int* Y);
 template void memcpy_gpu<int64_t>(const size_t N, const int64_t* X, int64_t* Y);
 template void memcpy_gpu<int16_t>(const size_t N, const int16_t* X, int16_t* Y);
@@ -844,6 +845,8 @@ template void pad_backward_gpu<double>(double* X, const int Hx, const int Cx,
     const double* Y, const int Hy, const int* label);
 template void pad_backward_gpu<int>(int* X, const int Hx, const int Cx,
     const int* Y, const int Hy, const int* label);
+template void pad_backward_gpu<uintk>(uintk* X, const int Hx, const int Cx,
+    const uintk* Y, const int Hy, const int* label);
 template void octree2col_gpu<float>(float* data_col, const float* data_octree,
     const int channel, const int height,  const int kernel_sdim, const int stride,
     const int* neigh, const int* ni, const int height_col, const int n);
