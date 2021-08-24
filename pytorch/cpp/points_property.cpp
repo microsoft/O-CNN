@@ -22,21 +22,25 @@ PointsInfo::PropType get_ptype(const string property) {
   return ptype;
 }
 
+vector<float> tensor2vector(const Tensor& data_in) {
+  vector<float> vec;
+  Tensor data = data_in.contiguous();  // !!! make sure the Tensor is contiguous
+  const int64_t num = data.numel();
+  if (num > 0) {
+    const float* ptr = data.data_ptr<float>();
+    vec.assign(ptr, ptr + num);
+  }
+  return vec;
+}
+
 }  // anonymous namespace
 
 Tensor points_new(Tensor pts, Tensor normals, Tensor features, Tensor labels) {
-  auto get_data = [](vector<float>& vec, const Tensor& data_in) {
-    const int64_t num = data_in.numel();
-    if (num > 0) {
-      const float* ptr = data_in.data_ptr<float>();
-      vec.assign(ptr, ptr + num);
-    }
-  };
-  vector<float> pts_in, normals_in, features_in, labels_in;
-  get_data(pts_in, pts);
-  get_data(normals_in, normals);
-  get_data(features_in, features);
-  get_data(labels_in, labels);
+  // input
+  vector<float> pts_in = tensor2vector(pts);
+  vector<float> normals_in = tensor2vector(normals);
+  vector<float> features_in = tensor2vector(features);
+  vector<float> labels_in = tensor2vector(labels);
 
   // create the point cloud
   Points point_cloud;
@@ -55,6 +59,7 @@ Tensor points_set_property(Tensor points_in, Tensor data, string property) {
   CHECK_EQ(data.dim(), 2);
   int num = data.size(0);
   int channel = data.size(1);
+  data = data.contiguous();  // !!! make sure the Tensor is contiguous
 
   // init the points
   Points pts;

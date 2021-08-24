@@ -8,6 +8,25 @@ namespace {
 
 using octree::OctreeBaseConv;
 
+// used for debug
+template <typename dtype>
+void dump_tensor(const Tensor tensor, string filename="") {
+  int dim = tensor.dim();
+  filename  +=  "_shape";
+  for (int j = 0; j < dim; ++j) {
+    filename += "_" + std::to_string(tensor.size(j));
+  }
+
+  std::cout << filename << std::endl;
+
+  Tensor t = tensor.cpu();
+  int n = t.numel();
+  std::ofstream outfile(filename, std::ios::binary);
+  const dtype* ptr = t.data_ptr<dtype>();
+  outfile.write((char*) ptr, n * sizeof(dtype));
+  outfile.close();
+}
+
 class THGpuGemm : public octree::GEMMEngine<float> {
  public:
   virtual void gemm(const bool TransA, const bool TransB, const int M,
@@ -27,11 +46,15 @@ class THGpuGemm : public octree::GEMMEngine<float> {
 
 class OctreeConvTH : public OctreeBaseConv<float> {
  public:
-  explicit OctreeConvTH(int depth, int num_output, vector<int> kernel_size, int stride)
-      : depth_(depth), num_output_(num_output), kernel_size_(kernel_size), stride_(stride) {
+  explicit OctreeConvTH(int depth, int num_output, vector<int> kernel_size,
+                        int stride, bool nempty)
+      : depth_(depth), num_output_(num_output), kernel_size_(kernel_size),
+        stride_(stride), non_empty_(nempty) {
     CHECK_GT(depth_, 0) << "The depth should be larger than 0";
     CHECK_GT(num_output_, 0) << "The num_output should be larger than 0";
-    for (auto k : kernel_size_) { CHECK(0 < k && k < 4) << "Invalide kernel size"; }
+    for (auto k : kernel_size_) {
+      CHECK(0 < k && k < 4) << "Invalide kernel size";
+    }
     CHECK(stride_ == 1 || stride_ == 2) << "Unsupport stride";
   }
 
@@ -44,10 +67,11 @@ class OctreeConvTH : public OctreeBaseConv<float> {
 
     // setup octree conv
     int channel_in = data_in.size(1), height_btm = data_in.size(2);
-    OctreeBaseConv<float>::setup(kernel_size_, stride_, depth_, channel_in,
-                                 num_output_);
-    if (stride_ == 2 && is_deconvolution_layer()) {
-      CHECK_EQ(height_btm, this->octree_.info().node_num_nempty(depth_));
+    OctreeBaseConv<float>::setup(
+        kernel_size_, stride_, depth_, channel_in, num_output_, non_empty_);
+    if ((stride_ == 2 && is_deconvolution_layer()) || non_empty_) {
+      CHECK_EQ(height_btm, this->octree_.info().node_num_nempty(depth_))
+          << ", d: " << depth_ << ", channel_in: " << channel_in;
     } else {
       CHECK_EQ(height_btm, this->octree_.info().node_num(depth_))
           << ", d: " << depth_ << ", channel_in: " << channel_in;
@@ -72,15 +96,6 @@ class OctreeConvTH : public OctreeBaseConv<float> {
       this->result_buffer_ = nullptr;
     }
 
-    count = num_elements(this->data_buffer_shape_);
-    if (count != 0) {
-      Tensor data_buffer = torch::zeros({count}, options);
-      this->data_buffer_ = data_buffer.data_ptr<float>();
-      tmp_tensors.push_back(data_buffer);
-    } else {
-      this->data_buffer_ = nullptr;
-    }
-
     vector<int>& ni_cpu = NeighHelper::get_ni(kernel_size_);
     count = ni_cpu.size();
     if (count != 0) {
@@ -90,6 +105,17 @@ class OctreeConvTH : public OctreeBaseConv<float> {
       this->ni_gpu_ptr_ = ni_ptr;
       tmp_tensors.push_back(ni_gpu);
     }
+
+    if (non_empty_) {
+      this->child_ = octree_.children_gpu(this->workspace_depth_);
+      Tensor t0 = torch::arange(this->child_h_, options.dtype(torch::kInt32));
+      Tensor t1 = torch::zeros(this->ichild_h_, options.dtype(torch::kInt32));
+      this->ichild_ = t1.data_ptr<int>();
+      pad_backward_gpu(t1.data_ptr<int>(), this->ichild_h_, 1,
+                       t0.data_ptr<int>(), this->child_h_, this->child_);
+      tmp_tensors.push_back(t1);
+    }
+
     return tmp_tensors;
   }
 
@@ -98,22 +124,26 @@ class OctreeConvTH : public OctreeBaseConv<float> {
   int num_output_;
   vector<int> kernel_size_;
   int stride_;
+  bool non_empty_;
   THGpuGemm th_gpu_gemm_;
 };
 
 class OctreeConvOp : public OctreeConvTH {
  public:
-  explicit OctreeConvOp(int depth, int num_output, vector<int> kernel_size, int stride)
-      : OctreeConvTH(depth, num_output, kernel_size, stride) {}
+  explicit OctreeConvOp(int depth, int num_output, vector<int> kernel_size,
+                        int stride, bool nempty)
+      : OctreeConvTH(depth, num_output, kernel_size, stride, nempty) {}
 
   Tensor compute(Tensor data_in, Tensor weights, Tensor octree) {
     // init
     this->setup_op(data_in, octree);
     torch::TensorOptions options = data_in.options();
     vector<Tensor> tmp_tensors = this->alloc_temp_memory(options);
-    Tensor data_out = torch::zeros({1, this->top_shape_[1], this->top_shape_[2], 1}, options);
+    Tensor data_out =
+        torch::zeros({1, this->top_shape_[1], this->top_shape_[2], 1}, options);
 
     // get pointers
+    data_in = data_in.contiguous();
     const float* btm_data = data_in.data_ptr<float>();
     const float* weights_data = weights.data_ptr<float>();
     float* top_data = data_out.data_ptr<float>();
@@ -128,10 +158,12 @@ class OctreeConvOp : public OctreeConvTH {
 
 class OctreeConvGradOp : public OctreeConvTH {
  public:
-  explicit OctreeConvGradOp(int depth, int num_output, vector<int> kernel_size, int stride)
-      : OctreeConvTH(depth, num_output, kernel_size, stride) {}
+  explicit OctreeConvGradOp(int depth, int num_output, vector<int> kernel_size,
+                            int stride, bool nempty)
+      : OctreeConvTH(depth, num_output, kernel_size, stride, nempty) {}
 
-  vector<Tensor> compute(Tensor data_in, Tensor weights, Tensor octree, Tensor diff_in) {
+  vector<Tensor> compute(Tensor data_in, Tensor weights, Tensor octree,
+                         Tensor diff_in) {
     // init
     this->setup_op(data_in, octree);
     vector<Tensor> tmp_tensors = this->alloc_temp_memory(data_in.options());
@@ -139,6 +171,8 @@ class OctreeConvGradOp : public OctreeConvTH {
     Tensor weights_out = torch::zeros_like(weights);
 
     // get points
+    data_in = data_in.contiguous();
+    diff_in = diff_in.contiguous();
     auto btm_data = data_in.data_ptr<float>();
     auto weights_data = weights.data_ptr<float>();
     auto top_diff = diff_in.data_ptr<float>();
@@ -156,17 +190,20 @@ class OctreeConvGradOp : public OctreeConvTH {
 
 class OctreeDeconvOp : public OctreeConvTH {
  public:
-  explicit OctreeDeconvOp(int depth, int num_output, vector<int> kernel_size, int stride)
-      : OctreeConvTH(depth, num_output, kernel_size, stride) {}
+  explicit OctreeDeconvOp(int depth, int num_output, vector<int> kernel_size,
+                          int stride, bool nempty)
+      : OctreeConvTH(depth, num_output, kernel_size, stride, nempty) {}
 
   Tensor compute(Tensor data_in, Tensor weights, Tensor octree) {
     // init
     this->setup_op(data_in, octree);
     torch::TensorOptions options = data_in.options();
     vector<Tensor> tmp_tensors = this->alloc_temp_memory(options);
-    Tensor data_out = torch::zeros({1, this->top_shape_[1], this->top_shape_[2], 1}, options);
+    Tensor data_out =
+        torch::zeros({1, this->top_shape_[1], this->top_shape_[2], 1}, options);
 
     // get pointers
+    data_in = data_in.contiguous();
     const float* btm_data = data_in.data_ptr<float>();
     const float* weights_data = weights.data_ptr<float>();
     float* top_data = data_out.data_ptr<float>();
@@ -181,10 +218,12 @@ class OctreeDeconvOp : public OctreeConvTH {
 
 class OctreeDeconvGradOp : public OctreeConvTH {
  public:
-  explicit OctreeDeconvGradOp(int depth, int num_output, vector<int> kernel_size, int stride)
-      : OctreeConvTH(depth, num_output, kernel_size, stride) {}
+  explicit OctreeDeconvGradOp(int depth, int num_output,
+                              vector<int> kernel_size, int stride, bool nempty)
+      : OctreeConvTH(depth, num_output, kernel_size, stride, nempty) {}
 
-  vector<Tensor> compute(Tensor data_in, Tensor weights, Tensor octree, Tensor diff_in) {
+  vector<Tensor> compute(Tensor data_in, Tensor weights, Tensor octree,
+                         Tensor diff_in) {
     // init
     this->setup_op(data_in, octree);
     vector<Tensor> tmp_tensors = this->alloc_temp_memory(data_in.options());
@@ -192,6 +231,8 @@ class OctreeDeconvGradOp : public OctreeConvTH {
     Tensor weights_out = torch::zeros_like(weights);
 
     // get points
+    data_in = data_in.contiguous();
+    diff_in = diff_in.contiguous();
     auto btm_data = data_in.data_ptr<float>();
     auto weights_data = weights.data_ptr<float>();
     auto top_diff = diff_in.data_ptr<float>();
@@ -208,31 +249,35 @@ class OctreeDeconvGradOp : public OctreeConvTH {
   virtual bool is_deconvolution_layer() { return true; }
 };
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // API implementation
 Tensor octree_conv(Tensor data_in, Tensor weights, Tensor octree, int depth,
-                   int num_output, vector<int> kernel_size, int stride) {
-  OctreeConvOp conv_op(depth, num_output, kernel_size, stride);
+                   int num_output, vector<int> kernel_size, int stride,
+                   bool nempty) {
+  OctreeConvOp conv_op(depth, num_output, kernel_size, stride, nempty);
   return conv_op.compute(data_in, weights, octree);
 }
 
 Tensor octree_deconv(Tensor data_in, Tensor weights, Tensor octree, int depth,
-                     int num_output, vector<int> kernel_size, int stride) {
-  OctreeDeconvOp deconv_op(depth, num_output, kernel_size, stride);
+                     int num_output, vector<int> kernel_size, int stride,
+                     bool nempty) {
+  OctreeDeconvOp deconv_op(depth, num_output, kernel_size, stride, nempty);
   return deconv_op.compute(data_in, weights, octree);
 }
 
 vector<Tensor> octree_conv_grad(Tensor data_in, Tensor weights, Tensor octree,
                                 Tensor grad_in, int depth, int num_output,
-                                vector<int> kernel_size, int stride) {
-  OctreeConvGradOp grad_op(depth, num_output, kernel_size, stride);
+                                vector<int> kernel_size, int stride,
+                                bool nempty) {
+  OctreeConvGradOp grad_op(depth, num_output, kernel_size, stride, nempty);
   return grad_op.compute(data_in, weights, octree, grad_in);
 }
 
 vector<Tensor> octree_deconv_grad(Tensor data_in, Tensor weights, Tensor octree,
-                                Tensor grad_in, int depth, int num_output,
-                                vector<int> kernel_size, int stride) {
-  OctreeDeconvGradOp grad_op(depth, num_output, kernel_size, stride);
+                                  Tensor grad_in, int depth, int num_output,
+                                  vector<int> kernel_size, int stride,
+                                  bool nempty) {
+  OctreeDeconvGradOp grad_op(depth, num_output, kernel_size, stride, nempty);
   return grad_op.compute(data_in, weights, octree, grad_in);
 }

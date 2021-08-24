@@ -1,6 +1,5 @@
 import torch
 import ocnn
-import numpy as np
 
 
 names = ['octree_%d' % i for i in range(1, 7)]

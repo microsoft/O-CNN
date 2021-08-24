@@ -1,0 +1,62 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/seg_partnet/bed_pts
+  alias: unet
+  run: train
+  max_epoch: 800
+  test_every_epoch: 20
+  step_size: (400,600)
+  ckpt_num: 20
+
+DATA:
+  train:
+    # octree building
+    depth: 6
+    node_dis: True
+
+    # points transform
+    offset: 0.0    # do not offset points along normal direction
+    normal_axis: y # re-orient normals along y axis
+
+    # data augmentations
+    distort: True
+    angle: (0, 5, 0)
+    interval: (1, 1, 1)
+    scale: 0.25
+    jitter: 0.125
+    uniform: True
+
+    # data loading
+    location: data/partnet_segmentation/data/Bed
+    filelist: data/partnet_segmentation/data/Bed_train_level3.txt
+    batch_size: 32
+    shuffle: True
+
+  test:
+    # octree building
+    depth: 6
+    node_dis: True
+
+    # points transform
+    offset: 0.0    # do not offset points along normal direction
+    normal_axis: y # re-orient normals along y axis
+
+    # no data augmentation
+    distort: False
+
+    # data loading
+    location: data/partnet_segmentation/data/Bed
+    filelist: data/partnet_segmentation/data/Bed_test_level3.txt
+    batch_size: 1
+    shuffle: False
+
+MODEL:
+  name: unet
+  channel: 4
+  nout: 15
+  depth: 6
+
+LOSS:
+  mask: 0
+  num_class: 15
+  point_wise: True

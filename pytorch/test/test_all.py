@@ -8,6 +8,7 @@ from test_octree_property import OctreePropertyTest
 from test_octree_key import OctreeKeyTest
 from test_points_property import PointsPropertyTest
 from test_octree_trilinear import OctreeTrilinearTest
+from test_octree_align import OctreeAlignTest
 
 # Run 16 test in total
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ vector<Tensor> octree_max_pool(Tensor btm_data, Tensor octree, int depth) {
   octree_.set_gpu(octree.data_ptr<uint8_t>());
 
   // btm data
+  btm_data = btm_data.contiguous();
   const float* btm_ptr = btm_data.data_ptr<float>();
   int channel = btm_data.size(1);
   int btm_h = btm_data.size(2);
@@ -38,12 +39,14 @@ Tensor octree_max_unpool(Tensor top_data, Tensor mask, Tensor octree, int depth)
   octree_.set_gpu(octree.data_ptr<uint8_t>());
 
   // top data
+  top_data = top_data.contiguous();
   const float* top_ptr = top_data.data_ptr<float>();
   int channel = top_data.size(1);
   int top_h = top_data.size(2);
   CHECK_EQ(top_h, octree_.info().node_num_nempty(depth - 1));
 
   // mask
+  mask = mask.contiguous();
   const int* mask_ptr = mask.data_ptr<int>();
   CHECK(mask.size(1) == channel && mask.size(2) == top_h);
 
@@ -63,11 +66,13 @@ Tensor octree_mask_pool(Tensor btm_data, Tensor mask, Tensor octree, int depth) 
   octree_.set_gpu(octree.data_ptr<uint8_t>());
 
   // btm data
+  btm_data = btm_data.contiguous();
   const float* btm_ptr = btm_data.data_ptr<float>();
   int channel = btm_data.size(1);
   int btm_h = btm_data.size(2);
 
   // mask
+  mask = mask.contiguous();
   auto mask_ptr = mask.data_ptr<int>();
   int top_h = mask.size(2);
 

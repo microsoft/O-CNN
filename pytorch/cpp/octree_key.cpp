@@ -9,6 +9,7 @@
 // if KEY64 is defined, uintk is uint64
 
 Tensor octree_encode_key(Tensor xyz) {
+  xyz = xyz.contiguous();  // !!! make sure the Tensor is contiguous
   auto ptr_in = xyz.data_ptr<int16_t>();
   int num = xyz.size(0);
   int channel = xyz.size(1);
@@ -27,6 +28,7 @@ Tensor octree_encode_key(Tensor xyz) {
 }
 
 Tensor octree_decode_key(Tensor key) {
+  key = key.contiguous();  // !!! make sure the Tensor is contiguous
   auto ptr_in = key.data_ptr<int64_t>();
   int num = key.size(0);
   CHECK_EQ(key.dim(), 1) << "The dim of input tensor must be 1.";
@@ -43,6 +45,7 @@ Tensor octree_decode_key(Tensor key) {
 }
 
 Tensor octree_xyz2key(Tensor xyz, int depth) {
+  xyz = xyz.contiguous();  // !!! make sure the Tensor is contiguous
   auto ptr_in = xyz.data_ptr<int64_t>();
   int num = xyz.numel();
   CHECK_GE(num, 1) << "The numel of the input tensor must be larger than 1.";
@@ -54,6 +57,7 @@ Tensor octree_xyz2key(Tensor xyz, int depth) {
 }
 
 Tensor octree_key2xyz(Tensor key, int depth) {
+  key = key.contiguous();  // !!! make sure the Tensor is contiguous
   auto ptr_in = key.data_ptr<int64_t>();
   int num = key.numel();
   CHECK_GE(num, 1) << "The numel of the input tensor must be larger than 1.";
@@ -64,14 +68,17 @@ Tensor octree_key2xyz(Tensor key, int depth) {
   return xyz;
 }
 
-Tensor octree_search_key(Tensor key, Tensor octree, int depth, bool is_in_xyz) {
+Tensor octree_search_key(Tensor key, Tensor octree, int depth, bool key_is_xyz,
+                         bool nempty) {
+  key = key.contiguous();
+  octree = octree.contiguous();  // !!! make sure the Tensor is contiguous
   int64_t* src_key = key.data_ptr<int64_t>();
   int src_h = key.numel();
   CHECK_GE(src_h, 1) << "The numel of the input tensor must be larger than 1.";
   torch::TensorOptions options = key.options();
 
   Tensor src_key_tmp;
-  if (is_in_xyz) {
+  if (key_is_xyz) {
     src_key_tmp = torch::zeros_like(key);
     int64_t* tmp = src_key_tmp.data_ptr<int64_t>();
     xyz2key_gpu((uintk*)tmp, (uintk*)src_key, src_h, depth);
@@ -82,6 +89,16 @@ Tensor octree_search_key(Tensor key, Tensor octree, int depth, bool is_in_xyz) {
   octree_.set_gpu(octree.data_ptr<uint8_t>());
   int des_h = octree_.info().node_num(depth);
   const uintk* des_key = octree_.key_gpu(depth);
+
+  Tensor key_tmp;
+  if (nempty) {  // Search the non-empty octree nodes only
+    int top_h = des_h;  // cache old des_h
+    des_h = octree_.info().node_num_nempty(depth); // update des_h
+    key_tmp = torch::zeros({des_h}, options);
+    int64_t* tmp = key_tmp.data_ptr<int64_t>();
+    pad_backward_gpu((uintk*)tmp, des_h, 1, des_key, top_h, octree_.children_gpu(depth));
+    des_key = (const uintk*)tmp;
+  }
 
   Tensor des_key_tmp;
   if (octree_.info().is_key2xyz()) {

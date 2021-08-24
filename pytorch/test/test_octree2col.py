@@ -61,7 +61,7 @@ class Octree2ColTest(unittest.TestCase):
         octree = self.octree.cuda()
         data_in = torch.from_numpy(self.data_in).cuda()
         data_out = ocnn.octree2col(data_in, octree,
-                                   self.depth, kernel_size[j], stride[i])
+                                   self.depth, kernel_size[j], stride[i], False)
 
         data_out = data_out.cpu().detach().numpy()
         self.assertTrue(np.array_equal(data_out, out_gt))
@@ -76,7 +76,7 @@ class Octree2ColTest(unittest.TestCase):
         octree = self.octree.cuda()
         data_in = torch.from_numpy(self.data_in).cuda().requires_grad_()
 
-        params = [data_in, octree, self.depth, kernel_size[j], stride[i]]
+        params = [data_in, octree, self.depth, kernel_size[j], stride[i], False]
         succ = gradcheck(ocnn.octree2col, params, eps=1.0)
         self.assertTrue(succ)
 
@@ -89,8 +89,8 @@ class Octree2ColTest(unittest.TestCase):
       for j in range(len(vi)):
         octree = self.octree.cuda()
         data_in = torch.from_numpy(self.data_in).cuda()
-        data_out = ocnn.nn.octree2colP(data_in, octree,
-                                      self.depth, kernel_size[j], stride[i])
+        data_out = ocnn.nn.octree2col(data_in, octree,
+                                      self.depth, kernel_size[j], stride[i], True)
         data_out = data_out.cpu().detach().numpy()
 
         out_gt = self.forward(kernel_size[j], stride[i], self.idx_maps[vi[j]])
@@ -113,13 +113,13 @@ class Octree2ColTest(unittest.TestCase):
     # octree2colP = octree2col + depad
     for i in range(len(stride)):
       for j in range(len(kernel_size)):
-        out1 = ocnn.octree2col(data1, octree, depth, kernel_size[j], stride[i])
+        out1 = ocnn.octree2col(data1, octree, depth, kernel_size[j], stride[i], False)
         if stride[i] == 1:
           ks, height = out1.size(1), out1.size(2)
           out1 = out1.view(1, -1, height, 1)
           out1 = ocnn.octree_depad(out1, octree, depth)
           out1 = out1.view(channel, ks, -1)
-        out2 = ocnn.octree2colP(data_in2, octree, depth, kernel_size[j], stride[i])
+        out2 = ocnn.octree2col(data_in2, octree, depth, kernel_size[j], stride[i], True)
         
         pesudo_grad = torch.rand(out1.shape, dtype=out1.dtype, device=out1.device)
         out1.backward(pesudo_grad, retain_graph=True)

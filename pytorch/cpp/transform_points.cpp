@@ -34,6 +34,7 @@ vector<float> bounding_sphere(Tensor data_in, string method) {
 }
 
 namespace {
+// TODO: Tensor.clone()
 void setup_transform(Tensor data_in, Tensor& data_out, Points& pts) {
   data_out = torch::zeros_like(data_in);
   uint8_t* out_ptr = data_out.data_ptr<uint8_t>();
@@ -70,7 +71,7 @@ Tensor normalize_points(Tensor data_in, float radius, vector<float> center) {
 }
 
 Tensor transform_points(Tensor data_in, vector<float> angle, vector<float> scale, 
-                        vector<float> jitter, float offset) {
+                        vector<float> jitter, float offset, string normal_axis) {
   // copy the data out of the input tensor
   Tensor data_out;  Points pts;
   setup_transform(data_in, data_out, pts);
@@ -99,11 +100,26 @@ Tensor transform_points(Tensor data_in, vector<float> angle, vector<float> scale
     pts.scale(scale.data());
   }
 
-  // clip the points to the box[-1, 1] ^ 3,
-  const float bbmin[] = {-1.0f, -1.0f, -1.0f};
-  const float bbmax[] = {1.0f, 1.0f, 1.0f};
-  pts.clip(bbmin, bbmax);
+  // orient normal
+  if(!normal_axis.empty()) {
+    pts.orient_normal(normal_axis);
+  }
 
   // output
   return data_out;
+}
+
+vector<Tensor> clip_points(Tensor data_in, vector<float> bbmin, vector<float> bbmax) {
+  // copy the data out of the input tensor
+  Tensor data_out;  Points pts;
+  setup_transform(data_in, data_out, pts);
+
+  // clip the points to the box[-1, 1] ^ 3,
+  const vector<int> inbox_mask_buffer = pts.clip(bbmin.data(), bbmax.data());
+  size_t sz = inbox_mask_buffer.size();
+  Tensor inbox_mask = torch::zeros({(int64_t)sz}, torch::dtype(torch::kInt32));
+  memcpy(inbox_mask.data_ptr<int>(), inbox_mask_buffer.data(), sz*sizeof(int));
+
+  // output
+  return {data_out, inbox_mask};
 }

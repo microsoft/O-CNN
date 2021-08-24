@@ -9,7 +9,7 @@ class Points2Octree:
 
   def __init__(self, depth, full_depth=2, node_dis=False, node_feature=False,
                split_label=False, adaptive=False, adp_depth=4, th_normal=0.1,
-               th_distance=1.0, extrapolate=False, save_pts=False, key2xyz=False,
+               th_distance=2.0, extrapolate=False, save_pts=False, key2xyz=False,
                **kwargs):
     self.depth = depth
     self.full_depth = full_depth
@@ -36,16 +36,23 @@ class NormalizePoints:
   ''' Normalize a point cloud with its bounding sphere
 
   Args: 
-      method: The method used to calculate the bounding sphere, choose from
-              'sphere' (bounding sphere) or 'box' (bounding box).
+      bsphere: The method used to calculate the bounding sphere, choose from
+               'sphere' (bounding sphere) or 'box' (bounding box).
+      radius:  Mannually specify the radius of the bounding sphere, -1 means 
+               that the bounding sphere is not provided.
   '''
 
-  def __init__(self, method='sphere'):
-    self.method = method
+  def __init__(self, bsphere='sphere', radius=-1.0, center=(-1.0,), **kwargs):
+    self.bsphere = bsphere
+    self.radius = radius
+    self.center = center
 
   def __call__(self, points):
-    bsphere = ocnn.bounding_sphere(points, self.method)
-    radius, center = bsphere[0], bsphere[1:]
+    if self.radius < 0:
+      bsphere = ocnn.bounding_sphere(points, self.bsphere)
+      radius, center = bsphere[0], bsphere[1:]
+    else:
+      radius, center = self.radius, self.center
     points = ocnn.normalize_points(points, radius, center)
     return points
 
@@ -58,7 +65,7 @@ class TransformPoints:
 
   def __init__(self, distort, angle=[0, 180, 0], scale=0.25, jitter=0.25,
                offset=0.0, angle_interval=[1, 1, 1], uniform_scale=False,
-               **kwargs):
+               normal_axis='', **kwargs):
     self.distort = distort
     self.angle = angle
     self.scale = scale
@@ -66,8 +73,9 @@ class TransformPoints:
     self.offset = offset
     self.angle_interval = angle_interval
     self.uniform_scale = uniform_scale
+    self.normal_axis = normal_axis
 
-  def __call__(self, points):    
+  def __call__(self, points):
     rnd_angle = [0.0, 0.0, 0.0]
     rnd_scale = [1.0, 1.0, 1.0]
     rnd_jitter = [0.0, 0.0, 0.0]
@@ -80,45 +88,61 @@ class TransformPoints:
 
       minval, maxval = 1 - self.scale, 1 + self.scale
       rnd_scale = np.random.uniform(low=minval, high=maxval, size=(3)).tolist()
-      if self.uniform_scale:  rnd_scale = [rnd_scale[0]]*3
+      if self.uniform_scale:
+        rnd_scale = [rnd_scale[0]]*3
 
       minval, maxval = -self.jitter, self.jitter
       rnd_jitter = np.random.uniform(low=minval, high=maxval, size=(3)).tolist()
 
     # The range of points is [-1, 1]
-    points = ocnn.transform_points(points, rnd_angle, rnd_scale, rnd_jitter, self.offset)
-    return points
+    points = ocnn.transform_points(
+        points, rnd_angle, rnd_scale, rnd_jitter, self.offset, self.normal_axis)
+    # clip the points into [-1, 1]
+    points, inbox_mask = ocnn.clip_points(points, [-1.0]*3, [1.0]*3)
+    return points, inbox_mask
 
 
 class TransformCompose:
-  def __init__(self, flags, return_pts=False):
+  def __init__(self, flags):
     self.flags = flags
-    self.return_pts = return_pts
-  
-  def __call__(self, points):
-    points = NormalizePoints('sphere')(points)
-    points = TransformPoints(**self.flags)(points)
-    octree = Points2Octree(**self.flags)(points)
-    return octree if not self.return_pts else (octree, points)
-    
+    self.normalize_points =  NormalizePoints(**flags)
+    self.transform_points = TransformPoints(**flags)
+    self.points2octree = Points2Octree(**flags)
 
-class CollateOctrees:
-  def __init__(self, return_pts=False):
-    self.return_pts = return_pts
+  def __call__(self, points, idx):
+    # Normalize the points into one unit sphere in [-1, 1]
+    points = self.normalize_points(points)
 
-  def __call__(self, batch):
-    ''' Merge a batch of octrees into one super octree
-    '''
-    assert type(batch) == list 
-    octrees = [b[0] for b in batch]
-    octree = ocnn.octree_batch(octrees)
-    labels = torch.tensor([b[1] for b in batch])
+    # Apply the general transformations provided by ocnn.
+    # The augmentations including rotation, scaling, and jittering, and the
+    # input points out of [-1, 1] are clipped
+    points, inbox_mask = self.transform_points(points)
 
-    outputs = [octree, labels]
-    if self.return_pts:
-      points = [b[2] for b in batch]
-      outputs.append(points)
-    return outputs
+    # Convert the points in [-1, 1] to an octree
+    octree = self.points2octree(points)
+
+    return {'octree': octree, 'points': points, 'inbox_mask': inbox_mask}
 
 
-collate_octrees = CollateOctrees(return_pts=False)
+def collate_octrees(batch):
+  assert type(batch) == list
+
+  outputs = {}
+  for key in batch[0].keys():
+    outputs[key] = [b[key] for b in batch]
+
+    # Merge a batch of octrees into one super octree
+    if 'octree' in key:
+      outputs[key] = ocnn.octree_batch(outputs[key])
+
+    # Convert the labels to a Tensor
+    if 'label' in key:
+      outputs['label'] = torch.tensor(outputs[key])
+
+    # # Concat the inbox_mask
+    # if 'inbox_mask' in key:
+    #   pt_num = [mk.numel() for mk in outputs['inbox_mask']]
+    #   outputs['pt_num'] = torch.tensor(pt_num)
+    #   outputs['inbox_mask'] = torch.cat(outputs['inbox_mask'], dim=0)
+
+  return outputs

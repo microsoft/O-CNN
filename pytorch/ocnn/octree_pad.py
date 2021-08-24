@@ -48,7 +48,7 @@ octree_depad = OctreeDepadFunction.apply
 # module
 class OctreePad(nn.Module):
   def __init__(self, depth, val=0.0):
-    super(OctreePad, self).__init__()
+    super().__init__()
     self.depth = depth
     self.val = val
 
@@ -61,7 +61,7 @@ class OctreePad(nn.Module):
 
 class OctreeDepad(nn.Module):
   def __init__(self, depth):
-    super(OctreeDepad, self).__init__()
+    super().__init__()
     self.depth = depth
 
   def forward(self, data_in, octree):
