@@ -7,7 +7,7 @@ from plyfile import PlyData, PlyElement
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--path_in', type=str, default='data/scannet/ScanNet_data')
-parser.add_argument('--path_out', type=str, default='data/scannet/scans')
+parser.add_argument('--path_out', type=str, default='data/scannet')
 parser.add_argument('--path_pred', type=str, default='logs/scannet/D9_2cm_eval')
 parser.add_argument('--filelist', type=str, default='scannetv2_test_new.txt')
 parser.add_argument('--run', type=str, default='generate_output_seg')
@@ -27,6 +27,24 @@ class_ids = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
              12, 14, 16, 24, 28, 33, 34, 36, 39)
 label_dict = dict(zip(class_ids, np.arange(0, 21)))
 ilabel_dict = dict(zip(np.arange(0, 21), class_ids))
+
+
+def download_filelists():
+  path_out = args.path_out
+  zip_file = os.path.join(path_out, 'filelist.zip')
+  if not os.path.exists(path_out):
+    os.makedirs(path_out)
+
+  # download
+  url = 'https://www.dropbox.com/s/aeizpy34zhozrcw/scannet_filelist.zip?dl=0'
+  cmd = 'wget %s -O %s' % (url, zip_file)
+  print(cmd)
+  os.system(cmd)
+
+  # unzip
+  cmd = 'unzip %s -d %s' % (zip_file, path_out)
+  print(cmd)
+  os.system(cmd)
 
 
 def read_ply(filename, compute_normal=True):

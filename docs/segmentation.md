@@ -107,11 +107,11 @@ which consists of pooling and unpooling layers.
    `pytorch/projects/dataset`:
     ```shell
     python seg_shapenet.py 
-    ln -s `pwd`/../script/dataset/shapenet_segmentation `pwd`/../../pytorch/projects/dataset
+    ln -s `pwd`/../script/dataset/shapenet_segmentation `pwd`/../../pytorch/projects/data
     ```
 
 3. Change the working directory to `pytorch/projects`. Run the following script
    to train the network. 
     ```shell
-    python shapenet_seg.py --config configs/shapenet_seg.yaml
+    python segmentation.py --config configs/seg_shapenet.yaml
     ```

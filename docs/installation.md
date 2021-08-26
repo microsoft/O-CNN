@@ -87,16 +87,26 @@ commands: `pip install -U gast==0.2.2 numpy==1.16.4`.
 
 The code has been tested with Ubuntu 16.04 and PyTorch 1.6.0.
 
-1. Install PyTorch and relevent packages with the following commands:
-   ```shell
-   conda create --name pytorch-1.6.0 python=3.7
-   conda activate pytorch-1.6.0
-   conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch
-   conda install tqdm yacs -c conda-forge
-   ```
+1. Enter the subfolder `pytorch`, and install PyTorch and relevant packages with
+   the following commands:
+    ```shell
+    conda create --name pytorch-1.7.0 python=3.7
+    conda activate pytorch-1.7.0
+    conda install pytorch==1.7.0 torchvision==0.8.0 cudatoolkit=10.2 -c pytorch
+    pip install -r requirements.txt
+    ```
+
+    The code is also tested with the following pytorch version:
+    - `pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1`
+    - `pytorch==1.9.0 torchvision cudatoolkit=11.1 `
+    <!--
+    - `pytorch==1.8.0 torchvision==0.9.0 cudatoolkit=11.1` conda  failed
+    - `pytorch/pytorch:1.7.0-cuda11.0-cudnn8-devel`        docker failed
+    - `pytorch/pytorch:1.6.0-cuda10.1-cudnn7-devel`        docker succeed
+    -->
+
 2. Build O-CNN under PyTorch.
    ```shell
-   cd pytorch
    python setup.py install --build_octree
    ```
 

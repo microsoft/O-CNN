@@ -1,10 +1,10 @@
 SOLVER:
   gpu: 0,
   run: train
-  logdir: logs/scannet/D8_4cm
-  max_epoch: 400
+  logdir: logs/scannet/D9_2cm
+  max_epoch: 600
   test_every_epoch: 10
-  weight_decay: 0.0005
+  weight_decay: 0.0001
 
   # learning rate
   lr: 0.05

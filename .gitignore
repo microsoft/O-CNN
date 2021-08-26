@@ -22,3 +22,4 @@ __pycache__
 log
 ae_output
 pytorch/projects/logs
+pytorch/projects/data

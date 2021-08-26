@@ -155,19 +155,52 @@ the data automatically.
 
 ## O-CNN on PyTorch
 
-1. Data preparation. Change the working directory to `O-CNN/pytorch/projects`
-   and follow the instructions [above](classification.md#o-cnn-on-tensorflow) to
-   the 3rd step. Place the preprocesed points files into the folder
-   `dataset/ModelNet40.points`.
+### Prepare the point cloud for ModelNet40   
+1. Change the working directory to `pytorch/projects`. Run the following command
+   to download [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip)
+   dataset and unzip it to the folder `dataset/ModelNet40` via the following
+   command:
+    ```
+    python tools/modelnet.py --run download_m40
+    ```
 
-2. Run the following command to train the network.
-   ```
-   python classification.py --config configs/m40_cls.yaml
+2. Convert triangle meshes (in `off` format) to point clouds (in `points` format)
+   with the [virtual_scanner](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
+   This process can be automatically executed by the following command.
+   Remember to provide actual `<The path of the virtual_scanner>` to run the command.
+    ```shell
+    python tools/modelnet.py --run m40_convert_mesh_to_points \
+                             --scanner <The path of the virtual_scanner>
+    ```
+
+3. The generated point clouds are very dense, and if you would like to save disk
+   spaces, you can optionally run the following command to simplify the point cloud.
+    ```shell
+    python tools/modelnet.py --run m40_simplify_points 
+    ```
+   We also provide the converted `point clouds` for convenience. Run the
+   following command to download the zip file
+   [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0).
+   ```shell
+   python tools/modelnet.py --run download_m40_points
    ```
 
-3. To train a deep Resnet, run the following command.
+4. Generate the filelists. 
+   ```shell
+   python tools/modelnet.py --run generate_points_filelist
    ```
-   python classification.py --config configs/m40_cls.yaml \
-                            SOLVER.logdir logs/m40/0301_resnet \
+
+### Train a classification with Pytorch-based O-CNN
+
+
+1. Run the following command to train the network.
+   ```
+   python classification.py --config configs/cls_m40.yaml
+   ```
+
+2. To train a deep ResNet, run the following command.
+   ```
+   python classification.py --config configs/cls_m40.yaml \
+                            SOLVER.logdir logs/m40/resnet \
                             MODEL.name resnet
    ```
