@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--octree", type=str, required=False,
                     default='../../octree')
 parser.add_argument("--cuda", type=str, required=False,
-                    default='/usr/local/cuda-11.2')
+                    default='/usr/local/cuda-11.4')
 parser.add_argument('--key64', type=str, required=False,
                     default='false')
 parser.add_argument('--cc', type=str, required=False,
