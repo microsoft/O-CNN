@@ -1,0 +1,68 @@
+SOLVER:
+  gpu: 0,
+  run: train
+  logdir: logs/scannet/D9_2cm
+  max_epoch: 600
+  test_every_epoch: 10
+  weight_decay: 0.0001
+
+  # learning rate
+  lr: 0.05
+  lr_type: poly
+  step_size: (200,300)  # has no effect for `poly`
+
+DATA:
+  train:
+    name: scannet
+
+    # octree building
+    depth: 8
+    node_dis: True
+    offset: 0.0
+
+    # data augmentations
+    distort: True
+    angle: (0, 0, 180)
+    scale: 0.1
+    jitter: 0.1
+    uniform: True
+
+    # data loading
+    location: data/scannet/train
+    filelist: data/scannet/scannetv2_train_new.txt
+    batch_size: 4
+    shuffle: True
+    in_memory: False
+
+  test:
+    name: scannet
+
+    # octree building
+    depth: 8
+    node_dis: True
+    offset: 0.0
+
+    # data augmentations
+    distort: False  # no data augmentation
+
+    # data loading
+    location: data/scannet/train
+    filelist: data/scannet/scannetv2_val_new.txt
+    batch_size: 1
+    shuffle: False
+    in_memory: False
+
+MODEL:
+  name: unet
+  channel: 7
+  nout: 21
+  depth: 8
+  nempty: True
+  interp: nearest
+  sync_bn: False
+  use_checkpoint: False
+
+LOSS:
+  mask: 0
+  point_wise: True
+  num_class: 21

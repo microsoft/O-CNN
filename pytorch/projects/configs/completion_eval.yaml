@@ -1,0 +1,31 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/completion/skip_connections_test
+  ckpt: logs/completion/skip_connectinos_07191553/checkpoints/model_00200.pth
+  run: evaluate
+
+
+DATA:
+  test:
+    name: completion
+    distort: False
+    location: data/ocnn_completion/test.scans.points
+    filelist: data/ocnn_completion/filelist_test_scans.txt
+    batch_size: 1
+    depth: 6
+    full_depth: 2
+    offset: 0.0
+    node_dis: True
+    split_label: True
+    radius: 64.0
+    center: (64.0,64.0,64.0)
+    scan: False
+    shuffle: False
+
+
+MODEL:
+  channel: 4
+  depth: 6
+  nout: 4
+  full_depth: 2
+  skip_connections: True

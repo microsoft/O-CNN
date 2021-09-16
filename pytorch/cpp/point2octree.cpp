@@ -9,10 +9,11 @@ Tensor points2octree(Tensor points, int depth, int full_depth, bool node_dis,
   // init the points
   Points point_cloud;
   point_cloud.set(points.data_ptr<uint8_t>());
-  // // check the points
-  // string msg;
-  // bool succ = point_cloud.info().check_format(msg);
-  // CHECK(succ) << msg;
+  
+  // check the points
+  string msg;
+  bool succ = point_cloud.info().check_format(msg);
+  CHECK(succ) << msg;
 
   // init the octree info
   OctreeInfo octree_info;

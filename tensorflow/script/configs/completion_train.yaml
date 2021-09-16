@@ -12,7 +12,6 @@ SOLVER:
 DATA:
   train:
     dtype: points
-    depth: 6
     distort: False
     location: dataset/ocnn_completion/completion_train_points.tfrecords
     camera: dataset/ocnn_completion/completion_train_points.camera_path.dict
@@ -21,11 +20,12 @@ DATA:
     offset: 0.0
     node_dis: True
     split_label: True
+    x_alias: data
+    y_alias: index
 
   # no testing data here, use the completion_test.yaml for testing
   test:
     dtype: points
-    depth: 6
     distort: False
     location: dataset/ocnn_completion/completion_train_points.tfrecords
     batch_size: 16
@@ -33,6 +33,8 @@ DATA:
     offset: 0.0
     node_dis: True
     split_label: True
+    x_alias: data
+    y_alias: index
 
 
 MODEL:

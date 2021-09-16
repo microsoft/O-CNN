@@ -1,11 +1,10 @@
 SOLVER:
   gpu: 0,
-  logdir: logs/m40/1011_lenet
+  logdir: logs/m40/m40
   run: train
-  max_iter: 160000
-  test_iter: 77
-  test_every_iter: 2000
-  step_size: (40000,)
+  max_epoch: 300
+  test_every_epoch: 5
+  step_size: (120,180,240)
   ckpt_num: 20
 
 DATA:
@@ -16,14 +15,18 @@ DATA:
     interval: (1, 1, 1)   
     scale: 0.25
     jitter: 0.125
-    location: dataset/ModelNet40.points
+    location: data/ModelNet40/ModelNet40.points
+    filelist: data/ModelNet40/m40_train_points_list.txt
     batch_size: 32
+    shuffle: True
 
   test: 
     distort: False
     depth: 5
-    location: dataset/ModelNet40.points
+    location: data/ModelNet40/ModelNet40.points
+    filelist: data/ModelNet40/m40_test_points_list.txt
     batch_size: 32
+    shuffle: False
 
 MODEL:
   name: lenet
@@ -33,4 +36,3 @@ MODEL:
 
 LOSS:
   num_class: 40
-  weight_decay: 0.0005

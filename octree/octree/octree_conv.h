@@ -13,11 +13,13 @@ template <typename Dtype>
 class OctreeBaseConv {
  public:
   explicit OctreeBaseConv(int max_size = 256 * 1024 * 1024)
-    : MAX_SIZE(max_size), engine_cpu_(nullptr), engine_gpu_(nullptr) {}
+      : MAX_SIZE(max_size), engine_cpu_(nullptr), engine_gpu_(nullptr),
+        nempty_(false), child_(nullptr), ichild_(nullptr) {}
   void setup(const vector<int>& kernel_size, const int stride,
-      const int curr_depth, const int channel_in, const int channel_out);
-  // after setup() and before reshpae(), 
-  // please set engine_cpu/gpu_,  octree_ and ni_gpu_ptr_
+      const int curr_depth, const int channel_in, const int channel_out,
+      const bool nempty = false);
+  // !!! Please set engine_cpu/gpu_, octree_ and ni_gpu_ptr_
+  // after calling setup() and before reshpae(),
   void reshape();
 
  protected:
@@ -40,11 +42,16 @@ class OctreeBaseConv {
   void weight_gpu_gemm(Dtype* weights_diff, const Dtype* bottom_data,
       const Dtype* top_diff);
 
+  void octree2col_cpu_wrapper(Dtype* workspace, const Dtype* bottom_data, int n);
+  void col2octree_cpu_wrapper(const Dtype* workspace, Dtype* bottom_data, int n);
+  void octree2col_gpu_wrapper(Dtype* workspace, const Dtype* bottom_data, int n);
+  void col2octree_gpu_wrapper(const Dtype* workspace, Dtype* bottom_data, int n);
+
  protected:
   int stride_;
   vector<int> kernel_size_;
   int kernel_dim_;
-  int kernel_sdim_; // spatial dim of the kernel
+  int kernel_sdim_;  // spatial dim of the kernel
   bool is_1x1_;
 
   // input channel & output channel
@@ -59,19 +66,17 @@ class OctreeBaseConv {
   OctreeParser octree_;
 
   int workspace_n_;
-  int workspace_ha_;	// actual worksapce h
-  int workspace_h_;	  // ideal workspace h
-  int workspace_depth_;
+  int workspace_ha_;    // actual worksapce h, the height of `col` data
+  int workspace_h_;     // ideal  workspace h
+  int workspace_depth_; // the depth value used for octree2col
 
   vector<int> top_shape_;
   vector<int> weights_shape_;
   vector<int> workspace_shape_;
-  vector<int> data_buffer_shape_;
   vector<int> result_buffer_shape_;
 
   Dtype* workspace_;
-  Dtype* data_buffer_;
-  Dtype* result_buffer_;
+  Dtype* result_buffer_;  // hold the temporary result of octree2col
 
   const int* ni_cpu_ptr_; // hold cpu data from NeighHelper::get_ni(kernel_size_)
   const int* ni_gpu_ptr_; // hold gpu data from NeighHelper::get_ni(kernel_size_)
@@ -80,6 +85,15 @@ class OctreeBaseConv {
 
   GEMMEngine<Dtype>* engine_cpu_;
   GEMMEngine<Dtype>* engine_gpu_;
+
+  bool nempty_;          // perform convolution on non-empty voxels
+
+  // used for octree2col and col2octree on non-empty voxels
+  int octree_h_;         // the height of octree data
+  int child_h_;
+  int ichild_h_;
+  const int* child_;
+  const int* ichild_;
 };
 
 }  // namespace octree

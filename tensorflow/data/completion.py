@@ -20,7 +20,7 @@ def download_point_clouds():
   # download via wget
   if not os.path.exists(root_folder):
     os.makedirs(root_folder)
-  url = 'https://www.dropbox.com/s/y5ljm2bs8649j3p/ocnn_completion.zip?dl=0'
+  url = 'https://www.dropbox.com/s/z2x0mw4ai18f855/ocnn_completion.zip?dl=0'
   cmd = 'wget %s -O %s.zip' % (url, root_folder)
   print(cmd)
   os.system(cmd)

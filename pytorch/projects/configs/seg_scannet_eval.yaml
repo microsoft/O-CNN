@@ -1,0 +1,37 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/scannet/D9_2cm_eval
+  run: evaluate
+  eval_epoch: 72
+  ckpt: logs/scannet/D9_2cm_all/checkpoints/00600.model.pth 
+
+DATA:
+  test:
+    name: scannet
+
+    # octree building
+    depth: 9
+    node_dis: True
+    offset: 0.0
+
+    # data augmentations
+    distort: True  # no data augmentation
+    angle: (0, 0, 180)
+    scale: 0.1
+    jitter: 0.1
+    uniform: True
+
+    location: data/scannet/test
+    filelist: data/scannet/scannetv2_test_new.txt
+    batch_size: 1
+    shuffle: False
+    in_memory: False
+    # num_workers: 0
+
+MODEL:
+  name: unet
+  channel: 7
+  nout: 21
+  depth: 9
+  nempty: True
+  interp: nearest

@@ -1,0 +1,52 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/completion/skip_connectinos
+  run: train
+  max_epoch: 200
+  test_every_epoch: 10
+  step_size: (100,150)
+  ckpt_num: 20
+
+
+DATA:
+  train:
+    name: completion
+    distort: False
+    location: data/ocnn_completion/shape.points
+    filelist: data/ocnn_completion/filelist_train.txt
+    camera_path: data/ocnn_completion/completion_train_points.camera_path.dict
+    batch_size: 16
+    depth: 6
+    offset: 0.0
+    full_depth: 2
+    node_dis: True
+    split_label: True
+    radius: 64.0
+    center: (64.0,64.0,64.0)
+    shuffle: True
+    # num_workers: 0
+
+  test:
+    name: completion
+    distort: False
+    location: data/ocnn_completion/shape.points
+    filelist: data/ocnn_completion/filelist_test.txt
+    camera_path: data/ocnn_completion/completion_train_points.camera_path.dict
+    batch_size: 16
+    depth: 6
+    offset: 0.0
+    full_depth: 2
+    node_dis: True
+    split_label: True
+    radius: 64.0
+    center: (64.0,64.0,64.0)
+    shuffle: False
+    # num_workers: 0
+
+
+MODEL:
+  channel: 4
+  depth: 6
+  nout: 4
+  full_depth: 2
+  skip_connections: True

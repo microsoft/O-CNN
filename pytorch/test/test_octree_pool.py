@@ -27,7 +27,7 @@ class OctreePoolTest(unittest.TestCase):
     # forward
     octree = octree.to('cuda')
     data_in = torch.from_numpy(data).to('cuda').requires_grad_()
-    outputs, mask_out = ocnn.OctreeMaxPool(depth)(data_in, octree)
+    outputs, mask_out = ocnn.OctreeMaxPool(depth, return_indices=True)(data_in, octree)
 
     # backward
     pesudo_grad = torch.from_numpy(data).to('cuda')

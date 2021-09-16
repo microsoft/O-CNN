@@ -10,7 +10,7 @@ void NeighHelper::init_neigh_index() {
     { "331", 6 }, { "313", 7 }, { "133", 8 } };
 
   const vector<vector<int> > vec{ {} /* 333, 27 */, { 13 } /* 111, 1 */,
-    { 13, 14, 16, 17, 22, 23, 25, 26 } /* 222, 8 */,
+    { 13, 14, 16, 17, 22, 23, 25, 26 } /* 222, 8, 8 octants */,
     {  4, 13, 22 } /* 311, 3 */,
     { 10, 13, 16 } /* 131, 3 */,
     { 12, 13, 14 } /* 113, 3 */,
@@ -141,19 +141,19 @@ void resize_with_last_val(vector<Dtype>& vec, const int size) {
 
 
 template <typename Dtype>
-void memset_cpu(const int N, const Dtype alpha, Dtype* Y) {
+void memset_cpu(const size_t N, const Dtype alpha, Dtype* Y) {
   if (alpha == 0) {
     memset(Y, 0, sizeof(Dtype) * N);
     return;
   }
-  for (int i = 0; i < N; ++i) {
+  for (size_t i = 0; i < N; ++i) {
     Y[i] = alpha;
   }
 }
 
 
 template <typename Dtype>
-void memcpy_cpu(const int N, const Dtype* X, Dtype* Y) {
+void memcpy_cpu(const size_t N, const Dtype* X, Dtype* Y) {
   if (X != Y && N > 0) {
     memcpy(Y, X, sizeof(Dtype) * N);
   }
@@ -240,6 +240,64 @@ void col2octree_cpu(const Dtype* data_col, Dtype* data_octree,
   }
 }
 
+
+template <typename Dtype>
+void octree2colP_cpu(Dtype* data_col, const Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n) {
+  for (int c = 0; c < channel; ++c) {
+    for (int k = 0; k < kernel_sdim; ++k) {
+      int h_start = n * height_col;
+      int i_start = (c * kernel_sdim + k) * height_col - h_start;
+      for (int h = h_start; h < h_start + height_col; ++h) {
+        // boundary condition
+        if (h >= height) {
+          data_col[i_start + h] = Dtype(0);
+          continue;
+        }
+        // neighborhood searching
+        const int hp = ichild[h];
+        const int index = stride == 2 ? (h << 6) + ni[k] :
+            (hp >> 3 << 6) + ni[(hp % 8) * kernel_sdim + k];
+        int p = neigh[index];
+        if (p >= 0) { p = child[p]; }
+        // assign values
+        data_col[i_start + h] =
+            p < 0 ? Dtype(0) : data_octree[c * octree_h + p];
+      }
+    }
+  }
+}
+
+template <typename Dtype>
+void col2octreeP_cpu(const Dtype* data_col, Dtype* data_octree, const int channel, 
+    const int height, const int octree_h, const int kernel_sdim, const int stride, 
+    const int* neigh, const int* ni, const int* child, const int* ichild, 
+    const int height_col, const int n) {
+  // set data_octree to zero ONCE when n ==0
+  if (n == 0) { memset_cpu(channel * octree_h, Dtype(0), data_octree); }
+  for (int c = 0; c < channel; ++c) {
+    for (int k = 0; k < kernel_sdim; ++k) {
+      int h_start = n * height_col;
+      int i_start = (c * kernel_sdim + k) * height_col - h_start;
+      for (int h = h_start; h < h_start + height_col; ++h) {
+        // boundary condition
+        if (h >= height) continue;
+        // neighborhood searching
+        const int hp = ichild[h];
+        const int index = stride == 2 ? (h << 6) + ni[k] :
+            (hp >> 3 << 6) + ni[(hp % 8) * kernel_sdim + k];
+        int p = neigh[index];
+        if (p >= 0) { p = child[p]; }
+        // assign values
+        if (p >= 0) { data_octree[c * octree_h + p] += data_col[i_start + h]; }          
+      }
+    }
+  }
+}
+
+
 template<typename Dtype>
 void octree_max_pool_cpu(Dtype* top_data, int top_h, int* mask,
     const Dtype* btm_data, int btm_h, int channel) {
@@ -322,16 +380,17 @@ void calc_neigh_cpu(int* neigh_split, const int* neigh,
 }
 
 void calc_neigh_cpu(int* neigh, const int depth, const int batch_size) {
-  uintk node_num = 1 << 3 * depth;
+  const uintk bit = 1;
+  uintk node_num = bit << 3 * depth;
   const uintk  bound = 1 << depth;
   for (uintk n = 0; n < batch_size; ++n) {
     for (uintk i = 0; i < node_num; i += 8) {
       // key to xyz
       uintk x0 = 0, y0 = 0, z0 = 0;
       for (uintk d = 0; d < depth; d++) {
-        x0 |= (i & (1 << (3 * d + 2))) >> (2 * d + 2);
-        y0 |= (i & (1 << (3 * d + 1))) >> (2 * d + 1);
-        z0 |= (i & (1 << (3 * d + 0))) >> (2 * d + 0);
+        x0 |= (i & (bit << (3 * d + 2))) >> (2 * d + 2);
+        y0 |= (i & (bit << (3 * d + 1))) >> (2 * d + 1);
+        z0 |= (i & (bit << (3 * d + 0))) >> (2 * d + 0);
       }
 
       for (uintk x = 0; x < 4; ++x) {
@@ -386,15 +445,16 @@ void generate_key_cpu(Dtype* key_child, const Dtype* key, const int* child,
 template <typename Dtype>
 void generate_key_cpu(Dtype* key, const int depth, const int batch_size) {
   typedef typename KeyTrait<Dtype>::uints T;
-  int node_num = 1 << 3 * depth;
+  const Dtype bit = 1;
+  int node_num = bit << 3 * depth;
   for (int n = 0; n < batch_size; ++n) {
     for (int k = 0; k < node_num; ++k) {
       Dtype xyz = 0;
       T* ptr = reinterpret_cast<T*>(&xyz);
       for (int d = 0; d < depth; d++) {
-        ptr[0] |= (k & (1 << (3 * d + 2))) >> (2 * d + 2);
-        ptr[1] |= (k & (1 << (3 * d + 1))) >> (2 * d + 1);
-        ptr[2] |= (k & (1 << (3 * d + 0))) >> (2 * d + 0);
+        ptr[0] |= (k & (bit << (3 * d + 2))) >> (2 * d + 2);
+        ptr[1] |= (k & (bit << (3 * d + 1))) >> (2 * d + 1);
+        ptr[2] |= (k & (bit << (3 * d + 0))) >> (2 * d + 0);
       }
       ptr[3] = n;
       key[n * node_num + k] = xyz;
@@ -503,11 +563,11 @@ void compute_key(Dtype& key, const Dtype* pt, const int depth) {
 template<typename Dtype>
 void compute_pt(Dtype* pt, const Dtype& key, const int depth) {
   for (int i = 0; i < 3; pt[i++] = 0u);
-
+  const Dtype bit = 1;
   for (int i = 0; i < depth; i++) {
     for (int j = 0; j < 3; j++) {
       // bit mask
-      Dtype mask = 1u << (3 * i + 2 - j);
+      Dtype mask = bit << (3 * i + 2 - j);
       // put the bit to position i
       pt[j] |= (key & mask) >> (2 * i + 2 - j);
     }
@@ -595,16 +655,17 @@ void key2xyz(Dtype1* xyz, const Dtype2 key, const int depth) {
 // Explicit instantiation
 template void resize_with_last_val<int>(vector<int>& vec, const int sz);
 template void resize_with_last_val<float>(vector<float>& vec, const int size);
-template void memset_cpu<int>(const int N, const int alpha, int* Y);
-template void memset_cpu<float>(const int N, const float alpha, float* Y);
-template void memset_cpu<double>(const int N, const double alpha, double* Y);
-template void memset_cpu<char>(const int N, const char alpha, char* Y);
-template void memset_cpu<int8_t>(const int N, const int8_t alpha, int8_t* Y);
-template void memset_cpu<uint8_t>(const int N, const uint8_t alpha, uint8_t* Y);
-template void memcpy_cpu<int>(const int N, const int* X, int* Y);
-template void memcpy_cpu<unsigned>(const int N, const unsigned* X, unsigned* Y);
-template void memcpy_cpu<float>(const int N, const float* X, float* Y);
-template void memcpy_cpu<double>(const int N, const double* X, double* Y);
+template void memset_cpu<int>(const size_t N, const int alpha, int* Y);
+template void memset_cpu<float>(const size_t N, const float alpha, float* Y);
+template void memset_cpu<double>(const size_t N, const double alpha, double* Y);
+template void memset_cpu<char>(const size_t N, const char alpha, char* Y);
+template void memset_cpu<int8_t>(const size_t N, const int8_t alpha, int8_t* Y);
+template void memset_cpu<uint8_t>(const size_t N, const uint8_t alpha, uint8_t* Y);
+template void memcpy_cpu<int>(const size_t N, const int* X, int* Y);
+template void memcpy_cpu<uint32>(const size_t N, const uint32* X, uint32* Y);
+template void memcpy_cpu<uint64>(const size_t N, const uint64* X, uint64* Y);
+template void memcpy_cpu<float>(const size_t N, const float* X, float* Y);
+template void memcpy_cpu<double>(const size_t N, const double* X, double* Y);
 template void sequence_cpu<int>(int* ptr, const int num);
 template void sequence_cpu<uintk>(uintk* ptr, const int num);
 template void pad_forward_cpu<float>(float* Y, const int Hy, const int Cy,
@@ -627,6 +688,22 @@ template void col2octree_cpu<float>(const float* data_col, float* data_octree,
 template void col2octree_cpu<double>(const double* data_col, double* data_octree,
     const int channel, const int height, const int kernel_sdim, const int stride,
     const int* neigh, const int* ni, const int height_col, const int n);
+template void octree2colP_cpu<float>(float* data_col, const float* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
+template void col2octreeP_cpu<float>(const float* data_col, float* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
+template void octree2colP_cpu<double>(double* data_col, const double* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
+template void col2octreeP_cpu<double>(const double* data_col, double* data_octree, 
+    const int channel, const int height, const int octree_h, const int kernel_sdim, 
+    const int stride, const int* neigh, const int* ni, const int* child, 
+    const int* ichild, const int height_col, const int n);
 template void generate_label_cpu<float>(int* label_data, int& top_h,
     const float* bottom_data, const int bottom_h, const int mask);
 template void generate_label_cpu<double>(int* label_data, int& top_h,

@@ -75,10 +75,13 @@ the data automatically.
 
 ## O-CNN on TensorFlow
 
-1. Download [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip) dataset
-   and unzip it to the folder `dataset/ModelNet40` via the following command:
+### Prepare the point cloud for ModelNet40   
+1. Change the working directory to `tensorflow/data`. Run the following command
+   to download [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip)
+   dataset and unzip it to the folder `dataset/ModelNet40` via the following
+   command:
     ```
-    python ../data/cls_modelnet.py --run download_m40
+    python cls_modelnet.py --run download_m40
     ```
 
 2. Convert triangle meshes (in `off` format) to point clouds (in `points` format)
@@ -86,57 +89,118 @@ the data automatically.
    This process can be automatically executed by the following command.
    Remember to provide actual `<The path of the virtual_scanner>` to run the command.
     ```shell
-    python ../data/cls_modelnet.py --run m40_convert_mesh_to_points \
-                                   --scanner <The path of the virtual_scanner>
+    python cls_modelnet.py --run m40_convert_mesh_to_points \
+                           --scanner <The path of the virtual_scanner>
     ```
-   The generated point clouds are very dense, and if you would like to save disk
+
+3. The generated point clouds are very dense, and if you would like to save disk
    spaces, you can optionally run the following command to simplify the point cloud.
     ```shell
-    python ../data/cls_modelnet.py --run m40_simplify_points 
+    python cls_modelnet.py --run m40_simplify_points 
     ```
-   We also provide the converted `point clouds` for convenience. Download the zip file
-   [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0) and
-   unzip it to the folder `dataset/ModelNet40.points`.
+   We also provide the converted `point clouds` for convenience. Run the
+   following command to download the zip file
+   [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0).
    ```shell
-   python ../data/cls_modelnet.py --run download_m40_points
+   python cls_modelnet.py --run download_m40_points
    ```
 
-3. The `Tensorflow` takes `TFRecords` as input, run the following command to
+### Train a shallow O-CNN network
+1. The `Tensorflow` takes `TFRecords` as input, run the following command to
    convert the point clouds to octrees, then build the `TFRecords` database
     ```shell
-    python ../data/cls_modelnet.py --run m40_generate_octree_tfrecords 
+    python cls_modelnet.py --run m40_generate_octree_tfrecords 
     ```
 
-4. Run the following command to train the network. 
-   The performance is consistent with the `Caffe`-based implementation,  i.e. 
+2. Change the working directory to `tensorflow/script`. Run the following
+   command to train the network. The network is based on the LeNet architecture.
+   The performance is consistent with the `Caffe`-based implementation,  i.e.
    the classification accuracy is 89.6% without voting.
     ```shell
     python run_cls.py --config configs/cls_octree.yaml
     ```
 
-5. With `Tensorflow`, the network can also directly consume the points as input
-   and build octrees at runtime. Run the following command to store the `points`
-   into one `TFRecords` database.
+### Train a deep O-CNN
+1. With `Tensorflow`, the network can also directly consume the points as input
+   and build octrees at runtime. Change the working directory to
+   `tensorflow/data`. Run the following command to store the `points` into one
+   `TFRecords` database.
     ```shell
-    python ../data/cls_modelnet.py --run m40_generate_points_tfrecords
+    python cls_modelnet.py --run m40_generate_points_tfrecords
     ```
     
-6. Run the following command to train a **deeper** network with ResBlocks, which
-   directly takes points. Notable, simply using the training hyperparameters as
-   before, the testing accuracy increases from 89.6% to **92.4%**.
+2. Change the working directory to `tensorflow/script`. Run the following command
+   to train a **deeper** network with ResBlocks, which directly takes points.
+   Notable, simply using the training hyperparameters as before, the testing
+   accuracy increases from 89.6% to **92.4%**.
     ```shell
     python run_cls.py --config configs/cls_points.yaml
     ```
 
+### Train a deep O-CNN-based HRNet
+1. Change the working directory to `tensorflow/data`. Run the following command
+   to store the `points` into `TFRecords` databases with different ratios of
+   training data. Here we also rotate the upright axis of shapes from `z` axis
+   to `y` axis.
+    ```shell
+    python cls_modelnet.py --run m40_generate_points_tfrecords_ratios
+    ```
+    
+2. Change the working directory to `tensorflow/script`. Run the following command
+   to train a **HRNet** with different ratios of training data.
+    ```shell
+    python run_cls_cmd.py
+    ```
+    <!-- https://www.dropbox.com/s/lmqv1n1yyja5z1j/m40_weights_and_logs.zip?dl=0 -->
+
 ## O-CNN on PyTorch
 
-1. Data preparation. Change the working directory to `O-CNN/pytorch/projects`
-   and follow the instructions [above](classification.md#o-cnn-on-tensorflow) to
-   the second step. Place the preprocesed points files into the folder
-   `dataset/ModelNet40.points`.
+### Prepare the point cloud for ModelNet40   
+1. Change the working directory to `pytorch/projects`. Run the following command
+   to download [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip)
+   dataset and unzip it to the folder `dataset/ModelNet40` via the following
+   command:
+    ```
+    python tools/modelnet.py --run download_m40
+    ```
 
-2. Run the following command to train the network.
+2. Convert triangle meshes (in `off` format) to point clouds (in `points` format)
+   with the [virtual_scanner](https://github.com/wang-ps/O-CNN/tree/master/virtual_scanner).
+   This process can be automatically executed by the following command.
+   Remember to provide actual `<The path of the virtual_scanner>` to run the command.
+    ```shell
+    python tools/modelnet.py --run m40_convert_mesh_to_points \
+                             --scanner <The path of the virtual_scanner>
+    ```
+
+3. The generated point clouds are very dense, and if you would like to save disk
+   spaces, you can optionally run the following command to simplify the point cloud.
+    ```shell
+    python tools/modelnet.py --run m40_simplify_points 
+    ```
+   We also provide the converted `point clouds` for convenience. Run the
+   following command to download the zip file
+   [here](https://www.dropbox.com/s/m233s9eza3acj2a/ModelNet40.points.zip?dl=0).
+   ```shell
+   python tools/modelnet.py --run download_m40_points
    ```
-   python classification.py --config configs/cls_lenet.yaml
+
+4. Generate the filelists. 
+   ```shell
+   python tools/modelnet.py --run generate_points_filelist
    ```
-   
+
+### Train a classification with Pytorch-based O-CNN
+
+
+1. Run the following command to train the network.
+   ```
+   python classification.py --config configs/cls_m40.yaml
+   ```
+
+2. To train a deep ResNet, run the following command.
+   ```
+   python classification.py --config configs/cls_m40.yaml \
+                            SOLVER.logdir logs/m40/resnet \
+                            MODEL.name resnet
+   ```

@@ -1,0 +1,55 @@
+SOLVER:
+  gpu: 0,
+  logdir: logs/m40/0201_hrnet_d6
+  run: train
+  max_iter: 100000
+  test_iter: 77
+  test_every_iter: 2000
+  step_size: (40000,20000)
+
+DATA:
+  train:
+    dtype: points
+    distort: True
+    depth: 6
+    axis: y 
+    angle: (5, 5, 5)
+    interval: (1, 1, 1)
+    scale: 0.25
+    jitter: 0.125
+    offset: 0.0
+    uniform: True
+    node_dis: True
+    location: dataset/ModelNet40/m40_y_train_points.tfrecords
+    batch_size: 32
+    x_alias: data
+  test: 
+    dtype: points
+    distort: False  # no data augmentation
+    depth: 6
+    axis: y 
+    angle: (1, 1, 1)
+    interval: (1, 1, 1)
+    scale: 0.25
+    jitter: 0.125
+    offset: 0.0
+    node_dis: True
+    location: dataset/ModelNet40/m40_y_test_points.tfrecords
+    shuffle: 0
+    batch_size: 32
+    x_alias: data
+
+MODEL:
+  name: hrnet
+  channel: 4
+  nout: 40
+  depth: 6
+  factor: 2
+  dropout: 0.0,
+  signal_abs: True
+  upsample: nearest
+
+
+LOSS:
+  num_class: 40
+  weight_decay: 0.0005
