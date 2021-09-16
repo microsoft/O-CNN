@@ -73,19 +73,6 @@ The code has been tested with Ubuntu 16.04/18.04 and TensorFlow 1.14.0/1.12.0.
     ```
 
 3. Build the code under `tensorflow`.
-<!-- =======
-3. Build the code under `octree` with CUDA enabled.
-    ```shell
-    cd octree/build
-    cmake .. -DUSE_CUDA=ON && make
-
-    # optionally, specify the CUDA/C++ standard when building
-    cmake .. -DUSE_CUDA=ON -DCMAKE_CUDA_STANDARD=14 && make
-    ```
-
-4. Build the code under `tensorflow`.
->>>>>>> 4dbfc73 (Add support for specifying CUDA C++ standard when compiling octree)
--->
     ```shell
     cd tensorflow/libs
     python build.py
@@ -121,9 +108,6 @@ The code has been tested with Ubuntu 16.04 and PyTorch 1.6.0.
 2. Build O-CNN under PyTorch.
    ```shell
    python setup.py install --build_octree
-
-   # optionally, specify the CUDA/C++ standard when building with --cuda11 (default) or --cuda14
-   python setup.py install --build_octree --cuda14
    ```
 
 3. Run the test cases.

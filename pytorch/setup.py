@@ -13,7 +13,7 @@ libraries = ['octree_lib', 'cublas']
 if sys.platform == 'win32':
   library_dirs[0] = os.path.join(library_dirs[0], 'Release')
 
-def build_octree(cuda_standard=11):
+def build_octree():
   octree_ext = os.path.join(octree_dir, 'external/octree-ext')
   if not os.path.exists(octree_ext):
     url = 'https://github.com/wang-ps/octree-ext.git'
@@ -26,23 +26,16 @@ def build_octree(cuda_standard=11):
     shutil.rmtree(octree_build, ignore_errors=True)
 
   x64 = '-A x64' if sys.platform == 'win32' else ''
-  cmd = 'mkdir {} && cd {} && cmake .. -DABI=ON -DKEY64=ON {} -DCMAKE_CUDA_STANDARD={} && ' \
+  cmd = 'mkdir {} && cd {} && cmake .. -DABI=ON -DKEY64=ON {} && ' \
         'cmake --build . --config Release && ./octree_test'.format(
-            octree_build, octree_build, x64, cuda_standard)
+            octree_build, octree_build, x64)
   print(cmd)
   os.system(cmd)
+  
 
 if "--build_octree" in sys.argv:
-    # default CUDA standard
-    cuda_standard = 11
-    supported_cuda_standards = ['--cuda11', '--cuda14']
-    for std in supported_cuda_standards:
-        if std in sys.argv:
-            cuda_standard = std.replace('--cuda', '')
-            sys.argv.remove(std)
-            break
-    build_octree(cuda_standard)
-    sys.argv.remove("--build_octree")
+  build_octree()
+  sys.argv.remove("--build_octree")
 
 # builid ocnn
 src = './cpp'  # '{}/cpp'.format(curr_dir)
