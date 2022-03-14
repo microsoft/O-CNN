@@ -1,0 +1,60 @@
+# Parameters for the airplane
+
+SOLVER:
+  gpu: 0,
+  logdir: logs/seg/shapenet_plane
+  max_iter: 3000
+  test_iter: 36
+  test_every_iter: 50
+  step_size: (1500, 750)
+
+DATA:
+  train:
+    dtype: points
+    distort: True
+    depth: 6
+    axis: y 
+    angle: (5, 5, 5)
+    interval: (1, 1, 1)
+    scale: 0.125
+    jitter: 0.125
+    offset: 0.0
+    uniform: True
+    node_dis: True
+    location: dataset/shapenet_segmentation/datasets/02691156_train_val.tfrecords
+    batch_size: 32
+    x_alias: data
+    # mask_ratio: 0.5
+    return_pts: True
+
+  test: 
+    dtype: points
+    distort: False  # no data augmentation
+    depth: 6
+    axis: y 
+    angle: (1, 1, 1)
+    interval: (1, 1, 1)
+    scale: 0.125
+    jitter: 0.125
+    offset: 0.0
+    node_dis: True
+    location: dataset/shapenet_segmentation/datasets/02691156_test.tfrecords
+
+    shuffle: 0
+    batch_size: 1
+    x_alias: data
+    return_pts: True
+
+
+MODEL:
+  name: hrnet
+  channel: 4
+  nout: 15
+  depth: 6
+  factor: 2
+  signal_abs: True
+  depth_out: 6
+
+LOSS:
+  num_class: 15
+  weight_decay: 0.0005

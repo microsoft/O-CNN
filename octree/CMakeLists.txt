@@ -33,7 +33,8 @@ endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # # c++11 Support
-set (CMAKE_CXX_STANDARD 11) 
+set (CMAKE_CXX_STANDARD 11)
+# end
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 if(ABI)
   message(STATUS "octree: _GLIBCXX_USE_CXX11_ABI=0")
