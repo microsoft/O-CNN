@@ -1,3 +1,4 @@
+from ctypes import util
 import tensorflow as tf
 
 from config import parse_args, FLAGS
@@ -15,7 +16,7 @@ class FinetuneOptimizer:
   def __call__(self, total_loss, learning_rate):
     FLAGS = self.flags
     var_list = get_variables_with_name(
-        name='ocnn', without='seg_header', verbose=FLAGS.verbose)
+        name='solver', without='seg_header', verbose=FLAGS.verbose)
     optim_backbone = Optimizer(var_list=var_list, mul=0.1)
     solver1, lr1 = optim_backbone(total_loss, learning_rate)
 
@@ -50,10 +51,10 @@ class ShapeNetFinetune(TFSolver):
     # under the scope of `ocnn`
     print('Restore from: ' + ckpt)
     var_restore = get_variables_with_name(
-        'ocnn', without='predict_6/conv2', verbose=self.flags.verbose, train_only=False)
+        'solver', without='predict_6/conv2', verbose=1, train_only=False)
     tf_saver = tf.train.Saver(var_list=var_restore)
     tf_saver.restore(sess, ckpt)
-
+  
 
 # run the experiments
 if __name__ == '__main__':

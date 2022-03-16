@@ -2,7 +2,7 @@
 
 SOLVER:
   gpu: 0,
-  logdir: logs/seg/shapenet_plane
+  logdir: logs/seg/pheno4d-tomato.64r.32b
   max_iter: 3000
   test_iter: 36
   test_every_iter: 50
@@ -21,7 +21,7 @@ DATA:
     offset: 0.0
     uniform: True
     node_dis: True
-    location: dataset/shapenet_segmentation/datasets/02691156_train_val.tfrecords
+    location: dataset/shapenet_segmentation/datasets/Tomato_train_val.tfrecords
     batch_size: 32
     x_alias: data
     # mask_ratio: 0.5
@@ -38,7 +38,7 @@ DATA:
     jitter: 0.125
     offset: 0.0
     node_dis: True
-    location: dataset/shapenet_segmentation/datasets/02691156_test.tfrecords
+    location: dataset/shapenet_segmentation/datasets/Tomato_test.tfrecords
 
     shuffle: 0
     batch_size: 1
