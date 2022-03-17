@@ -297,7 +297,7 @@ def average_tensors(tower_tensors):
 
 
 def solver_single_gpu(total_loss, learning_rate_handle, gpu_num=1):
-  with tf.variable_scope('solver'):
+  with tf.name_scope('solver'):
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
       global_step = tf.Variable(0, trainable=False, name='global_step')
