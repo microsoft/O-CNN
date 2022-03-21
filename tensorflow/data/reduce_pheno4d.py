@@ -21,10 +21,10 @@ ply_folder = os.path.join(root_folder, dataset_folder)
 reduced_folder = os.path.join(root_folder, 'ply_reduced_' + str(target))
 cc_header_folder = os.path.join(root_folder, 'cc_header')
 cloudcompare = os.path.join(project_root, 'cloudcompare/CloudCompare_v2.12.beta_bin_x64/CloudCompare.exe')
-print(cloudcompare)
 
-categories = ['Maize01', 'Maize02', 'Maize03', 'Maize04', 'Maize05', 'Maize06', 'Maize07',
-              'Tomato01', 'Tomato02', 'Tomato03', 'Tomato04', 'Tomato05', 'Tomato06', 'Tomato07']
+# categories = ['Maize01', 'Maize02', 'Maize03', 'Maize04', 'Maize05', 'Maize06', 'Maize07',
+#               'Tomato01', 'Tomato02', 'Tomato03', 'Tomato04', 'Tomato05', 'Tomato06', 'Tomato07']
+categories = ['Maize', 'Tomato']
 
 def check_cloudcompare():
   if not(Path(cloudcompare).is_file()):
