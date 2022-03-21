@@ -3,10 +3,10 @@ import tensorflow as tf
 import os
 
 checkpoint_path_default = '/home/ervin/Desktop/Thesis/O-CNN/tensorflow/script/dataset/midnet_data/mid_d6_o6/model/iter_800000.ckpt'
-checkpoint_path_custom = '/home/ervin/Desktop/Thesis/O-CNN/tensorflow/script/logs/hrnet/0814_hrnet_d6_o6/model/iter_000002.ckpt'
+checkpoint_path_custom = '/home/ervin/Desktop/Thesis/O-CNN/tensorflow/script/logs/hrnet/plant3D/128.fixed/model/iter_080000.ckpt'
 
 def inspect():
-    reader = pywrap_tensorflow.NewCheckpointReader(checkpoint_path_custom)
+    reader = pywrap_tensorflow.NewCheckpointReader(checkpoint_path_custom+"_renamed.ckpt")
     var_to_shape_map = reader.get_variable_to_shape_map()
 
     for key in var_to_shape_map:
@@ -49,6 +49,38 @@ def fix(checkpoint_dir, dry_run):
             print("Session ran")
             saver.save(sess, checkpoint_dir)
             print("Saved")
+def fix2():
+    NEW_CHECKPOINT_FILE = checkpoint_path_custom+"_renamed.ckpt"
+
+    new_checkpoint_vars = {}
+    reader = tf.train.NewCheckpointReader(checkpoint_path_custom)
+
+    for old_name in reader.get_variable_to_shape_map():
+        if old_name != 'solver/global_step' and 'solver/' in old_name:
+            new_name = old_name.replace('solver/','')
+        else:
+            new_name = old_name
+        new_checkpoint_vars[new_name] = tf.Variable(reader.get_tensor(old_name))
+
+    init = tf.global_variables_initializer()
+    saver = tf.train.Saver(new_checkpoint_vars)
+
+    with tf.Session() as sess:
+        sess.run(init)
+        saver.save(sess, NEW_CHECKPOINT_FILE)
+
+def countSolvers():
+    count = 0
+    f = open('default_layers.txt')
+    r = f.readlines()
+    for line in r:
+        # if 'solver' in line and 'solver/global_step' not in line:
+        #     count+=1
+        if 'ocnn' in line:
+            count+=1
+    print(count)    
 
 #fix(checkpoint_path_custom,False)
 inspect()
+#fix2()
+#countSolvers()

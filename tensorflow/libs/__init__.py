@@ -421,9 +421,13 @@ def octree_bilinear_v3(pts, data, octree, depth):
     indices = tf.cast(indices, tf.int64)
     data = tf.squeeze(data, [0, 3])  # (C, H)
     h = tf.shape(data)[1]
+    print('Indices: ', indices)
     mat = tf.SparseTensor(indices=indices, values=weight, dense_shape=[npt, h])
 
+    # # commented
     # channel, max_channel = int(data.shape[0]), 512
+    # print("Channel: ", channel)
+    
     # if channel > max_channel:
     #   num = channel // max_channel
     #   remain = channel % max_channel
@@ -440,9 +444,12 @@ def octree_bilinear_v3(pts, data, octree, depth):
     #   output = tf.concat(output_split, axis=1)
     # else:
     #   output = tf.sparse.sparse_dense_matmul(mat, data, adjoint_a=False, adjoint_b=True)
-
-    output = tf.sparse.sparse_dense_matmul(mat, data, adjoint_a=False, adjoint_b=True)
-    norm = tf.sparse.sparse_dense_matmul(mat, tf.ones([h, 1]))
+    # commented end
+    dense_mat = tf.sparse_tensor_to_dense(mat)
+    #output = tf.sparse.sparse_dense_matmul(mat, data, adjoint_a=False, adjoint_b=True)
+    output = tf.matmul(dense_mat, data, adjoint_a=False, adjoint_b=True,a_is_sparse = True)
+    #norm = tf.sparse.sparse_dense_matmul(mat, tf.ones([h, 1]))
+    norm = tf.matmul(dense_mat, tf.ones([h, 1]), a_is_sparse = True)
     output = tf.div(output, norm + 1.0e-10) # avoid dividing by zeros
     output = tf.expand_dims(tf.expand_dims(tf.transpose(output), 0), -1)
   return output

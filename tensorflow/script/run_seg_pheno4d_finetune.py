@@ -6,6 +6,7 @@ from tfsolver import TFSolver
 from ocnn import get_variables_with_name, Optimizer
 from run_seg_shapenet import ComputeGraphSeg
 
+from tensorflow.python import pywrap_tensorflow
 
 class FinetuneOptimizer:
   def __init__(self, flags):
@@ -16,7 +17,7 @@ class FinetuneOptimizer:
   def __call__(self, total_loss, learning_rate):
     FLAGS = self.flags
     var_list = get_variables_with_name(
-        name='solver', without='seg_header', verbose=FLAGS.verbose)
+        name='ocnn', without='seg_header', verbose=FLAGS.verbose)
     optim_backbone = Optimizer(var_list=var_list, mul=0.1)
     solver1, lr1 = optim_backbone(total_loss, learning_rate)
 
@@ -51,7 +52,22 @@ class ShapeNetFinetune(TFSolver):
     # under the scope of `ocnn`
     print('Restore from: ' + ckpt)
     var_restore = get_variables_with_name(
-        'solver', without='predict_6/conv2', verbose=1, train_only=False)
+        'ocnn', without='predict_6/conv2', verbose=0, train_only=False)
+    
+    # vars = {}
+    # reader = tf.train.NewCheckpointReader(ckpt)
+    
+    # count = 0
+    # for var in var_restore:
+    #   v = var.name.replace(':0','')
+    #   for old_name in reader.get_variable_to_shape_map():
+    #     if v in old_name:
+    #       count+=1
+    #       vars[old_name] = var
+    #       break
+    # print(count)
+
+    #print(vars)
     tf_saver = tf.train.Saver(var_list=var_restore)
     tf_saver.restore(sess, ckpt)
   

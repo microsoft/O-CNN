@@ -2,7 +2,7 @@
 
 SOLVER:
   gpu: 0,
-  logdir: logs/seg/pheno4d-tomato.64r.32b
+  logdir: logs/seg/pheno4d-tomato.128rpre.32b
   max_iter: 3000
   test_iter: 36
   test_every_iter: 50
@@ -39,7 +39,6 @@ DATA:
     offset: 0.0
     node_dis: True
     location: dataset/shapenet_segmentation/datasets/Tomato_test.tfrecords
-
     shuffle: 0
     batch_size: 1
     x_alias: data
@@ -56,5 +55,5 @@ MODEL:
   depth_out: 6
 
 LOSS:
-  num_class: 15
+  num_class: 2
   weight_decay: 0.0005

@@ -9,7 +9,7 @@ parser.add_argument('--alias', type=str, required=False,
 parser.add_argument('--gpu', type=int, required=False, default=0)
 parser.add_argument('--mode', type=str, required=False, default='randinit')
 parser.add_argument('--ckpt', type=str, required=False,
-                    default='/home/ervin/Desktop/Thesis/O-CNN/tensorflow/script/logs/hrnet/plant3D/64/model/iter_080000.ckpt')
+                    default='/home/ervin/Desktop/Thesis/O-CNN/tensorflow/script/logs/hrnet/plant3D/128.fixed/model/iter_080000.ckpt_renamed.ckpt')
 
 args = parser.parse_args()
 alias = args.alias
