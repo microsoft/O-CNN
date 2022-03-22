@@ -22,7 +22,7 @@ ckpt = args.ckpt if mode != 'randinit' else '\'\''
 module = 'run_seg_pheno4d_finetune.py' if mode != 'randinit' else 'run_seg_shapenet.py'
 script = 'python %s --config configs/seg_hrnet_pheno4d_pts.yaml' % module
 if mode != 'randinit': script += ' SOLVER.mode %s ' % mode
-data = 'dataset/shapenet_segmentation/datasets'
+data = 'dataset/shapenet_segmentation/datasets_reduced_100000_partial'
 
 
 categories= ['Tomato', 'Maize']

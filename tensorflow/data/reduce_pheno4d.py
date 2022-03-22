@@ -15,12 +15,12 @@ target = args.target
 
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 current_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-root_folder = os.path.join(current_path, 'script/dataset/pheno4d_segmentation')
+root_folder = os.path.join(current_path, 'script/dataset/shapenet_segmentation')
 dataset_folder = 'ply'
 ply_folder = os.path.join(root_folder, dataset_folder)
 reduced_folder = os.path.join(root_folder, 'ply_reduced_' + str(target))
 cc_header_folder = os.path.join(root_folder, 'cc_header')
-cloudcompare = os.path.join(project_root, 'cloudcompare/CloudCompare_v2.12.beta_bin_x64/CloudCompare.exe')
+cloudcompare = 'cloudcompare.CloudCompare'
 
 # categories = ['Maize01', 'Maize02', 'Maize03', 'Maize04', 'Maize05', 'Maize06', 'Maize07',
 #               'Tomato01', 'Tomato02', 'Tomato03', 'Tomato04', 'Tomato05', 'Tomato06', 'Tomato07']
@@ -151,9 +151,9 @@ def compute_stats():
         fid.write(log_content)
 
 if __name__ == '__main__':
-  check_cloudcompare()
-  modify_ply_header_cc()
-  reduce_points()
-  shutil.rmtree(cc_header_folder)
+  #check_cloudcompare()
+  #modify_ply_header_cc()
+  #reduce_points()
+  #shutil.rmtree(cc_header_folder)
   modify_ply_header()
   compute_stats()

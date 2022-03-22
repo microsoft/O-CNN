@@ -148,4 +148,5 @@ def points_to_tfrecords():
 
 if __name__ == '__main__':
   #pheno4d_simplify_points()
+  ply_to_points()
   points_to_tfrecords()

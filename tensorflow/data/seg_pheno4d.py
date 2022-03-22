@@ -10,10 +10,10 @@ root_folder = os.path.join(current_path, 'script/dataset/shapenet_segmentation')
 ply2points = 'ply2points'
 convert_tfrecords = os.path.join(current_path, 'util/convert_tfrecords.py')
 
-txt_folder = os.path.join(root_folder, 'txt')
-ply_folder = os.path.join(root_folder, 'ply')
-points_folder = os.path.join(root_folder, 'points')
-dataset_folder = os.path.join(root_folder, 'datasets')
+txt_folder = os.path.join(root_folder, 'txt_reduced_100000_partial')
+ply_folder = os.path.join(root_folder, 'ply_reduced_100000')
+points_folder = os.path.join(root_folder, 'points_reduced_100000_partial')
+dataset_folder = os.path.join(root_folder, 'datasets_reduced_100000_partial')
 
 categories= ['Tomato', 'Maize']
 seg_num   = [2, 2]
@@ -38,14 +38,13 @@ def ply_to_points():
           '--output_path', des_folder,
           '--verbose', '0']
     cmd = ' '.join(cmds)
-    # print(cmd + '\n')
+    print(cmd + '\n')
     os.system(cmd)
 
 def split_data():
   file_list = getListOfFiles(points_folder)
-  train, test = train_test_split(file_list, test_size=0.3, random_state = 42)
-  val, test = train_test_split(test, test_size=0.5, random_state = 42)
-  return train,val,test
+  train, test = train_test_split(file_list, test_size=0.4, random_state = 42)
+  return train,test
 
 def getListOfFiles(dirName):
     # create a list of file and sub directories 
@@ -78,11 +77,11 @@ def points_to_tfrecords():
   print('Convert points files to tfrecords files ...')
   if not os.path.exists(dataset_folder): os.makedirs(dataset_folder)
   list_folder     = os.path.join(txt_folder, 'train_test_split')
-  train, val , test = split_data()
+  if not os.path.exists(list_folder): os.makedirs(list_folder)
+  train, test = split_data()
   for i, c in enumerate(categories):
     filelist_name = os.path.join(list_folder, c + '_train_val.txt')
-    filelist = ['%s.points %d' % (line, i) for line in train if c in line] + \
-               ['%s.points %d' % (line, i) for line in val   if c in line]
+    filelist = ['%s.points %d' % (line, i) for line in train if c in line] 
     with open(filelist_name, 'w') as fid:
       fid.write('\n'.join(filelist))
 
@@ -113,6 +112,6 @@ def points_to_tfrecords():
     shutil.copytree(list_folder, des_folder)
 
 if __name__ == '__main__':
-  # ply_to_points()
+  ply_to_points()
   points_to_tfrecords()
   #split_data()
