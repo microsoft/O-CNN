@@ -52,7 +52,11 @@ Tensor octree_xyz2key(Tensor xyz, int depth) {
 
   Tensor key = torch::zeros_like(xyz);
   auto ptr_out = key.data_ptr<int64_t>();
-  xyz2key_gpu((uintk*)ptr_out, (uintk*)ptr_in, num, depth);
+  if (key.is_cuda()) {
+    xyz2key_gpu((uintk*)ptr_out, (uintk*)ptr_in, num, depth);
+  } else {
+    xyz2key_cpu((uintk*)ptr_out, (uintk*)ptr_in, num, depth);
+  }
   return key;
 }
 
@@ -64,7 +68,11 @@ Tensor octree_key2xyz(Tensor key, int depth) {
 
   Tensor xyz = torch::zeros_like(key);
   auto ptr_out = xyz.data_ptr<int64_t>();
-  key2xyz_gpu((uintk*)ptr_out, (uintk*)ptr_in, num, depth);
+  if (key.is_cuda()) {
+    key2xyz_gpu((uintk*)ptr_out, (uintk*)ptr_in, num, depth);
+  } else {
+    key2xyz_cpu((uintk*)ptr_out, (uintk*)ptr_in, num, depth);
+  }
   return xyz;
 }
 
@@ -91,12 +99,13 @@ Tensor octree_search_key(Tensor key, Tensor octree, int depth, bool key_is_xyz,
   const uintk* des_key = octree_.key_gpu(depth);
 
   Tensor key_tmp;
-  if (nempty) {  // Search the non-empty octree nodes only
+  if (nempty) {         // Search the non-empty octree nodes only
     int top_h = des_h;  // cache old des_h
-    des_h = octree_.info().node_num_nempty(depth); // update des_h
+    des_h = octree_.info().node_num_nempty(depth);  // update des_h
     key_tmp = torch::zeros({des_h}, options);
     int64_t* tmp = key_tmp.data_ptr<int64_t>();
-    pad_backward_gpu((uintk*)tmp, des_h, 1, des_key, top_h, octree_.children_gpu(depth));
+    pad_backward_gpu((uintk*)tmp, des_h, 1, des_key, top_h,
+                     octree_.children_gpu(depth));
     des_key = (const uintk*)tmp;
   }
 

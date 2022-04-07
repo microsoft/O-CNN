@@ -25,7 +25,20 @@ Tensor octree_property_gpu(Tensor octree_in, string property, int depth) {
     int channel = octree_.info().channel(OctreeInfo::kKey);  // = 1
     int total_num = channel * nnum;
     data_out = torch::zeros({total_num}, options.dtype(torch::kInt64));
-    memcpy_gpu(total_num, ptr, (uintk*)data_out.data_ptr<int64_t>());
+    uintk* des_ptr = (uintk*)data_out.data_ptr<int64_t>();
+    if (octree_.info().is_key2xyz()) {
+      if (depth > 0) {
+        xyz2key_gpu(des_ptr, ptr, total_num, depth);
+      } else {
+        for (int d = 1; d < octree_depth + 1; d++) {
+          int nnum_d = octree_.info().node_num(d);
+          int ncum_d = octree_.info().node_num_cum(d);
+          xyz2key_gpu(des_ptr + ncum_d, ptr + ncum_d, nnum_d, d);
+        }
+      }
+    } else {
+      memcpy_gpu(total_num, ptr, des_ptr);
+    }
   }
 
   else if (property == "xyz") {
@@ -78,7 +91,8 @@ Tensor octree_property_gpu(Tensor octree_in, string property, int depth) {
     CHECK(feature_ptr != nullptr) << "The features do not exist: d = " << depth;
     int channel = octree_.info().channel(OctreeInfo::kFeature);
     int total_num = channel * nnum;
-    data_out = torch::zeros({1, channel, nnum, 1}, options.dtype(torch::kFloat32));
+    data_out =
+        torch::zeros({1, channel, nnum, 1}, options.dtype(torch::kFloat32));
     memcpy_gpu(total_num, feature_ptr, data_out.data_ptr<float>());
   }
 
@@ -137,7 +151,7 @@ Tensor octree_property_gpu(Tensor octree_in, string property, int depth) {
     memcpy_gpu(1, &full_depth, data_out.data_ptr<int>());
   }
 
-  else{
+  else {
     LOG(FATAL) << "Unsupport octree property: " << property;
   }
 
@@ -161,7 +175,21 @@ Tensor octree_property_cpu(Tensor octree_in, string property, int depth) {
     int channel = octree_.info().channel(OctreeInfo::kKey);  // = 1
     int total_num = channel * nnum;
     data_out = torch::zeros({total_num}, options.dtype(torch::kInt64));
-    memcpy_cpu(total_num, ptr, (uintk*)data_out.data_ptr<int64_t>());
+    uintk* des_ptr = (uintk*)data_out.data_ptr<int64_t>();
+    if (octree_.info().is_key2xyz()) {
+      if (depth > 0) {
+        xyz2key_cpu(des_ptr, ptr, total_num, depth);
+      } else {
+        for (int d = 1; d < octree_depth + 1; d++) {
+          int nnum_d = octree_.info().node_num(d);
+          int ncum_d = octree_.info().node_num_cum(d);
+          xyz2key_cpu(des_ptr + ncum_d, ptr + ncum_d, nnum_d, d);
+        }
+      }
+    } else {
+      memcpy_cpu(total_num, ptr, des_ptr);
+    }
+
   }
 
   else if (property == "xyz") {
@@ -214,7 +242,8 @@ Tensor octree_property_cpu(Tensor octree_in, string property, int depth) {
     CHECK(feature_ptr != nullptr) << "The features do not exist: d = " << depth;
     int channel = octree_.info().channel(OctreeInfo::kFeature);
     int total_num = channel * nnum;
-    data_out = torch::zeros({1, channel, nnum, 1}, options.dtype(torch::kFloat32));
+    data_out =
+        torch::zeros({1, channel, nnum, 1}, options.dtype(torch::kFloat32));
     memcpy_cpu(total_num, feature_ptr, data_out.data_ptr<float>());
   }
 
@@ -273,7 +302,7 @@ Tensor octree_property_cpu(Tensor octree_in, string property, int depth) {
     memcpy_cpu(1, &full_depth, data_out.data_ptr<int>());
   }
 
-  else{
+  else {
     LOG(FATAL) << "Unsupport octree property: " << property;
   }
 
@@ -293,7 +322,7 @@ Tensor octree_set_property_gpu(Tensor octree_in, Tensor data_in, int depth) {
   data_in = data_in.contiguous();
   CHECK_EQ(count, data_in.numel()) << "Wrong Property Size";
   memcpy_gpu(count, data_in.data_ptr<float>(), property_ptr);
-  
+
   return octree_out;
 }
 
