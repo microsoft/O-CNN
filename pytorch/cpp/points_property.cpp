@@ -97,7 +97,10 @@ Tensor points_property(Tensor points, string property) {
   int npt = points_in.info().pt_num();
   int channel = points_in.info().channel(ptype);
   const float* ptr = points_in.ptr(ptype);
-  CHECK_NE(ptr, nullptr) << "The specified property does not exist.";
+  // CHECK_NE(ptr, nullptr) << "The specified property does not exist.";
+  if (ptr == nullptr) {
+    return Tensor();
+  }
 
   Tensor data_out = torch::zeros({npt, channel}, torch::dtype(torch::kFloat32));
   float* out_ptr = data_out.data_ptr<float>();
