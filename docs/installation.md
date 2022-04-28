@@ -68,8 +68,8 @@ The code has been tested with Ubuntu 16.04/18.04 and TensorFlow 1.14.0/1.12.0.
 2. Create a new conda environment and install tensorflow-gpu 1.14.0.
     ```shell
     conda create -n tf-1.14.0 tensorflow-gpu==1.14.0
-    conda install -c conda-forge yacs tqdm
     conda activate tf-1.14.0
+    conda install -c conda-forge yacs tqdm
     ```
 
 3. Build the code under `tensorflow`.
